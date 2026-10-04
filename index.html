@@ -3,41 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COSWAY AI 中醫體質檢測</title>
-    <link rel="stylesheet" href="/frontend/css/style.css">
+    <title>快速中醫體質檢測 | COSWAY AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#059669', light: '#10B981', dark: '#047857' },
+                        surface: '#F9FAFB',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom animations and utilities */
+        @keyframes scanPulse {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(1.4); opacity: 0; }
+        }
+        @keyframes scanFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .scan-ring {
+            animation: scanPulse 2s ease-out infinite;
+        }
+        .scan-ring:nth-child(2) { animation-delay: 0.5s; }
+        .scan-ring:nth-child(3) { animation-delay: 1s; }
+        .scan-icon { animation: scanFloat 3s ease-in-out infinite; }
+        .stage { display: none; }
+        .stage.active { display: block; }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5d0; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a0b5a8; }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <!-- 第一階段 -->
-        <div id="stage1" class="stage active">
-            <div class="header">
-                <h1>🌿 AI 中醫體質檢測</h1>
-                <p class="subtitle">初步自我評估 · 只需 2 分鐘</p>
+<body class="bg-surface text-slate-800 font-sans antialiased">
+
+    <!-- Stage 1: Questionnaire -->
+    <div id="stage1" class="stage active">
+        <div class="max-w-2xl mx-auto px-4 py-8">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-bold text-primary-dark mb-2">快速中醫體質檢測</h1>
+                <p class="text-slate-500 text-base md:text-lg">1 分鐘完成個人健康評估</p>
             </div>
-            <form id="questionnaire-form">
-                <div class="form-section">
-                    <h3>基本資料</h3>
-                    <div class="form-group">
-                        <label>姓名 <span class="required">*</span></label>
-                        <input type="text" id="name" required placeholder="請輸入姓名">
-                    </div>
-                    <div class="form-group">
-                        <label>聯絡電話 <span class="required">*</span></label>
-                        <input type="tel" id="phone" required placeholder="請輸入電話">
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>性別 <span class="required">*</span></label>
-                            <select id="gender" required>
+
+            <form id="questionnaire-form" class="space-y-6">
+                <!-- Basic Info -->
+                <div class="bg-white rounded-2xl shadow-md p-5 md:p-6">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">基本資料</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">姓名 <span class="text-red-500">*</span></label>
+                            <input type="text" id="name" required placeholder="請輸入姓名"
+                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">聯絡電話 <span class="text-red-500">*</span></label>
+                            <input type="tel" id="phone" required placeholder="請輸入電話"
+                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">性別 <span class="text-red-500">*</span></label>
+                            <select id="gender" required
+                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition bg-white">
                                 <option value="">請選擇</option>
                                 <option value="男">男</option>
                                 <option value="女">女</option>
                                 <option value="其他">其他</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label>年齡層 <span class="required">*</span></label>
-                            <select id="age_group" required>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">年齡層 <span class="text-red-500">*</span></label>
+                            <select id="age_group" required
+                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition bg-white">
                                 <option value="">請選擇</option>
                                 <option value="18-30">18-30 歲</option>
                                 <option value="31-45">31-45 歲</option>
@@ -46,144 +91,462 @@
                             </select>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>檢測人員編號 <span class="optional">(選填)</span></label>
-                        <input type="text" id="referral_code" placeholder="檢測人員編號（例如：111557 或 HK111557）">
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">檢測人員編號 <span class="text-slate-400 text-xs">(選填)</span></label>
+                        <input type="text" id="referral_code" placeholder="檢測人員編號（例如：111557 或 HK111557）"
+                            class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition">
                     </div>
                 </div>
-                <div class="form-section">
-                    <h3>近期身體狀況</h3>
-                    <p class="question-hint">請選擇過去一個月內較明顯的體徵觀察（可複選）</p>
-                    <div class="cards-grid" id="symptoms">
-                        <label class="symptom-card" data-value="舌象異常">
-                            <input type="checkbox" value="舌象異常" hidden>
-                            <div class="card-icon">👅</div>
-                            <div class="card-title">舌象觀察</div>
-                            <div class="card-desc">舌邊有明顯齒痕，或舌苔較厚/發黃</div>
-                            <div class="card-check">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
+
+                <!-- Symptom Cards -->
+                <div class="bg-white rounded-2xl shadow-md p-5 md:p-6">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-2">近期身體狀況</h3>
+                    <p class="text-sm text-slate-500 mb-4">請選擇過去一個月內較明顯的體徵觀察（可複選）</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="symptoms">
+                        <!-- Card 1 -->
+                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                            <input type="checkbox" value="舌象異常" class="peer sr-only">
+                            <div class="mt-0.5 text-2xl">👅</div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">舌象觀察</div>
+                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">舌邊有明顯齒痕，或舌苔較厚/發黃</div>
+                            </div>
+                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
+                                <i data-lucide="check" class="w-3 h-3"></i>
                             </div>
                         </label>
-                        <label class="symptom-card" data-value="晨起覺知">
-                            <input type="checkbox" value="晨起覺知" hidden>
-                            <div class="card-icon">🌅</div>
-                            <div class="card-title">晨起覺知</div>
-                            <div class="card-desc">晨起時感到口乾、口苦或面部眼睛微腫</div>
-                            <div class="card-check">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
+                        <!-- Card 2 -->
+                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                            <input type="checkbox" value="晨起覺知" class="peer sr-only">
+                            <div class="mt-0.5 text-2xl">🌅</div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">晨起覺知</div>
+                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">晨起時感到口乾、口苦或面部眼睛微腫</div>
+                            </div>
+                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
+                                <i data-lucide="check" class="w-3 h-3"></i>
                             </div>
                         </label>
-                        <label class="symptom-card" data-value="體溫循環">
-                            <input type="checkbox" value="體溫循環" hidden>
-                            <div class="card-icon">❄️</div>
-                            <div class="card-title">體溫循環</div>
-                            <div class="card-desc">在冷氣房或冬日中，手腳或腰背較易冰涼</div>
-                            <div class="card-check">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
+                        <!-- Card 3 -->
+                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                            <input type="checkbox" value="體溫循環" class="peer sr-only">
+                            <div class="mt-0.5 text-2xl">❄️</div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">體溫循環</div>
+                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">在冷氣房或冬日中，手腳或腰背較易冰涼</div>
+                            </div>
+                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
+                                <i data-lucide="check" class="w-3 h-3"></i>
                             </div>
                         </label>
-                        <label class="symptom-card" data-value="腸胃消化">
-                            <input type="checkbox" value="腸胃消化" hidden>
-                            <div class="card-icon">🍽️</div>
-                            <div class="card-title">腸胃消化</div>
-                            <div class="card-desc">餐後較常感到腹脹，或消化速度較慢</div>
-                            <div class="card-check">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
+                        <!-- Card 4 -->
+                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                            <input type="checkbox" value="腸胃消化" class="peer sr-only">
+                            <div class="mt-0.5 text-2xl">🍽️</div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">腸胃消化</div>
+                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">餐後較常感到腹脹，或消化速度較慢</div>
+                            </div>
+                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
+                                <i data-lucide="check" class="w-3 h-3"></i>
                             </div>
                         </label>
-                        <label class="symptom-card" data-value="睡眠型態">
-                            <input type="checkbox" value="睡眠型態" hidden>
-                            <div class="card-icon">🌙</div>
-                            <div class="card-title">睡眠型態</div>
-                            <div class="card-desc">入睡時間較長（&gt;30分鐘）或夜間多夢易醒</div>
-                            <div class="card-check">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
+                        <!-- Card 5 -->
+                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                            <input type="checkbox" value="睡眠型態" class="peer sr-only">
+                            <div class="mt-0.5 text-2xl">🌙</div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">睡眠型態</div>
+                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">入睡時間較長（&gt;30分鐘）或夜間多夢易醒</div>
+                            </div>
+                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
+                                <i data-lucide="check" class="w-3 h-3"></i>
                             </div>
                         </label>
-                        <label class="symptom-card" data-value="膚質氣色">
-                            <input type="checkbox" value="膚質氣色" hidden>
-                            <div class="card-icon">✨</div>
-                            <div class="card-title">膚質氣色</div>
-                            <div class="card-desc">肌膚較易敏感乾燥，或面色較為暗沉</div>
-                            <div class="card-check">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
+                        <!-- Card 6 -->
+                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                            <input type="checkbox" value="膚質氣色" class="peer sr-only">
+                            <div class="mt-0.5 text-2xl">✨</div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">膚質氣色</div>
+                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">肌膚較易敏感乾燥，或面色較為暗沉</div>
+                            </div>
+                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
+                                <i data-lucide="check" class="w-3 h-3"></i>
                             </div>
                         </label>
-                        <label class="symptom-card" data-value="日常活力">
-                            <input type="checkbox" value="日常活力" hidden>
-                            <div class="card-icon">🔋</div>
-                            <div class="card-title">日常活力</div>
-                            <div class="card-desc">午後特定時段較易感到精神不濟、體力下滑</div>
-                            <div class="card-check">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
+                        <!-- Card 7 -->
+                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                            <input type="checkbox" value="日常活力" class="peer sr-only">
+                            <div class="mt-0.5 text-2xl">🔋</div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">日常活力</div>
+                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">午後特定時段較易感到精神不濟、體力下滑</div>
+                            </div>
+                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
+                                <i data-lucide="check" class="w-3 h-3"></i>
                             </div>
                         </label>
-                        <label class="symptom-card" data-value="肌群緊張">
-                            <input type="checkbox" value="肌群緊張" hidden>
-                            <div class="card-icon">💻</div>
-                            <div class="card-title">肌群緊張</div>
-                            <div class="card-desc">長期使用手機/電腦導致肩頸肌肉僵硬</div>
-                            <div class="card-check">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
+                        <!-- Card 8 -->
+                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                            <input type="checkbox" value="肌群緊張" class="peer sr-only">
+                            <div class="mt-0.5 text-2xl">💻</div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">肌群緊張</div>
+                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">長期使用手機/電腦導致肩頸肌肉僵硬</div>
+                            </div>
+                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
+                                <i data-lucide="check" class="w-3 h-3"></i>
                             </div>
                         </label>
                     </div>
                 </div>
-                <button type="submit" class="btn-primary">開始 AI 體質分析</button>
+
+                <!-- Submit -->
+                <button type="submit" id="submit-btn" class="w-full py-4 px-6 bg-gradient-to-r from-primary to-primary-light text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl hover:from-primary-dark hover:to-primary transition transform active:scale-[0.98] flex items-center justify-center gap-2">
+                    <span id="btn-text">立即生成 體質分析報告</span>
+                    <svg id="btn-spinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
             </form>
         </div>
-        <!-- 掃描動畫 -->
-        <div id="scanning" class="stage">
-            <div class="scan-container">
-                <div class="scan-ring"></div>
-                <div class="scan-ring"></div>
-                <div class="scan-ring"></div>
-                <div class="scan-icon">🔬</div>
-                <h2>AI 體質分析中</h2>
-                <p class="scan-text" id="scan-text">正在初始化...</p>
-                <div class="scan-bar"><div class="scan-bar-fill" id="scan-bar-fill"></div></div>
+    </div>
+
+    <!-- Stage 2: Scanning -->
+    <div id="scanning" class="stage">
+        <div class="flex flex-col items-center justify-center min-h-[60vh] text-center relative px-4">
+            <div class="relative w-48 h-48 md:w-56 md:h-56 mb-6">
+                <div class="scan-ring absolute inset-0 rounded-full border-2 border-primary/20"></div>
+                <div class="scan-ring absolute inset-0 rounded-full border-2 border-primary/20"></div>
+                <div class="scan-ring absolute inset-0 rounded-full border-2 border-primary/20"></div>
+                <div class="scan-icon absolute inset-0 flex items-center justify-center text-5xl">🔬</div>
             </div>
-        </div>
-        <!-- 第二階段 -->
-        <div id="stage2" class="stage">
-            <div class="header">
-                <h1>📊 您的 AI 體質分析報告</h1>
-                <p class="subtitle">基於中醫體質學的初步評估結果</p>
-            </div>
-            <div id="report-content"></div>
-            <div class="recommendations" id="recommendations"></div>
-            <div class="booking-card">
-                <h3>🔬 進階深度檢測體驗</h3>
-                <p>AI 初步預警顯示您的血管與代謝指標需高度關注。<br>憑此報告，可免費預約至門市進行『量子 / 血管微循環進階檢測』。</p>
-                <button class="btn-booking" id="confirm-booking">免費預約門市進階體驗</button>
+            <h2 class="text-2xl font-bold text-primary-dark mb-3">AI 體質分析中</h2>
+            <p class="text-slate-500 mb-6 min-h-[1.5em]" id="scan-text">正在初始化...</p>
+            <div class="w-64 h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-primary to-primary-light rounded-full transition-all duration-300" id="scan-bar-fill" style="width:0%"></div>
             </div>
         </div>
     </div>
-    <!-- Pop-up -->
-    <div id="popup" class="popup-overlay">
-        <div class="popup-card">
-            <div class="popup-icon">✅</div>
-            <h3>預約成功</h3>
-            <p>報告已備份至檢測人員 Email</p>
-            <button class="btn-primary" id="popup-close">我知道了</button>
+
+    <!-- Stage 3: Report -->
+    <div id="stage2" class="stage">
+        <div class="max-w-2xl mx-auto px-4 py-8 space-y-6">
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-primary-dark mb-2">📊 您的 AI 體質分析報告</h1>
+                <p class="text-slate-500">基於中醫體質學的初步評估結果</p>
+            </div>
+
+            <!-- Score Dashboard -->
+            <div class="bg-white rounded-2xl shadow-md p-5 md:p-6 flex flex-col items-center">
+                <div class="relative w-48 h-48 md:w-56 md:h-56">
+                    <svg class="w-full h-full" viewBox="0 0 160 160">
+                        <circle class="text-slate-200" stroke-width="14" stroke="currentColor" fill="none" cx="80" cy="80" r="70" />
+                        <circle id="gauge-fill" class="text-primary transition-all duration-1000" stroke-width="14" stroke-linecap="round" stroke="currentColor" fill="none" cx="80" cy="80" r="70" transform="rotate(-90 80 80)" stroke-dasharray="439.82" stroke-dashoffset="0" />
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <div id="gauge-number" class="text-4xl font-bold text-slate-800">0</div>
+                        <div class="text-sm text-slate-500 mt-1">健康警示分</div>
+                    </div>
+                </div>
+                <div id="risk-badge" class="mt-4 px-5 py-2 rounded-full font-bold text-sm border"></div>
+                <div class="mt-3 text-slate-600">
+                    體質判定：<strong id="constitution-text" class="text-slate-800">--</strong>
+                </div>
+            </div>
+
+            <!-- Risk Indicators -->
+            <div class="bg-white rounded-2xl shadow-md p-5 md:p-6">
+                <h3 class="text-lg font-semibold text-red-600 mb-4 flex items-center gap-2">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                    健康風險關注指標
+                </h3>
+                <div id="risk-indicators" class="space-y-2 mb-4"></div>
+                <div class="space-y-3 mt-4">
+                    <div>
+                        <div class="flex justify-between text-sm text-slate-600 mb-1"><span>血管彈性指數</span></div>
+                        <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-1" class="h-full bg-red-500 rounded-full transition-all duration-1000" style="width:0%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm text-slate-600 mb-1"><span>血液粘稠度預警</span></div>
+                        <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-2" class="h-full bg-orange-400 rounded-full transition-all duration-1000" style="width:0%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm text-slate-600 mb-1"><span>肝臟代謝負擔</span></div>
+                        <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-3" class="h-full bg-red-600 rounded-full transition-all duration-1000" style="width:0%"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="bg-white rounded-2xl shadow-md p-5 md:p-6">
+                <h3 class="text-lg font-semibold text-primary-dark mb-3 flex items-center gap-2">
+                    <i data-lucide="cup-soda" class="w-5 h-5"></i>
+                    個人化調理建議
+                </h3>
+                <div id="recommendations" class="space-y-2 text-slate-700 text-sm md:text-base"></div>
+            </div>
+
+            <!-- Booking Card -->
+            <div class="bg-gradient-to-br from-orange-50 to-primary/5 border border-orange-100 rounded-2xl p-5 md:p-6 text-center">
+                <h3 class="text-lg font-bold text-orange-600 mb-2">🔬 進階深度檢測體驗</h3>
+                <p class="text-slate-600 text-sm mb-4 leading-relaxed">AI 初步預警顯示您的血管與代謝指標需高度關注。<br>憑此報告，可免費預約至門市進行『量子 / 血管微循環進階檢測』。</p>
+                <button id="confirm-booking" class="w-full py-3.5 px-6 bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-xl font-semibold shadow hover:shadow-lg transition transform active:scale-[0.98]">
+                    免費預約門市進階體驗
+                </button>
+            </div>
         </div>
     </div>
-    <script src="/frontend/js/app.js"></script>
+
+    <!-- Popup -->
+    <div id="popup" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
+            <div class="text-4xl mb-3">✅</div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">預約成功</h3>
+            <p class="text-slate-500 text-sm mb-5">報告已備份至檢測人員 Email</p>
+            <button id="popup-close" class="w-full py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition">我知道了</button>
+        </div>
+    </div>
+
+    <script>
+        // ===== 配置 =====
+        const API_BASE = "http://localhost:8000/api";
+
+        const SCAN_MESSAGES = [
+            "正在初始化 AI 分析引擎...",
+            "正在分析您的九種體質...",
+            "計算經絡氣血狀態...",
+            "評估健康風險指標...",
+            "生成個人化調理建議...",
+        ];
+
+        // ===== 工具函式 =====
+        const $ = (id) => document.getElementById(id);
+        const getQueryParam = (name) => new URLSearchParams(window.location.search).get(name);
+
+        function showStage(id) {
+            document.querySelectorAll(".stage").forEach(s => s.classList.remove("active"));
+            $(id).classList.add("active");
+        }
+
+        function getSymptoms() {
+            return Array.from(document.querySelectorAll("#symptoms input:checked")).map(el => el.value);
+        }
+
+        function validateForm() {
+            const fields = ["name", "phone", "gender", "age_group"];
+            for (const f of fields) {
+                if (!$(f).value.trim()) {
+                    alert("請填寫所有必填欄位");
+                    $(f).focus();
+                    return false;
+                }
+            }
+            if (getSymptoms().length === 0) {
+                alert("請至少選擇一個體徵觀察");
+                return false;
+            }
+            return true;
+        }
+
+        function autoFillReferralCode() {
+            const ref = getQueryParam("ref");
+            if (ref && $("referral_code")) $("referral_code").value = ref;
+        }
+
+        // ===== 視覺卡片互動 =====
+        function initSymptomCards() {
+            const cards = document.querySelectorAll('.symptom-card');
+            cards.forEach(card => {
+                const input = card.querySelector('input');
+                const checkBadge = card.querySelector('.check-badge');
+
+                const updateUI = () => {
+                    if (input.checked) {
+                        card.classList.add('border-primary', 'bg-primary/5');
+                        card.classList.remove('border-slate-100', 'bg-slate-50/50');
+                        checkBadge.classList.remove('hidden');
+                        checkBadge.classList.add('flex');
+                    } else {
+                        card.classList.remove('border-primary', 'bg-primary/5');
+                        card.classList.add('border-slate-100', 'bg-slate-50/50');
+                        checkBadge.classList.add('hidden');
+                        checkBadge.classList.remove('flex');
+                    }
+                };
+
+                card.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    input.checked = !input.checked;
+                    updateUI();
+                });
+
+                // 初始化狀態
+                updateUI();
+            });
+        }
+
+        // ===== 掃描動畫 =====
+        function runScanAnimation() {
+            return new Promise((resolve) => {
+                showStage("scanning");
+                const scanText = $("scan-text");
+                const scanBarFill = $("scan-bar-fill");
+                let index = 0;
+                const interval = setInterval(() => {
+                    if (index < SCAN_MESSAGES.length) {
+                        scanText.textContent = SCAN_MESSAGES[index];
+                        scanBarFill.style.width = `${((index + 1) / SCAN_MESSAGES.length) * 100}%`;
+                        index++;
+                    } else {
+                        clearInterval(interval);
+                        setTimeout(resolve, 400);
+                    }
+                }, 600);
+            });
+        }
+
+        // ===== 提交表單 =====
+        async function submitQuestionnaire(e) {
+            e.preventDefault();
+            if (!validateForm()) return;
+
+            const payload = {
+                name: $("name").value.trim(),
+                phone: $("phone").value.trim(),
+                gender: $("gender").value,
+                age_group: $("age_group").value,
+                referral_code: $("referral_code").value.trim() || null,
+                answers: { symptoms: getSymptoms() },
+            };
+
+            const btn = $("submit-btn");
+            const btnText = $("btn-text");
+            const spinner = $("btn-spinner");
+
+            btn.disabled = true;
+            btnText.textContent = "分析中...";
+            spinner.classList.remove("hidden");
+
+            try {
+                await runScanAnimation();
+                const resp = await fetch(`${API_BASE}/questionnaire/submit`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.detail || "提交失敗");
+                renderReport(data);
+                showStage("stage2");
+                setTimeout(() => $("report-content")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+            } catch (err) {
+                alert("提交失敗：" + err.message);
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = "立即生成 體質分析報告";
+                spinner.classList.add("hidden");
+            }
+        }
+
+        // ===== 報告渲染 =====
+        function getRiskColor(risk) {
+            if (risk === "高") return { bg: "bg-red-50", text: "text-red-600", border: "border-red-200", meter: "bg-red-500" };
+            if (risk === "中") return { bg: "bg-orange-50", text: "text-orange-600", border: "border-orange-200", meter: "bg-orange-400" };
+            return { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-200", meter: "bg-emerald-500" };
+        }
+
+        async function renderReport(data) {
+            const report = data.report;
+            const score = report.score;
+            const risk = report.risk_level;
+            const colors = getRiskColor(risk);
+
+            // Gauge
+            const circumference = 2 * Math.PI * 70;
+            const percent = Math.max(0, Math.min(100, score));
+            const offset = circumference - (percent / 100) * circumference;
+            const gaugeFill = $("gauge-fill");
+            gaugeFill.style.strokeDashoffset = offset;
+            gaugeFill.className = `text-primary transition-all duration-1000`;
+            $("gauge-number").textContent = score;
+            $("gauge-number").className = `text-4xl font-bold ${score < 60 ? 'text-red-500' : score < 80 ? 'text-orange-500' : 'text-emerald-600'}`;
+
+            // Risk badge
+            const badge = $("risk-badge");
+            badge.className = `mt-4 px-5 py-2 rounded-full font-bold text-sm border ${colors.bg} ${colors.text} ${colors.border}`;
+            badge.textContent = risk === "高" ? "潛在風險等級：高" : risk === "中" ? "潛在風險等級：中" : "潛在風險等級：低";
+
+            // Constitution
+            $("constitution-text").textContent = report.constitution;
+
+            // Risk indicators
+            const indicatorsContainer = $("risk-indicators");
+            indicatorsContainer.innerHTML = (report.risk_indicators || []).map(i => `
+                <div class="flex items-center gap-2 text-sm text-slate-700">
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span>${i}</span>
+                </div>
+            `).join("");
+
+            // Risk meters
+            setTimeout(() => {
+                $("risk-1").style.width = `${Math.min(100, Math.max(20, 100 - score + 10))}%`;
+                $("risk-2").style.width = `${Math.min(100, Math.max(20, 100 - score + 5))}%`;
+                $("risk-3").style.width = `${Math.min(100, Math.max(20, 100 - score))}%`;
+            }, 300);
+
+            // Recommendations
+            const recContainer = $("recommendations");
+            fetch(`${API_BASE}/report/${data.assessment_id}`)
+                .then(r => r.json())
+                .then(reportData => {
+                    recContainer.innerHTML = reportData.recommendations.map(r => `
+                        <div class="flex items-start gap-2">
+                            <span class="text-primary mt-0.5">•</span>
+                            <span>${r}</span>
+                        </div>
+                    `).join("");
+                });
+
+            window.__assessmentId = data.assessment_id;
+            lucide.createIcons();
+        }
+
+        // ===== Popup =====
+        function showPopup() { $("popup").classList.remove("hidden"); $("popup").classList.add("flex"); }
+        function hidePopup() { $("popup").classList.add("hidden"); $("popup").classList.remove("flex"); }
+
+        async function confirmBooking() {
+            const id = window.__assessmentId;
+            if (!id) return alert("找不到檢測記錄");
+            try {
+                const resp = await fetch(`${API_BASE}/booking/confirm`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ assessment_id: id, confirmed: true }),
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.detail || "預約失敗");
+                showPopup();
+            } catch (err) {
+                alert("預約失敗：" + err.message);
+            }
+        }
+
+        // ===== 事件監聽 =====
+        $("questionnaire-form").addEventListener("submit", submitQuestionnaire);
+        $("confirm-booking").addEventListener("click", confirmBooking);
+        $("popup-close").addEventListener("click", hidePopup);
+
+        // ===== 初始化 =====
+        document.addEventListener("DOMContentLoaded", () => {
+            initSymptomCards();
+            autoFillReferralCode();
+            lucide.createIcons();
+        });
+    </script>
 </body>
 </html>
