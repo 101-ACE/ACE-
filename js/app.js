@@ -29,7 +29,7 @@ function getSymptoms() {
 }
 
 function validateForm() {
-    const fields = ["name", "phone", "gender", "age_group", "store"];
+    const fields = ["name", "phone", "gender", "age_group"];
     for (const f of fields) {
         if (!$(f).value.trim()) {
             alert("請填寫所有必填欄位");
@@ -39,7 +39,7 @@ function validateForm() {
     }
     const symptoms = getSymptoms();
     if (symptoms.length === 0) {
-        alert("請至少勾選一個症狀");
+        alert("請至少選擇一個體徵觀察");
         return false;
     }
     return true;
@@ -53,9 +53,9 @@ function autoFillReferralCode() {
 }
 
 function getGaugeColor(score) {
-    if (score < 60) return "#ff6b6b";
-    if (score < 80) return "#f4d03f";
-    return "#2ecc71";
+    if (score < 60) return "#e74c3c";
+    if (score < 80) return "#f39c12";
+    return "#27ae60";
 }
 
 function getRiskClass(risk) {
@@ -116,7 +116,6 @@ async function submitQuestionnaire(e) {
         gender: $("gender").value,
         age_group: $("age_group").value,
         referral_code: $("referral_code").value.trim() || null,
-        store: $("store").value,
         answers: { symptoms: getSymptoms() },
     };
 
@@ -157,7 +156,7 @@ async function renderReport(data) {
         <div class="score-dashboard">
             ${renderGauge(score)}
             <div class="risk-badge ${riskClass}">${riskLabel}</div>
-            <div style="margin-top:14px; font-size:1rem; color:#a8e6cf;">體質判定：<strong style="color:#fff;">${report.constitution}</strong></div>
+            <div style="margin-top:14px; font-size:1rem; color:#4a7c6a;">體質判定：<strong style="color:#1a4a3a;">${report.constitution}</strong></div>
         </div>
         <div class="warning-block">
             <h3>⚠️ 健康風險關注指標</h3>

@@ -46,78 +46,102 @@
                             </select>
                         </div>
                     </div>
-                </div>
-                <div class="form-section">
-                    <h3>體驗資料</h3>
                     <div class="form-group">
                         <label>檢測人員編號 <span class="optional">(選填)</span></label>
                         <input type="text" id="referral_code" placeholder="檢測人員編號（例如：111557 或 HK111557）">
                     </div>
-                    <div class="form-group">
-                        <label>預約體驗門市 <span class="required">*</span></label>
-                        <select id="store" required>
-                            <option value="">請選擇門市</option>
-                            <option value="將軍澳中心">將軍澳中心</option>
-                            <option value="將軍澳寶琳">將軍澳寶琳</option>
-                            <option value="樂富">樂富</option>
-                            <option value="柴灣">柴灣</option>
-                            <option value="佐敦">佐敦</option>
-                        </select>
-                    </div>
                 </div>
                 <div class="form-section">
                     <h3>近期身體狀況</h3>
-                    <p class="question-hint">請勾選過去一個月內較明顯的症狀（可複選）</p>
-                    <div class="checkbox-group" id="symptoms">
-                        <label class="checkbox-item">
-                            <input type="checkbox" value="睡眠差">
-                            <span class="checkmark"></span>
-                            <span>睡眠品質較差</span>
+                    <p class="question-hint">請選擇過去一個月內較明顯的體徵觀察（可複選）</p>
+                    <div class="cards-grid" id="symptoms">
+                        <label class="symptom-card" data-value="舌象異常">
+                            <input type="checkbox" value="舌象異常" hidden>
+                            <div class="card-icon">👅</div>
+                            <div class="card-title">舌象觀察</div>
+                            <div class="card-desc">舌邊有明顯齒痕，或舌苔較厚/發黃</div>
+                            <div class="card-check">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
                         </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" value="手腳冰冷">
-                            <span class="checkmark"></span>
-                            <span>手腳容易冰冷</span>
+                        <label class="symptom-card" data-value="晨起覺知">
+                            <input type="checkbox" value="晨起覺知" hidden>
+                            <div class="card-icon">🌅</div>
+                            <div class="card-title">晨起覺知</div>
+                            <div class="card-desc">晨起時感到口乾、口苦或面部眼睛微腫</div>
+                            <div class="card-check">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
                         </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" value="口乾">
-                            <span class="checkmark"></span>
-                            <span>經常感到口乾</span>
+                        <label class="symptom-card" data-value="體溫循環">
+                            <input type="checkbox" value="體溫循環" hidden>
+                            <div class="card-icon">❄️</div>
+                            <div class="card-title">體溫循環</div>
+                            <div class="card-desc">在冷氣房或冬日中，手腳或腰背較易冰涼</div>
+                            <div class="card-check">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
                         </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" value="易倦">
-                            <span class="checkmark"></span>
-                            <span>容易疲倦、精神不濟</span>
+                        <label class="symptom-card" data-value="腸胃消化">
+                            <input type="checkbox" value="腸胃消化" hidden>
+                            <div class="card-icon">🍽️</div>
+                            <div class="card-title">腸胃消化</div>
+                            <div class="card-desc">餐後較常感到腹脹，或消化速度較慢</div>
+                            <div class="card-check">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
                         </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" value="消化不良">
-                            <span class="checkmark"></span>
-                            <span>消化不良或食慾不振</span>
+                        <label class="symptom-card" data-value="睡眠型態">
+                            <input type="checkbox" value="睡眠型態" hidden>
+                            <div class="card-icon">🌙</div>
+                            <div class="card-title">睡眠型態</div>
+                            <div class="card-desc">入睡時間較長（&gt;30分鐘）或夜間多夢易醒</div>
+                            <div class="card-check">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
                         </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" value="容易水腫">
-                            <span class="checkmark"></span>
-                            <span>身體容易水腫</span>
+                        <label class="symptom-card" data-value="膚質氣色">
+                            <input type="checkbox" value="膚質氣色" hidden>
+                            <div class="card-icon">✨</div>
+                            <div class="card-title">膚質氣色</div>
+                            <div class="card-desc">肌膚較易敏感乾燥，或面色較為暗沉</div>
+                            <div class="card-check">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
                         </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" value="皮膚敏感">
-                            <span class="checkmark"></span>
-                            <span>皮膚容易敏感/過敏</span>
+                        <label class="symptom-card" data-value="日常活力">
+                            <input type="checkbox" value="日常活力" hidden>
+                            <div class="card-icon">🔋</div>
+                            <div class="card-title">日常活力</div>
+                            <div class="card-desc">午後特定時段較易感到精神不濟、體力下滑</div>
+                            <div class="card-check">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
                         </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" value="容易生氣">
-                            <span class="checkmark"></span>
-                            <span>情緒容易起伏/焦慮</span>
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" value="頭暈">
-                            <span class="checkmark"></span>
-                            <span>頭暈或頭脹</span>
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" value="夜尿頻繁">
-                            <span class="checkmark"></span>
-                            <span>夜尿次數較多</span>
+                        <label class="symptom-card" data-value="肌群緊張">
+                            <input type="checkbox" value="肌群緊張" hidden>
+                            <div class="card-icon">💻</div>
+                            <div class="card-title">肌群緊張</div>
+                            <div class="card-desc">長期使用手機/電腦導致肩頸肌肉僵硬</div>
+                            <div class="card-check">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
                         </label>
                     </div>
                 </div>

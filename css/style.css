@@ -1,61 +1,56 @@
 :root {
-    --primary: #0a2e24;
-    --primary-light: #134e3a;
-    --accent: #e07a3d;
-    --bg: #0a2e24;
-    --card: rgba(255, 255, 255, 0.08);
-    --card-border: rgba(255, 255, 255, 0.12);
-    --text: #e8f5e9;
-    --muted: #8fa89b;
-    --danger: #ff6b6b;
-    --warning: #f4d03f;
-    --success: #2ecc71;
-    --glass: rgba(255, 255, 255, 0.06);
-    --glass-border: rgba(255, 255, 255, 0.1);
+    --primary: #1a4a3a;
+    --primary-light: #2d6a56;
+    --accent: #d4853b;
+    --bg: #f7f9f6;
+    --card: #ffffff;
+    --card-border: #e2e8e4;
+    --text: #2c3e3a;
+    --muted: #6b7f78;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+    --success: #27ae60;
+    --shadow: 0 4px 24px rgba(0,0,0,0.06);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", "PingFang HK", sans-serif;
-    background: linear-gradient(135deg, var(--bg) 0%, var(--primary-light) 100%);
+    background: linear-gradient(180deg, #f7f9f6 0%, #eef2ec 100%);
     color: var(--text);
-    line-height: 1.5;
+    line-height: 1.6;
     min-height: 100vh;
 }
 
 .container { max-width: 720px; margin: 0 auto; padding: 20px; }
 
 .header { text-align: center; margin-bottom: 24px; }
-.header h1 { font-size: 1.6rem; color: #a8e6cf; text-shadow: 0 0 20px rgba(168, 230, 207, 0.3); }
+.header h1 { font-size: 1.6rem; color: var(--primary); letter-spacing: 0.5px; }
 .subtitle { color: var(--muted); font-size: 0.95rem; margin-top: 6px; }
 
 .form-section {
     background: var(--card);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
     padding: 18px;
-    margin-bottom: 14px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
 }
-.form-section h3 { font-size: 1rem; margin-bottom: 12px; color: #a8e6cf; }
-.question-hint { font-size: 0.85rem; color: var(--muted); margin-bottom: 10px; }
+.form-section h3 { font-size: 1rem; margin-bottom: 12px; color: var(--primary); }
+.question-hint { font-size: 0.85rem; color: var(--muted); margin-bottom: 12px; }
 
 .form-group { margin-bottom: 14px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-label { display: block; font-size: 0.9rem; margin-bottom: 6px; color: var(--text); }
+label { display: block; font-size: 0.9rem; margin-bottom: 6px; color: var(--text); font-weight: 500; }
 .required { color: var(--danger); }
 .optional { color: var(--muted); font-size: 0.85rem; }
 
 input[type="text"], input[type="tel"], select {
     width: 100%;
     padding: 12px 14px;
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--card-border);
     border-radius: 12px;
-    background: var(--glass);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: #ffffff;
     font-size: 0.95rem;
     color: var(--text);
     transition: all 0.3s ease;
@@ -63,50 +58,83 @@ input[type="text"], input[type="tel"], select {
 input::placeholder { color: var(--muted); }
 input:focus, select:focus {
     outline: none;
-    border-color: #a8e6cf;
-    box-shadow: 0 0 0 3px rgba(168, 230, 207, 0.15);
-    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(26,74,58,0.08);
 }
-select option { background: var(--primary); color: var(--text); }
+select option { background: #ffffff; color: var(--text); }
 
-.checkbox-group { display: grid; gap: 10px; }
-.checkbox-item {
+/* 圖文選擇卡片 */
+.cards-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+.symptom-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    border-radius: 16px;
+    border: 1.5px solid var(--card-border);
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    user-select: none;
+}
+.symptom-card:hover {
+    border-color: #c8d6ce;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+    transform: translateY(-1px);
+}
+.symptom-card input { display: none; }
+.symptom-card.selected {
+    border-color: var(--primary-light);
+    background: linear-gradient(180deg, #ffffff 0%, #f3faf6 100%);
+    box-shadow: 0 8px 26px rgba(26,74,58,0.10);
+}
+.card-icon { font-size: 1.6rem; line-height: 1; }
+.card-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+.card-desc { font-size: 0.9rem; color: var(--muted); line-height: 1.5; }
+.card-check {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 1.5px solid var(--card-border);
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px;
-    border-radius: 12px;
-    border: 1px solid var(--glass-border);
-    background: var(--glass);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    cursor: pointer;
-    transition: all 0.3s ease;
+    justify-content: center;
+    color: #ffffff;
+    transition: all 0.25s ease;
 }
-.checkbox-item:hover {
-    border-color: rgba(168, 230, 207, 0.3);
-    background: rgba(255, 255, 255, 0.1);
+.symptom-card.selected .card-check {
+    background: var(--primary-light);
+    border-color: var(--primary-light);
+    color: #ffffff;
 }
-.checkbox-item input { width: 20px; height: 20px; accent-color: #a8e6cf; }
 
 .btn-primary {
     width: 100%;
     padding: 16px;
-    background: linear-gradient(135deg, #134e3a, #0a2e24);
-    color: #a8e6cf;
-    border: 1px solid rgba(168, 230, 207, 0.3);
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: #ffffff;
+    border: none;
     border-radius: 14px;
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 700;
     margin-top: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 20px rgba(168, 230, 207, 0.15);
+    box-shadow: 0 8px 24px rgba(26,74,58,0.20);
 }
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 30px rgba(168, 230, 207, 0.25);
-    background: linear-gradient(135deg, #1a5f4a, #0f3d30);
+    box-shadow: 0 10px 30px rgba(26,74,58,0.28);
 }
 .btn-primary:active { transform: translateY(0); }
 
@@ -121,13 +149,14 @@ select option { background: var(--primary); color: var(--text); }
     justify-content: center;
     min-height: 60vh;
     text-align: center;
+    position: relative;
 }
 .scan-ring {
     position: absolute;
     width: 200px;
     height: 200px;
     border-radius: 50%;
-    border: 2px solid rgba(168, 230, 207, 0.2);
+    border: 2px solid rgba(26,74,58,0.15);
     animation: scanPulse 2s ease-out infinite;
 }
 .scan-ring:nth-child(2) { animation-delay: 0.5s; }
@@ -139,9 +168,8 @@ select option { background: var(--primary); color: var(--text); }
 }
 .scan-container h2 {
     font-size: 1.4rem;
-    color: #a8e6cf;
+    color: var(--primary);
     margin-bottom: 12px;
-    text-shadow: 0 0 20px rgba(168, 230, 207, 0.3);
 }
 .scan-text {
     color: var(--muted);
@@ -152,15 +180,14 @@ select option { background: var(--primary); color: var(--text); }
 .scan-bar {
     width: 280px;
     height: 6px;
-    background: rgba(255, 255, 255, 0.1);
+    background: #e2e8e4;
     border-radius: 999px;
     overflow: hidden;
-    backdrop-filter: blur(10px);
 }
 .scan-bar-fill {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, #a8e6cf, #134e3a);
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
     border-radius: 999px;
     transition: width 0.3s ease;
 }
@@ -177,13 +204,11 @@ select option { background: var(--primary); color: var(--text); }
 /* 儀表板樣式 */
 .score-dashboard {
     background: var(--card);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--card-border);
     border-radius: 20px;
     padding: 24px;
     margin-bottom: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow);
 }
 .gauge-wrap {
     position: relative;
@@ -193,7 +218,7 @@ select option { background: var(--primary); color: var(--text); }
 }
 .gauge-bg {
     fill: none;
-    stroke: rgba(255, 255, 255, 0.1);
+    stroke: #e2e8e4;
     stroke-width: 14;
 }
 .gauge-fill {
@@ -215,7 +240,6 @@ select option { background: var(--primary); color: var(--text); }
     font-weight: 700;
     line-height: 1;
     color: var(--text);
-    text-shadow: 0 0 20px rgba(168, 230, 207, 0.3);
 }
 .gauge-label {
     margin-top: 4px;
@@ -228,98 +252,33 @@ select option { background: var(--primary); color: var(--text); }
     border-radius: 999px;
     font-weight: 700;
     font-size: 1rem;
-    background: rgba(255, 107, 107, 0.15);
+    background: rgba(231,76,60,0.10);
     color: var(--danger);
-    border: 1px solid rgba(255, 107, 107, 0.3);
+    border: 1px solid rgba(231,76,60,0.25);
     display: inline-block;
 }
 .risk-badge.medium {
-    background: rgba(244, 208, 63, 0.15);
+    background: rgba(243,156,18,0.10);
     color: var(--warning);
-    border: 1px solid rgba(244, 208, 63, 0.3);
+    border: 1px solid rgba(243,156,18,0.25);
 }
 .risk-badge.low {
-    background: rgba(46, 204, 113, 0.15);
+    background: rgba(39,174,96,0.10);
     color: var(--success);
-    border: 1px solid rgba(46, 204, 113, 0.3);
-}
-
-/* 風險指標條 */
-.risk-chart {
-    background: var(--card);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 18px;
-    margin-bottom: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-.risk-chart h3 {
-    font-size: 1.05rem;
-    margin-bottom: 14px;
-    color: #a8e6cf;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.risk-item {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin: 12px 0;
-}
-.risk-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    background: rgba(224, 122, 61, 0.15);
-    color: var(--accent);
-    border: 1px solid rgba(224, 122, 61, 0.3);
-}
-.risk-text {
-    flex: 1;
-    font-size: 0.95rem;
-    color: var(--text);
-}
-.risk-meter {
-    width: 100%;
-    height: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 999px;
-    overflow: hidden;
-    margin-top: 8px;
-}
-.risk-meter-fill {
-    height: 100%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, var(--danger), var(--accent));
-    transition: width 0.8s ease;
-}
-.risk-meter-fill.medium {
-    background: linear-gradient(90deg, var(--warning), #f1c40f);
-}
-.risk-meter-fill.low {
-    background: linear-gradient(90deg, var(--success), #2ecc71);
+    border: 1px solid rgba(39,174,96,0.25);
 }
 
 /* 警告區塊 */
 .warning-block {
     background: var(--card);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 107, 107, 0.2);
+    border: 1px solid rgba(231,76,60,0.15);
     border-radius: 16px;
     padding: 18px;
     margin-bottom: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow);
 }
 .warning-block h3 {
-    color: #ff6b6b;
+    color: var(--danger);
     margin-bottom: 12px;
     display: flex;
     align-items: center;
@@ -335,55 +294,83 @@ select option { background: var(--primary); color: var(--text); }
     color: var(--text);
 }
 .warning-item .warn-icon {
-    color: #ff6b6b;
+    color: var(--danger);
     font-size: 1.3rem;
-    text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+}
+
+/* 風險指標條 */
+.risk-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 12px 0;
+}
+.risk-text {
+    flex: 1;
+    font-size: 0.95rem;
+    color: var(--text);
+}
+.risk-meter {
+    width: 100%;
+    height: 10px;
+    background: #eef2ec;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+.risk-meter-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--danger), var(--accent));
+    transition: width 0.8s ease;
+}
+.risk-meter-fill.medium {
+    background: linear-gradient(90deg, var(--warning), #f1c40f);
+}
+.risk-meter-fill.low {
+    background: linear-gradient(90deg, var(--success), #27ae60);
 }
 
 /* 建議區塊 */
 .recommendations {
     background: var(--card);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--card-border);
     border-radius: 16px;
     padding: 18px;
     margin-bottom: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow);
 }
-.recommendations h3 { color: #a8e6cf; margin-bottom: 12px; font-size: 1.05rem; }
-.recommendation-item { padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); font-size: 0.95rem; color: var(--text); }
+.recommendations h3 { color: var(--primary); margin-bottom: 12px; font-size: 1.05rem; }
+.recommendation-item { padding: 10px 0; border-bottom: 1px solid #eef2ec; font-size: 0.95rem; color: var(--text); }
 .recommendation-item:last-child { border-bottom: none; }
 
 /* 預約按鈕美化 */
 .booking-card {
-    background: linear-gradient(135deg, rgba(224, 122, 61, 0.15), rgba(19, 78, 58, 0.3));
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(224, 122, 61, 0.3);
+    background: linear-gradient(135deg, rgba(212,133,59,0.10), rgba(26,74,58,0.08));
+    border: 1px solid rgba(212,133,59,0.25);
     border-radius: 20px;
     padding: 20px;
     text-align: center;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow);
 }
 .booking-card h3 { color: var(--accent); margin-bottom: 10px; font-size: 1.1rem; }
 .booking-card p { font-size: 0.95rem; margin-bottom: 16px; color: var(--text); line-height: 1.6; }
 .btn-booking {
     width: 100%;
     padding: 16px;
-    background: linear-gradient(135deg, #e07a3d, #f39c12);
+    background: linear-gradient(135deg, var(--accent), #e6a355);
     color: white;
     border: none;
     border-radius: 14px;
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 6px 24px rgba(224, 122, 61, 0.3);
+    box-shadow: 0 6px 24px rgba(212,133,59,0.25);
     transition: all 0.3s ease;
 }
 .btn-booking:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(224, 122, 61, 0.4);
+    box-shadow: 0 8px 30px rgba(212,133,59,0.35);
 }
 .btn-booking:active { transform: translateY(0); }
 
@@ -391,9 +378,9 @@ select option { background: var(--primary); color: var(--text); }
 .popup-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     display: none;
     align-items: center;
     justify-content: center;
@@ -401,27 +388,27 @@ select option { background: var(--primary); color: var(--text); }
 }
 .popup-overlay.active { display: flex; }
 .popup-card {
-    background: linear-gradient(135deg, var(--primary), var(--primary-light));
-    border: 1px solid var(--glass-border);
+    background: #ffffff;
+    border: 1px solid var(--card-border);
     border-radius: 20px;
     padding: 28px;
     width: 90%;
     max-width: 340px;
     text-align: center;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.12);
 }
 .popup-icon {
     font-size: 3rem;
     margin-bottom: 12px;
 }
-.popup-card h3 { margin-bottom: 8px; color: #a8e6cf; }
+.popup-card h3 { margin-bottom: 8px; color: var(--primary); }
 .popup-card p { color: var(--muted); margin-bottom: 16px; font-size: 0.95rem; }
 
 /* 滾動條美化 */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
-::-webkit-scrollbar-thumb { background: rgba(168, 230, 207, 0.3); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(168, 230, 207, 0.5); }
+::-webkit-scrollbar-track { background: #f1f3f1; }
+::-webkit-scrollbar-thumb { background: #c8d6ce; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #aabcb4; }
 
 @media (max-width: 480px) {
     .container { padding: 14px; }
@@ -430,4 +417,9 @@ select option { background: var(--primary); color: var(--text); }
     .gauge-number { font-size: 2.8rem; }
     .scan-ring { width: 160px; height: 160px; }
     .scan-bar { width: 240px; }
+    .cards-grid { gap: 10px; }
+}
+
+@media (min-width: 540px) {
+    .cards-grid { grid-template-columns: 1fr 1fr; }
 }
