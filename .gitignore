@@ -1,0 +1,29 @@
+# 依賴與套件
+node_modules/
+.npm/
+
+# 環境變數
+.env
+.env.local
+.env.*.local
+
+# 日誌
+*.log
+npm-debug.log*
+
+# 作業系統
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 建置產物
+dist/
+build/
+
+# 鎖定檔（本專案為靜態頁，可視需求保留或忽略）
+# package-lock.json

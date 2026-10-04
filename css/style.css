@@ -1,0 +1,433 @@
+:root {
+    --primary: #0a2e24;
+    --primary-light: #134e3a;
+    --accent: #e07a3d;
+    --bg: #0a2e24;
+    --card: rgba(255, 255, 255, 0.08);
+    --card-border: rgba(255, 255, 255, 0.12);
+    --text: #e8f5e9;
+    --muted: #8fa89b;
+    --danger: #ff6b6b;
+    --warning: #f4d03f;
+    --success: #2ecc71;
+    --glass: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", "PingFang HK", sans-serif;
+    background: linear-gradient(135deg, var(--bg) 0%, var(--primary-light) 100%);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+}
+
+.container { max-width: 720px; margin: 0 auto; padding: 20px; }
+
+.header { text-align: center; margin-bottom: 24px; }
+.header h1 { font-size: 1.6rem; color: #a8e6cf; text-shadow: 0 0 20px rgba(168, 230, 207, 0.3); }
+.subtitle { color: var(--muted); font-size: 0.95rem; margin-top: 6px; }
+
+.form-section {
+    background: var(--card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.form-section h3 { font-size: 1rem; margin-bottom: 12px; color: #a8e6cf; }
+.question-hint { font-size: 0.85rem; color: var(--muted); margin-bottom: 10px; }
+
+.form-group { margin-bottom: 14px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+label { display: block; font-size: 0.9rem; margin-bottom: 6px; color: var(--text); }
+.required { color: var(--danger); }
+.optional { color: var(--muted); font-size: 0.85rem; }
+
+input[type="text"], input[type="tel"], select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-size: 0.95rem;
+    color: var(--text);
+    transition: all 0.3s ease;
+}
+input::placeholder { color: var(--muted); }
+input:focus, select:focus {
+    outline: none;
+    border-color: #a8e6cf;
+    box-shadow: 0 0 0 3px rgba(168, 230, 207, 0.15);
+    background: rgba(255, 255, 255, 0.1);
+}
+select option { background: var(--primary); color: var(--text); }
+
+.checkbox-group { display: grid; gap: 10px; }
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.checkbox-item:hover {
+    border-color: rgba(168, 230, 207, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+}
+.checkbox-item input { width: 20px; height: 20px; accent-color: #a8e6cf; }
+
+.btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #134e3a, #0a2e24);
+    color: #a8e6cf;
+    border: 1px solid rgba(168, 230, 207, 0.3);
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(168, 230, 207, 0.15);
+}
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 30px rgba(168, 230, 207, 0.25);
+    background: linear-gradient(135deg, #1a5f4a, #0f3d30);
+}
+.btn-primary:active { transform: translateY(0); }
+
+.stage { display: none; }
+.stage.active { display: block; }
+
+/* 掃描動畫 */
+.scan-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+}
+.scan-ring {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: 2px solid rgba(168, 230, 207, 0.2);
+    animation: scanPulse 2s ease-out infinite;
+}
+.scan-ring:nth-child(2) { animation-delay: 0.5s; }
+.scan-ring:nth-child(3) { animation-delay: 1s; }
+.scan-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    animation: scanFloat 3s ease-in-out infinite;
+}
+.scan-container h2 {
+    font-size: 1.4rem;
+    color: #a8e6cf;
+    margin-bottom: 12px;
+    text-shadow: 0 0 20px rgba(168, 230, 207, 0.3);
+}
+.scan-text {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+    min-height: 1.5em;
+}
+.scan-bar {
+    width: 280px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+.scan-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #a8e6cf, #134e3a);
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+@keyframes scanPulse {
+    0% { transform: scale(0.8); opacity: 1; }
+    100% { transform: scale(1.4); opacity: 0; }
+}
+@keyframes scanFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* 儀表板樣式 */
+.score-dashboard {
+    background: var(--card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.gauge-wrap {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+}
+.gauge-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 14;
+}
+.gauge-fill {
+    fill: none;
+    stroke-width: 14;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s ease, stroke 0.3s;
+}
+.gauge-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.gauge-number {
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text);
+    text-shadow: 0 0 20px rgba(168, 230, 207, 0.3);
+}
+.gauge-label {
+    margin-top: 4px;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+.risk-badge {
+    margin-top: 16px;
+    padding: 10px 24px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 1rem;
+    background: rgba(255, 107, 107, 0.15);
+    color: var(--danger);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    display: inline-block;
+}
+.risk-badge.medium {
+    background: rgba(244, 208, 63, 0.15);
+    color: var(--warning);
+    border: 1px solid rgba(244, 208, 63, 0.3);
+}
+.risk-badge.low {
+    background: rgba(46, 204, 113, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+/* 風險指標條 */
+.risk-chart {
+    background: var(--card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.risk-chart h3 {
+    font-size: 1.05rem;
+    margin-bottom: 14px;
+    color: #a8e6cf;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.risk-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 12px 0;
+}
+.risk-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    background: rgba(224, 122, 61, 0.15);
+    color: var(--accent);
+    border: 1px solid rgba(224, 122, 61, 0.3);
+}
+.risk-text {
+    flex: 1;
+    font-size: 0.95rem;
+    color: var(--text);
+}
+.risk-meter {
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+.risk-meter-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--danger), var(--accent));
+    transition: width 0.8s ease;
+}
+.risk-meter-fill.medium {
+    background: linear-gradient(90deg, var(--warning), #f1c40f);
+}
+.risk-meter-fill.low {
+    background: linear-gradient(90deg, var(--success), #2ecc71);
+}
+
+/* 警告區塊 */
+.warning-block {
+    background: var(--card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 107, 107, 0.2);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.warning-block h3 {
+    color: #ff6b6b;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.05rem;
+}
+.warning-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 10px 0;
+    font-size: 0.95rem;
+    color: var(--text);
+}
+.warning-item .warn-icon {
+    color: #ff6b6b;
+    font-size: 1.3rem;
+    text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+}
+
+/* 建議區塊 */
+.recommendations {
+    background: var(--card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.recommendations h3 { color: #a8e6cf; margin-bottom: 12px; font-size: 1.05rem; }
+.recommendation-item { padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); font-size: 0.95rem; color: var(--text); }
+.recommendation-item:last-child { border-bottom: none; }
+
+/* 預約按鈕美化 */
+.booking-card {
+    background: linear-gradient(135deg, rgba(224, 122, 61, 0.15), rgba(19, 78, 58, 0.3));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(224, 122, 61, 0.3);
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+.booking-card h3 { color: var(--accent); margin-bottom: 10px; font-size: 1.1rem; }
+.booking-card p { font-size: 0.95rem; margin-bottom: 16px; color: var(--text); line-height: 1.6; }
+.btn-booking {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #e07a3d, #f39c12);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 24px rgba(224, 122, 61, 0.3);
+    transition: all 0.3s ease;
+}
+.btn-booking:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(224, 122, 61, 0.4);
+}
+.btn-booking:active { transform: translateY(0); }
+
+/* Pop-up */
+.popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.popup-overlay.active { display: flex; }
+.popup-card {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 28px;
+    width: 90%;
+    max-width: 340px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+.popup-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+.popup-card h3 { margin-bottom: 8px; color: #a8e6cf; }
+.popup-card p { color: var(--muted); margin-bottom: 16px; font-size: 0.95rem; }
+
+/* 滾動條美化 */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+::-webkit-scrollbar-thumb { background: rgba(168, 230, 207, 0.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(168, 230, 207, 0.5); }
+
+@media (max-width: 480px) {
+    .container { padding: 14px; }
+    .form-row { grid-template-columns: 1fr; }
+    .gauge-wrap { width: 160px; height: 160px; }
+    .gauge-number { font-size: 2.8rem; }
+    .scan-ring { width: 160px; height: 160px; }
+    .scan-bar { width: 240px; }
+}
