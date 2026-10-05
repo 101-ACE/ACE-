@@ -19,7 +19,6 @@
         }
     </script>
     <style>
-        /* Custom animations and utilities */
         @keyframes scanPulse {
             0% { transform: scale(0.8); opacity: 1; }
             100% { transform: scale(1.4); opacity: 0; }
@@ -28,19 +27,43 @@
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
-        .scan-ring {
-            animation: scanPulse 2s ease-out infinite;
-        }
+        .scan-ring { animation: scanPulse 2s ease-out infinite; }
         .scan-ring:nth-child(2) { animation-delay: 0.5s; }
         .scan-ring:nth-child(3) { animation-delay: 1s; }
         .scan-icon { animation: scanFloat 3s ease-in-out infinite; }
         .stage { display: none; }
         .stage.active { display: block; }
-        /* Custom scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5d0; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #a0b5a8; }
+        /* Accordion smooth open */
+        .accordion-content {
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        .accordion-content.open {
+            max-height: 4000px;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        /* Card selected state */
+        .obs-card.selected {
+            border-color: #059669 !important;
+            background: #dcfce7 !important;
+        }
+        .obs-card .check-icon {
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.2s ease;
+        }
+        .obs-card.selected .check-icon {
+            opacity: 1;
+            transform: scale(1);
+        }
     </style>
 </head>
 <body class="bg-surface text-slate-800 font-sans antialiased">
@@ -59,16 +82,21 @@
                 <div class="bg-white rounded-2xl shadow-md p-5 md:p-6">
                     <h3 class="text-lg font-semibold text-slate-800 mb-4">基本資料</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- 姓名 -->
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">姓名 <span class="text-red-500">*</span></label>
                             <input type="text" id="name" required placeholder="請輸入姓名"
                                 class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition">
                         </div>
+                        <!-- 聯絡電話 -->
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">聯絡電話 <span class="text-red-500">*</span></label>
                             <input type="tel" id="phone" required placeholder="請輸入電話"
                                 class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition">
                         </div>
+                    </div>
+                    <!-- 性別 / 年齡 / 檢測人員編號 三欄同排 -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">性別 <span class="text-red-500">*</span></label>
                             <select id="gender" required
@@ -80,130 +108,315 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">年齡層 <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">年齡 <span class="text-red-500">*</span></label>
                             <select id="age_group" required
                                 class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition bg-white">
-                                <option value="">請選擇</option>
+                                <option value="">請選擇年齡</option>
                                 <option value="18-30">18-30 歲</option>
                                 <option value="31-45">31-45 歲</option>
                                 <option value="46-60">46-60 歲</option>
                                 <option value="61+">61 歲以上</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="mt-4">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">檢測人員編號 <span class="text-slate-400 text-xs">(選填)</span></label>
-                        <input type="text" id="referral_code" placeholder="檢測人員編號（例如：111557 或 HK111557）"
-                            class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">檢測人員編號 <span class="text-slate-400 text-xs">(選填)</span></label>
+                            <input type="text" id="referral_code" placeholder="例：111557 或 HK111557"
+                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition">
+                        </div>
                     </div>
                 </div>
 
-                <!-- Symptom Cards -->
+                <!-- Observation Categories -->
                 <div class="bg-white rounded-2xl shadow-md p-5 md:p-6">
-                    <h3 class="text-lg font-semibold text-slate-800 mb-2">近期身體狀況</h3>
+                    <h3 class="text-lg font-semibold text-slate-800 mb-2">各項身體現況</h3>
                     <p class="text-sm text-slate-500 mb-4">請選擇過去一個月內較明顯的體徵觀察（可複選）</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="symptoms">
-                        <!-- Card 1 -->
-                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                            <input type="checkbox" value="舌象異常" class="peer sr-only">
-                            <div class="mt-0.5 text-2xl">👅</div>
-                            <div class="flex-1">
-                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">舌象觀察</div>
-                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">舌邊有明顯齒痕，或舌苔較厚/發黃</div>
+
+                    <!-- 五大平行觀察類別標題 -->
+                    <div class="grid grid-cols-1 sm:grid-cols-5 gap-2 mb-4">
+                        <button type="button" data-category="舌象觀察"
+                            class="category-btn col-span-1 sm:col-span-1 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-primary/5 hover:border-primary transition flex items-center justify-center gap-1">
+                            <i data-lucide="tongue" class="w-4 h-4"></i>
+                            <span>舌象觀察</span>
+                        </button>
+                        <button type="button" data-category="面色觀察"
+                            class="category-btn px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-primary/5 hover:border-primary transition flex items-center justify-center gap-1">
+                            <i data-lucide="palette" class="w-4 h-4"></i>
+                            <span>面色觀察</span>
+                        </button>
+                        <button type="button" data-category="眼睛觀察"
+                            class="category-btn px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-primary/5 hover:border-primary transition flex items-center justify-center gap-1">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                            <span>眼睛觀察</span>
+                        </button>
+                        <button type="button" data-category="聲音觀察"
+                            class="category-btn px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-primary/5 hover:border-primary transition flex items-center justify-center gap-1">
+                            <i data-lucide="volume-2" class="w-4 h-4"></i>
+                            <span>聲音觀察</span>
+                        </button>
+                        <button type="button" data-category="症狀觀察"
+                            class="category-btn px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-primary/5 hover:border-primary transition flex items-center justify-center gap-1">
+                            <i data-lucide="activity" class="w-4 h-4"></i>
+                            <span>症狀觀察</span>
+                        </button>
+                    </div>
+
+                    <!-- 舌象觀察 Accordion -->
+                    <div class="accordion border-t border-slate-100">
+                        <div class="accordion-header flex items-center justify-between py-3 cursor-pointer"
+                            onclick="toggleAccordion('tongue')">
+                            <span class="font-semibold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="tongue" class="w-5 h-5 text-primary"></i>
+                                舌象觀察
+                            </span>
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400 transition-transform duration-300"
+                               id="tongue-chevron"></i>
+                        </div>
+
+                        <div id="tongue-accordion" class="accordion-content overflow-hidden">
+                            <!-- 舌色觀察 -->
+                            <div class="py-3 border-b border-slate-100 last:border-0">
+                                <div class="text-sm font-medium text-slate-700 mb-2">舌色觀察</div>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" data-subcat="舌色觀察">
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌色:淡紅舌" class="sr-only">
+                                        <span class="text-lg mb-1">🩸</span>
+                                        <span class="text-xs font-medium text-slate-700">淡紅舌</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌色:淡白舌" class="sr-only">
+                                        <span class="text-lg mb-1">🤍</span>
+                                        <span class="text-xs font-medium text-slate-700">淡白舌</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌色:紅舌" class="sr-only">
+                                        <span class="text-lg mb-1">🔴</span>
+                                        <span class="text-xs font-medium text-slate-700">紅舌</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌色:絳舌" class="sr-only">
+                                        <span class="text-lg mb-1">🟣</span>
+                                        <span class="text-xs font-medium text-slate-700">絳舌</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌色:紫舌" class="sr-only">
+                                        <span class="text-lg mb-1">💜</span>
+                                        <span class="text-xs font-medium text-slate-700">紫舌</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌色:青舌" class="sr-only">
+                                        <span class="text-lg mb-1">🟢</span>
+                                        <span class="text-xs font-medium text-slate-700">青舌</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
-                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
-                                <i data-lucide="check" class="w-3 h-3"></i>
+                            <!-- 舌態觀察 -->
+                            <div class="py-3 border-b border-slate-100 last:border-0">
+                                <div class="text-sm font-medium text-slate-700 mb-2">舌態觀察</div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" data-subcat="舌態觀察">
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌態:適中" class="sr-only">
+                                        <span class="text-lg mb-1">⚖️</span>
+                                        <span class="text-xs font-medium text-slate-700">適中</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌態:強硬" class="sr-only">
+                                        <span class="text-lg mb-1">💪</span>
+                                        <span class="text-xs font-medium text-slate-700">強硬</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌態:痿軟" class="sr-only">
+                                        <span class="text-lg mb-1">🥶</span>
+                                        <span class="text-xs font-medium text-slate-700">痿軟</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌態:舌歪斜" class="sr-only">
+                                        <span class="text-lg mb-1">🧭</span>
+                                        <span class="text-xs font-medium text-slate-700">舌歪斜</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
-                        </label>
-                        <!-- Card 2 -->
-                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                            <input type="checkbox" value="晨起覺知" class="peer sr-only">
-                            <div class="mt-0.5 text-2xl">🌅</div>
-                            <div class="flex-1">
-                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">晨起覺知</div>
-                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">晨起時感到口乾、口苦或面部眼睛微腫</div>
+                            <!-- 舌苔色觀察 -->
+                            <div class="py-3 border-b border-slate-100 last:border-0">
+                                <div class="text-sm font-medium text-slate-700 mb-2">舌苔色觀察</div>
+                                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2" data-subcat="舌苔色觀察">
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔色:無苔" class="sr-only">
+                                        <span class="text-lg mb-1">🧼</span>
+                                        <span class="text-xs font-medium text-slate-700">無苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔色:白苔" class="sr-only">
+                                        <span class="text-lg mb-1">⚪</span>
+                                        <span class="text-xs font-medium text-slate-700">白苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔色:黃苔" class="sr-only">
+                                        <span class="text-lg mb-1">🟡</span>
+                                        <span class="text-xs font-medium text-slate-700">黃苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔色:灰苔" class="sr-only">
+                                        <span class="text-lg mb-1">🌫️</span>
+                                        <span class="text-xs font-medium text-slate-700">灰苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔色:黑苔" class="sr-only">
+                                        <span class="text-lg mb-1">⚫</span>
+                                        <span class="text-xs font-medium text-slate-700">黑苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
-                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
-                                <i data-lucide="check" class="w-3 h-3"></i>
+                            <!-- 舌苔質觀察 -->
+                            <div class="py-3 border-b border-slate-100 last:border-0">
+                                <div class="text-sm font-medium text-slate-700 mb-2">舌苔質觀察</div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" data-subcat="舌苔質觀察">
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔質:薄苔" class="sr-only">
+                                        <span class="text-lg mb-1">🥄</span>
+                                        <span class="text-xs font-medium text-slate-700">薄苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔質:厚苔" class="sr-only">
+                                        <span class="text-lg mb-1">🧱</span>
+                                        <span class="text-xs font-medium text-slate-700">厚苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔質:潤苔" class="sr-only">
+                                        <span class="text-lg mb-1">💧</span>
+                                        <span class="text-xs font-medium text-slate-700">潤苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔質:燥苔" class="sr-only">
+                                        <span class="text-lg mb-1">🔥</span>
+                                        <span class="text-xs font-medium text-slate-700">燥苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔質:膩苔" class="sr-only">
+                                        <span class="text-lg mb-1">🟤</span>
+                                        <span class="text-xs font-medium text-slate-700">膩苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔質:腐苔" class="sr-only">
+                                        <span class="text-lg mb-1">🧨</span>
+                                        <span class="text-xs font-medium text-slate-700">腐苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔質:鏡面苔" class="sr-only">
+                                        <span class="text-lg mb-1">🔍</span>
+                                        <span class="text-xs font-medium text-slate-700">鏡面苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔質:花剝苔" class="sr-only">
+                                        <span class="text-lg mb-1">🌸</span>
+                                        <span class="text-xs font-medium text-slate-700">花剝苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
-                        </label>
-                        <!-- Card 3 -->
-                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                            <input type="checkbox" value="體溫循環" class="peer sr-only">
-                            <div class="mt-0.5 text-2xl">❄️</div>
-                            <div class="flex-1">
-                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">體溫循環</div>
-                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">在冷氣房或冬日中，手腳或腰背較易冰涼</div>
+                            <!-- 舌苔形觀察 -->
+                            <div class="py-3 border-b border-slate-100 last:border-0">
+                                <div class="text-sm font-medium text-slate-700 mb-2">舌苔形觀察</div>
+                                <div class="grid grid-cols-2 sm:grid-cols-2 gap-2" data-subcat="舌苔形觀察">
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔形:顆粒苔" class="sr-only">
+                                        <span class="text-lg mb-1">🧂</span>
+                                        <span class="text-xs font-medium text-slate-700">顆粒苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="舌苔形:膩苔" class="sr-only">
+                                        <span class="text-lg mb-1">🟤</span>
+                                        <span class="text-xs font-medium text-slate-700">膩苔</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
-                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
-                                <i data-lucide="check" class="w-3 h-3"></i>
+                            <!-- 舌態觀察 (預留擴充) -->
+                            <div class="py-3 border-b border-slate-100 last:border-0">
+                                <div class="text-sm font-medium text-slate-700 mb-2">舌態觀察</div>
+                                <div class="grid grid-cols-1 gap-2" data-subcat="舌態觀察" id="tongue-posture-container">
+                                    <div class="text-xs text-slate-400 text-center py-4">此處留空，待擴充子分類卡片</div>
+                                </div>
                             </div>
-                        </label>
-                        <!-- Card 4 -->
-                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                            <input type="checkbox" value="腸胃消化" class="peer sr-only">
-                            <div class="mt-0.5 text-2xl">🍽️</div>
-                            <div class="flex-1">
-                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">腸胃消化</div>
-                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">餐後較常感到腹脹，或消化速度較慢</div>
-                            </div>
-                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
-                                <i data-lucide="check" class="w-3 h-3"></i>
-                            </div>
-                        </label>
-                        <!-- Card 5 -->
-                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                            <input type="checkbox" value="睡眠型態" class="peer sr-only">
-                            <div class="mt-0.5 text-2xl">🌙</div>
-                            <div class="flex-1">
-                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">睡眠型態</div>
-                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">入睡時間較長（&gt;30分鐘）或夜間多夢易醒</div>
-                            </div>
-                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
-                                <i data-lucide="check" class="w-3 h-3"></i>
-                            </div>
-                        </label>
-                        <!-- Card 6 -->
-                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                            <input type="checkbox" value="膚質氣色" class="peer sr-only">
-                            <div class="mt-0.5 text-2xl">✨</div>
-                            <div class="flex-1">
-                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">膚質氣色</div>
-                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">肌膚較易敏感乾燥，或面色較為暗沉</div>
-                            </div>
-                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
-                                <i data-lucide="check" class="w-3 h-3"></i>
-                            </div>
-                        </label>
-                        <!-- Card 7 -->
-                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                            <input type="checkbox" value="日常活力" class="peer sr-only">
-                            <div class="mt-0.5 text-2xl">🔋</div>
-                            <div class="flex-1">
-                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">日常活力</div>
-                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">午後特定時段較易感到精神不濟、體力下滑</div>
-                            </div>
-                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
-                                <i data-lucide="check" class="w-3 h-3"></i>
-                            </div>
-                        </label>
-                        <!-- Card 8 -->
-                        <label class="symptom-card group relative flex items-start gap-3 p-4 rounded-xl border-2 border-slate-100 bg-slate-50/50 cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                            <input type="checkbox" value="肌群緊張" class="peer sr-only">
-                            <div class="mt-0.5 text-2xl">💻</div>
-                            <div class="flex-1">
-                                <div class="font-semibold text-slate-800 peer-checked:text-primary-dark">肌群緊張</div>
-                                <div class="text-xs text-slate-500 mt-1 leading-relaxed">長期使用手機/電腦導致肩頸肌肉僵硬</div>
-                            </div>
-                            <div class="check-badge hidden w-5 h-5 rounded-full bg-primary text-white items-center justify-center">
-                                <i data-lucide="check" class="w-3 h-3"></i>
-                            </div>
-                        </label>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Submit -->
-                <button type="submit" id="submit-btn" class="w-full py-4 px-6 bg-gradient-to-r from-primary to-primary-light text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl hover:from-primary-dark hover:to-primary transition transform active:scale-[0.98] flex items-center justify-center gap-2">
+                <!-- Submit Button -->
+                <button type="submit" id="submit-btn"
+                    class="w-full py-4 px-6 bg-gradient-to-r from-primary to-primary-light text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition transform active:scale-[0.98] flex items-center justify-center gap-2">
                     <span id="btn-text">立即生成 體質分析報告</span>
                     <svg id="btn-spinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -270,7 +483,7 @@
                         <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-1" class="h-full bg-red-500 rounded-full transition-all duration-1000" style="width:0%"></div></div>
                     </div>
                     <div>
-                        <div class="flex justify-between text-sm text-slate-600 mb-1"><span>血液粘稠度預警</span></div>
+                        <div class="flex justify-between text-sm text-slate-600 mb-1"><span>血液粘稈度預警</span></div>
                         <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-2" class="h-full bg-orange-400 rounded-full transition-all duration-1000" style="width:0%"></div></div>
                     </div>
                     <div>
@@ -293,7 +506,8 @@
             <div class="bg-gradient-to-br from-orange-50 to-primary/5 border border-orange-100 rounded-2xl p-5 md:p-6 text-center">
                 <h3 class="text-lg font-bold text-orange-600 mb-2">🔬 進階深度檢測體驗</h3>
                 <p class="text-slate-600 text-sm mb-4 leading-relaxed">AI 初步預警顯示您的血管與代謝指標需高度關注。<br>憑此報告，可免費預約至門市進行『量子 / 血管微循環進階檢測』。</p>
-                <button id="confirm-booking" class="w-full py-3.5 px-6 bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-xl font-semibold shadow hover:shadow-lg transition transform active:scale-[0.98]">
+                <button id="confirm-booking"
+                    class="w-full py-3.5 px-6 bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-xl font-semibold shadow hover:shadow-lg transition transform active:scale-[0.98]">
                     免費預約門市進階體驗
                 </button>
             </div>
@@ -306,7 +520,10 @@
             <div class="text-4xl mb-3">✅</div>
             <h3 class="text-xl font-bold text-slate-800 mb-2">預約成功</h3>
             <p class="text-slate-500 text-sm mb-5">報告已備份至檢測人員 Email</p>
-            <button id="popup-close" class="w-full py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition">我知道了</button>
+            <button id="popup-close"
+                class="w-full py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition">
+                我知道了
+            </button>
         </div>
     </div>
 
@@ -319,7 +536,7 @@
             "正在分析您的九種體質...",
             "計算經絡氣血狀態...",
             "評估健康風險指標...",
-            "生成個人化調理建議...",
+            "生成個人化調理建識...",
         ];
 
         // ===== 工具函式 =====
@@ -329,12 +546,50 @@
         function showStage(id) {
             document.querySelectorAll(".stage").forEach(s => s.classList.remove("active"));
             $(id).classList.add("active");
+            // Re-init lucide icons after stage switch
+            setTimeout(() => lucide.createIcons(), 50);
         }
 
-        function getSymptoms() {
-            return Array.from(document.querySelectorAll("#symptoms input:checked")).map(el => el.value);
+        // ===== Accordion =====
+        function toggleAccordion(id) {
+            const content = document.getElementById(id + '-accordion');
+            const chevron = document.getElementById(id + '-chevron');
+            content.classList.toggle('open');
+            if (chevron) chevron.classList.toggle('rotate-180');
         }
 
+        // ===== 觀察卡片互動 =====
+        function initObservationCards() {
+            // Accordion auto-open 舌象觀察
+            toggleAccordion('tongue');
+
+            const cards = document.querySelectorAll('.obs-card');
+            cards.forEach(card => {
+                const input = card.querySelector('input');
+                const updateUI = () => {
+                    if (input.checked) {
+                        card.classList.add('selected');
+                    } else {
+                        card.classList.remove('selected');
+                    }
+                };
+                card.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    input.checked = !input.checked;
+                    updateUI();
+                });
+                updateUI();
+            });
+        }
+
+        // ===== 取得選取的觀察值 =====
+        function getObservations() {
+            const vals = Array.from(document.querySelectorAll('.obs-card input:checked'))
+                .map(el => el.value);
+            return vals;
+        }
+
+        // ===== 驗證表單 =====
         function validateForm() {
             const fields = ["name", "phone", "gender", "age_group"];
             for (const f of fields) {
@@ -344,8 +599,8 @@
                     return false;
                 }
             }
-            if (getSymptoms().length === 0) {
-                alert("請至少選擇一個體徵觀察");
+            if (getObservations().length === 0) {
+                alert("請至少選擇一個觀察項目");
                 return false;
             }
             return true;
@@ -354,38 +609,6 @@
         function autoFillReferralCode() {
             const ref = getQueryParam("ref");
             if (ref && $("referral_code")) $("referral_code").value = ref;
-        }
-
-        // ===== 視覺卡片互動 =====
-        function initSymptomCards() {
-            const cards = document.querySelectorAll('.symptom-card');
-            cards.forEach(card => {
-                const input = card.querySelector('input');
-                const checkBadge = card.querySelector('.check-badge');
-
-                const updateUI = () => {
-                    if (input.checked) {
-                        card.classList.add('border-primary', 'bg-primary/5');
-                        card.classList.remove('border-slate-100', 'bg-slate-50/50');
-                        checkBadge.classList.remove('hidden');
-                        checkBadge.classList.add('flex');
-                    } else {
-                        card.classList.remove('border-primary', 'bg-primary/5');
-                        card.classList.add('border-slate-100', 'bg-slate-50/50');
-                        checkBadge.classList.add('hidden');
-                        checkBadge.classList.remove('flex');
-                    }
-                };
-
-                card.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    input.checked = !input.checked;
-                    updateUI();
-                });
-
-                // 初始化狀態
-                updateUI();
-            });
         }
 
         // ===== 掃描動畫 =====
@@ -419,7 +642,7 @@
                 gender: $("gender").value,
                 age_group: $("age_group").value,
                 referral_code: $("referral_code").value.trim() || null,
-                answers: { symptoms: getSymptoms() },
+                answers: { observations: getObservations() },
             };
 
             const btn = $("submit-btn");
@@ -440,8 +663,8 @@
                 const data = await resp.json();
                 if (!resp.ok) throw new Error(data.detail || "提交失敗");
                 renderReport(data);
+                window.__assessmentId = data.assessment_id;
                 showStage("stage2");
-                setTimeout(() => $("report-content")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
             } catch (err) {
                 alert("提交失敗：" + err.message);
             } finally {
@@ -453,9 +676,9 @@
 
         // ===== 報告渲染 =====
         function getRiskColor(risk) {
-            if (risk === "高") return { bg: "bg-red-50", text: "text-red-600", border: "border-red-200", meter: "bg-red-500" };
-            if (risk === "中") return { bg: "bg-orange-50", text: "text-orange-600", border: "border-orange-200", meter: "bg-orange-400" };
-            return { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-200", meter: "bg-emerald-500" };
+            if (risk === "高") return { badge: "bg-red-50 text-red-600 border-red-200", meter: "bg-red-500" };
+            if (risk === "中") return { badge: "bg-orange-50 text-orange-600 border-orange-200", meter: "bg-orange-400" };
+            return { badge: "bg-emerald-50 text-emerald-600 border-emerald-200", meter: "bg-emerald-500" };
         }
 
         async function renderReport(data) {
@@ -470,13 +693,14 @@
             const offset = circumference - (percent / 100) * circumference;
             const gaugeFill = $("gauge-fill");
             gaugeFill.style.strokeDashoffset = offset;
-            gaugeFill.className = `text-primary transition-all duration-1000`;
+
+            const scoreColorClass = score < 60 ? "text-red-500" : score < 80 ? "text-orange-500" : "text-emerald-600";
             $("gauge-number").textContent = score;
-            $("gauge-number").className = `text-4xl font-bold ${score < 60 ? 'text-red-500' : score < 80 ? 'text-orange-500' : 'text-emerald-600'}`;
+            $("gauge-number").className = `text-4xl font-bold ${scoreColorClass}`;
 
             // Risk badge
             const badge = $("risk-badge");
-            badge.className = `mt-4 px-5 py-2 rounded-full font-bold text-sm border ${colors.bg} ${colors.text} ${colors.border}`;
+            badge.className = `mt-4 px-5 py-2 rounded-full font-bold text-sm border ${colors.badge}`;
             badge.textContent = risk === "高" ? "潛在風險等級：高" : risk === "中" ? "潛在風險等級：中" : "潛在風險等級：低";
 
             // Constitution
@@ -500,24 +724,31 @@
 
             // Recommendations
             const recContainer = $("recommendations");
-            fetch(`${API_BASE}/report/${data.assessment_id}`)
-                .then(r => r.json())
-                .then(reportData => {
-                    recContainer.innerHTML = reportData.recommendations.map(r => `
-                        <div class="flex items-start gap-2">
-                            <span class="text-primary mt-0.5">•</span>
-                            <span>${r}</span>
-                        </div>
-                    `).join("");
-                });
+            try {
+                const resp = await fetch(`${API_BASE}/report/${data.assessment_id}`);
+                const reportData = await resp.json();
+                recContainer.innerHTML = reportData.recommendations.map(r => `
+                    <div class="flex items-start gap-2">
+                        <span class="text-primary mt-0.5">•</span>
+                        <span>${r}</span>
+                    </div>
+                `).join("");
+            } catch {
+                recContainer.innerHTML = `<div class="text-sm text-slate-500">暫無調理建議</div>`;
+            }
 
-            window.__assessmentId = data.assessment_id;
             lucide.createIcons();
         }
 
         // ===== Popup =====
-        function showPopup() { $("popup").classList.remove("hidden"); $("popup").classList.add("flex"); }
-        function hidePopup() { $("popup").classList.add("hidden"); $("popup").classList.remove("flex"); }
+        function showPopup() {
+            $("popup").classList.remove("hidden");
+            $("popup").classList.add("flex");
+        }
+        function hidePopup() {
+            $("popup").classList.add("hidden");
+            $("popup").classList.remove("flex");
+        }
 
         async function confirmBooking() {
             const id = window.__assessmentId;
@@ -537,13 +768,11 @@
         }
 
         // ===== 事件監聽 =====
-        $("questionnaire-form").addEventListener("submit", submitQuestionnaire);
-        $("confirm-booking").addEventListener("click", confirmBooking);
-        $("popup-close").addEventListener("click", hidePopup);
-
-        // ===== 初始化 =====
         document.addEventListener("DOMContentLoaded", () => {
-            initSymptomCards();
+            $("questionnaire-form").addEventListener("submit", submitQuestionnaire);
+            $("confirm-booking").addEventListener("click", confirmBooking);
+            $("popup-close").addEventListener("click", hidePopup);
+            initObservationCards();
             autoFillReferralCode();
             lucide.createIcons();
         });
