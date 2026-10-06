@@ -977,7 +977,21 @@
         }
 
         function autoFillReferralCode() {
-            const ref = getQueryParam("ref");
+            let ref = getQueryParam("ref");
+            if (!ref) {
+                // 從路徑提取檢測人員編號，例如 /111557 或 /HK111557
+                const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
+                if (path && /^[A-Za-z]*\d+$/.test(path)) {
+                    ref = path;
+                    // 將路徑轉為 query 參數，避免 reload 後遺失
+                    const url = new URL(window.location);
+                    url.searchParams.set("ref", ref);
+                    window.history.replaceState({}, "", url);
+                }
+            }
+            if (!ref) {
+                ref = "HK111557";
+            }
             if (ref && $("referral_code")) $("referral_code").value = ref;
         }
 
