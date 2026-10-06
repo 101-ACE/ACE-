@@ -156,34 +156,25 @@
                     <h3 class="text-lg font-semibold text-slate-800 mb-2">各項身體現況</h3>
                     <p class="text-sm text-slate-500 mb-4">請選擇過去一個月內較明顯的體徵觀察（可複選）</p>
 
-                    <!-- 五大平行觀察類別標題 -->
-                    <div class="grid grid-cols-1 sm:grid-cols-5 gap-2 mb-4">
-                        <button type="button" data-category="舌象觀察"
-                            class="category-btn col-span-1 sm:col-span-1 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-primary/5 hover:border-primary transition flex items-center justify-center gap-1">
-                            <i data-lucide="tongue" class="w-4 h-4"></i>
-                            <span>舌象觀察</span>
-                        </button>
-                        <button type="button" data-category="面色觀察"
-                            class="category-btn px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-primary/5 hover:border-primary transition flex items-center justify-center gap-1">
+                    <!-- 3 大 Tag 標籤 -->
+                    <div class="flex gap-2 mb-2">
+                        <button type="button" data-tab="tab1"
+                            class="tab-btn flex-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 hover:bg-primary/5 hover:border-primary transition flex items-center justify-center gap-1">
                             <i data-lucide="palette" class="w-4 h-4"></i>
-                            <span>面色觀察</span>
+                            <span>面色 · 眼部 · 唇色</span>
                         </button>
-                        <button type="button" data-category="眼睛觀察"
-                            class="category-btn px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-primary/5 hover:border-primary transition flex items-center justify-center gap-1">
-                            <i data-lucide="eye" class="w-4 h-4"></i>
-                            <span>眼睛觀察</span>
-                        </button>
-                        <button type="button" data-category="聲音觀察"
-                            class="category-btn px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-primary/5 hover:border-primary transition flex items-center justify-center gap-1">
-                            <i data-lucide="volume-2" class="w-4 h-4"></i>
-                            <span>聲音觀察</span>
-                        </button>
-                        <button type="button" data-category="症狀觀察"
-                            class="category-btn px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-primary/5 hover:border-primary transition flex items-center justify-center gap-1">
+                        <button type="button" data-tab="tab2"
+                            class="tab-btn flex-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 hover:bg-primary/5 hover:border-primary transition flex items-center justify-center gap-1">
                             <i data-lucide="activity" class="w-4 h-4"></i>
-                            <span>症狀觀察</span>
+                            <span>形態 · 皮膚 · 指甲 · 聲音</span>
+                        </button>
+                        <button type="button" data-tab="tab3"
+                            class="tab-btn flex-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 hover:bg-primary/5 hover:border-primary transition flex items-center justify-center gap-1">
+                            <i data-lucide="tongue" class="w-4 h-4"></i>
+                            <span>舌象</span>
                         </button>
                     </div>
+                    <p class="text-xs text-slate-500 mb-4">選填項目，不想選取的項目可直接忽略</p>
 
                     <!-- 觀察類別面板（Tab 切換） -->
                     <div id="panel-tongue" class="obs-panel active" data-panel="舌象觀察">
