@@ -871,7 +871,9 @@
 
     <script>
         // ===== 配置 =====
-        const API_BASE = "http://localhost:8000/api";
+        // 支援透過 URL 參數覆寫 API 基底網址，例如：?api_url=https://backend.example.com/api
+        const getQueryParam = (name) => new URLSearchParams(window.location.search).get(name);
+        const API_BASE = getQueryParam("api_url") || "http://localhost:8000/api";
 
         const SCAN_MESSAGES = [
             "正在初始化 AI 分析引擎...",
@@ -883,7 +885,6 @@
 
         // ===== 工具函式 =====
         const $ = (id) => document.getElementById(id);
-        const getQueryParam = (name) => new URLSearchParams(window.location.search).get(name);
 
         function showStage(id) {
             document.querySelectorAll(".stage").forEach(s => s.classList.remove("active"));
