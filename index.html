@@ -65,7 +65,7 @@
             transform: scale(1);
         }
         /* Category tab active state */
-        .category-btn.active {
+        .tab-btn.active {
             border-color: #059669 !important;
             background: #dcfce7 !important;
             color: #047857 !important;
@@ -177,7 +177,7 @@
                     <p class="text-xs text-slate-500 mb-4">選填項目，不想選取的項目可直接忽略</p>
 
                     <!-- 觀察類別面板（Tab 切換） -->
-                    <div id="panel-tongue" class="obs-panel active" data-panel="舌象觀察">
+                    <div id="panel-tongue" class="obs-panel" data-panel="舌象觀察">
                     <!-- 舌象觀察 Accordion -->
                     <div class="accordion border-t border-slate-100">
                         <div class="accordion-header flex items-center justify-between py-3 cursor-pointer"
@@ -918,36 +918,47 @@
 
         // ===== 觀察類別 Tab 切換 =====
         function initCategoryTabs() {
-            const btns = Array.from(document.querySelectorAll('.category-btn'));
+            const btns = Array.from(document.querySelectorAll('.tab-btn'));
             const panels = Array.from(document.querySelectorAll('.obs-panel'));
 
-            function activate(category) {
+            // Tab 到面板的映射
+            const tabPanelMap = {
+                'tab1': ['面色觀察', '眼睛觀察'],
+                'tab2': ['聲音觀察', '症狀觀察'],
+                'tab3': ['舌象觀察']
+            };
+
+            function activate(tabId) {
                 btns.forEach(b => {
-                    const on = b.dataset.category === category;
+                    const on = b.dataset.tab === tabId;
                     b.classList.toggle('active', on);
                     b.setAttribute('aria-selected', on ? 'true' : 'false');
                 });
+                const targetPanels = tabPanelMap[tabId] || [];
                 panels.forEach(p => {
-                    p.classList.toggle('active', p.dataset.panel === category);
+                    const show = targetPanels.includes(p.dataset.panel);
+                    p.classList.toggle('active', show);
                 });
+                // 舌象 Tab 自動展開 Accordion
+                if (tabId === 'tab3') {
+                    toggleAccordion('tongue');
+                }
                 // 面板切換後重繪 Lucide 圖示
                 if (window.lucide) lucide.createIcons();
             }
 
             btns.forEach(b => {
                 b.setAttribute('role', 'tab');
-                b.addEventListener('click', () => activate(b.dataset.category));
+                b.addEventListener('click', () => activate(b.dataset.tab));
             });
 
-            const initial = (btns[0] && btns[0].dataset.category) || '舌象觀察';
+            // 預設顯示第一個 Tab（面色・眼部・唇色）
+            const initial = (btns[0] && btns[0].dataset.tab) || 'tab1';
             activate(initial);
         }
 
         // ===== 觀察卡片互動 =====
         function initObservationCards() {
-            // Accordion auto-open 舌象觀察
-            toggleAccordion('tongue');
-
             const cards = document.querySelectorAll('.obs-card');
             cards.forEach(card => {
                 const input = card.querySelector('input');
