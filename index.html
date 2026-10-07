@@ -751,6 +751,48 @@
                     </div>
 
                     <!-- 指甲觀察（甲診） -->
+                    <!-- 體型形態觀察 -->
+                    <div id="panel-body" class="obs-panel" data-panel="體型形態觀察">
+                            <div class="py-3 border-b border-slate-100 last:border-0">
+                                <div class="text-sm font-medium text-slate-700 mb-2">體型形態觀察</div>
+                                <p class="text-xs text-slate-500 mb-2">體型形態反映脾胃與氣血狀態（可複選）</p>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-2 md:gap-3" data-subcat="體型形態觀察">
+                                    <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 md:p-2 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="體型:勻稱適中" class="sr-only">
+                                        <img src="public/images/body/body_normal.png" alt="勻稱適中身形示意圖" class="obs-thumb" loading="lazy" decoding="async">
+                                        <span class="text-[10px] sm:text-xs md:text-xs font-medium text-slate-700 mt-1 text-center leading-tight">勻稱適中<br>（身材標準）</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 md:p-2 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="體型:體型瘦削" class="sr-only">
+                                        <img src="public/images/body/body_thin.png" alt="體型瘦削身形示意圖" class="obs-thumb" loading="lazy" decoding="async">
+                                        <span class="text-[10px] sm:text-xs md:text-xs font-medium text-slate-700 mt-1 text-center leading-tight">體型瘦削<br>（乾瘦/肌肉少）</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 md:p-2 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="體型:腹部肥胖" class="sr-only">
+                                        <img src="public/images/body/body_fat.png" alt="腹部肥胖身形示意圖" class="obs-thumb" loading="lazy" decoding="async">
+                                        <span class="text-[10px] sm:text-xs md:text-xs font-medium text-slate-700 mt-1 text-center leading-tight">腹部肥胖<br>（鬆軟/大肚腩）</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 md:p-2 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="體型:姿態委靡" class="sr-only">
+                                        <img src="public/images/body/body_slouched.png" alt="姿態委靡身形示意圖" class="obs-thumb" loading="lazy" decoding="async">
+                                        <span class="text-[10px] sm:text-xs md:text-xs font-medium text-slate-700 mt-1 text-center leading-tight">姿態委靡<br>（精神不振/駝背）</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                    </div>
+
                     <div id="panel-nails" class="obs-panel" data-panel="指甲觀察">
                             <div class="py-3 border-b border-slate-100 last:border-0">
                                 <div class="text-sm font-medium text-slate-700 mb-2">指甲觀察（甲診）</div>
@@ -1027,7 +1069,7 @@
             // Tab 到面板的映射
             const tabPanelMap = {
                 'tab1': ['面色觀察', '眼睛觀察'],
-                'tab2': ['聲音觀察', '症狀觀察', '指甲觀察'],
+                'tab2': ['聲音觀察', '症狀觀察', '指甲觀察', '體型形態觀察'],
                 'tab3': ['舌象觀察']
             };
 
