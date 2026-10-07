@@ -693,55 +693,40 @@
                             </div>
                     </div>
 
-                    <!-- 聲音觀察 -->
-                    <div id="panel-voice" class="obs-panel" data-panel="聲音觀察">
+                    <!-- 聲音觀察（聲診） -->
+                    <div id="panel-voice" class="obs-panel" data-panel="聲音觀察（聲診）">
                             <div class="py-3 border-b border-slate-100 last:border-0">
-                                <div class="text-sm font-medium text-slate-700 mb-2">聲音觀察</div>
-                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" data-subcat="聲音觀察">
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="聲音:聲音低微" class="sr-only">
-                                        <span class="text-lg mb-1">🔈</span>
-                                        <span class="text-xs font-medium text-slate-700">聲音低微</span>
+                                <div class="text-sm font-medium text-slate-700 mb-2">聲音觀察（聲診）</div>
+                                <p class="text-xs text-slate-500 mb-2">聲音狀況反映肺氣與肝膽情志（可複選）</p>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2" data-subcat="聲音觀察">
+                                    <label class="obs-card has-image relative flex flex-col items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="聲音:低微無力" class="sr-only">
+                                        <img src="public/images/voice/voice_weak.png" alt="低微無力聲音觀察示意圖" class="obs-thumb" loading="lazy" decoding="async">
+                                        <span class="text-[10px] sm:text-xs md:text-xs font-medium text-slate-700 mt-1 text-center leading-tight">低微無力<br>（氣虛/說話費力）</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
                                     </label>
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="聲音:聲音沙啞" class="sr-only">
-                                        <span class="text-lg mb-1">😫</span>
-                                        <span class="text-xs font-medium text-slate-700">聲音沙啞</span>
+                                    <label class="obs-card has-image relative flex flex-col items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="聲音:語速快急" class="sr-only">
+                                        <img src="public/images/voice/voice_fast.png" alt="語速快急聲音觀察示意圖" class="obs-thumb" loading="lazy" decoding="async">
+                                        <span class="text-[10px] sm:text-xs md:text-xs font-medium text-slate-700 mt-1 text-center leading-tight">語速快急<br>（肝火旺/急躁）</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
                                     </label>
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="聲音:聲音洪亮" class="sr-only">
-                                        <span class="text-lg mb-1">🔊</span>
-                                        <span class="text-xs font-medium text-slate-700">聲音洪亮</span>
+                                    <label class="obs-card has-image relative flex flex-col items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="聲音:頻繁嘆氣" class="sr-only">
+                                        <img src="public/images/voice/voice_sigh.png" alt="頻繁嘆氣聲音觀察示意圖" class="obs-thumb" loading="lazy" decoding="async">
+                                        <span class="text-[10px] sm:text-xs md:text-xs font-medium text-slate-700 mt-1 text-center leading-tight">頻繁嘆氣<br>（肝氣鬱結/胸悶）</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
                                     </label>
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="聲音:氣短懶言" class="sr-only">
-                                        <span class="text-lg mb-1">😤</span>
-                                        <span class="text-xs font-medium text-slate-700">氣短懶言</span>
-                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
-                                            <i data-lucide="check" class="w-3 h-3"></i>
-                                        </div>
-                                    </label>
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="聲音:語言含糊" class="sr-only">
-                                        <span class="text-lg mb-1">🗣️</span>
-                                        <span class="text-xs font-medium text-slate-700">語言含糊</span>
-                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
-                                            <i data-lucide="check" class="w-3 h-3"></i>
-                                        </div>
-                                    </label>
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="聲音:喜歡安靜" class="sr-only">
-                                        <span class="text-lg mb-1">🤫</span>
-                                        <span class="text-xs font-medium text-slate-700">喜歡安靜</span>
+                                    <label class="obs-card has-image relative flex flex-col items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="聲音:痰音粗重" class="sr-only">
+                                        <img src="public/images/voice/voice_phlegm.png" alt="痰音粗重聲音觀察示意圖" class="obs-thumb" loading="lazy" decoding="async">
+                                        <span class="text-[10px] sm:text-xs md:text-xs font-medium text-slate-700 mt-1 text-center leading-tight">痰音粗重<br>（痰濕阻肺/喉帶痰）</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -1069,7 +1054,7 @@
             // Tab 到面板的映射
             const tabPanelMap = {
                 'tab1': ['面色觀察', '眼睛觀察'],
-                'tab2': ['聲音觀察', '症狀觀察', '指甲觀察', '體型形態觀察'],
+                'tab2': ['聲音觀察（聲診）', '症狀觀察', '指甲觀察', '體型形態觀察'],
                 'tab3': ['舌象觀察']
             };
 
