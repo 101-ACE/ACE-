@@ -37,20 +37,7 @@
         ::-webkit-scrollbar-track { background: #f1f5f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5d0; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #a0b5a8; }
-        /* Accordion smooth open */
-        .accordion-content {
-            max-height: 0;
-            opacity: 0;
-            transform: translateY(-8px);
-            transition: all 0.3s ease;
-            overflow: hidden;
-        }
-        .accordion-content.open {
-            max-height: 4000px;
-            opacity: 1;
-            transform: translateY(0);
-        }
-        /* Card selected state */
+/* Card selected state */
         .obs-card.selected {
             border-color: #059669 !important;
             background: #dcfce7 !important;
@@ -184,19 +171,8 @@
 
                     <!-- 觀察類別面板（Tab 切換） -->
                     <div id="panel-tongue" class="obs-panel" data-panel="舌象觀察">
-                    <!-- 舌象觀察 Accordion -->
-                    <div class="accordion border-t border-slate-100">
-                        <div class="accordion-header flex items-center justify-between py-3 cursor-pointer"
-                            onclick="toggleAccordion('tongue')">
-                            <span class="font-semibold text-slate-800 flex items-center gap-2">
-                                <i data-lucide="tongue" class="w-5 h-5 text-primary"></i>
-                                舌象觀察
-                            </span>
-                            <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400 transition-transform duration-300"
-                               id="tongue-chevron"></i>
-                        </div>
-
-                        <div id="tongue-accordion" class="accordion-content overflow-hidden">
+                    <!-- 舌象觀察 -->
+                    <div class="border-t border-slate-100">
                             <!-- 舌色觀察 -->
                             <div class="py-3 border-b border-slate-100 last:border-0">
                                 <div class="text-sm font-medium text-slate-700 mb-2">舌色觀察</div>
@@ -241,18 +217,10 @@
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
                                     </label>
-                                    <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5>
-                                        <input type="checkbox" value="舌色:綠舌" class="sr-only">
-                                        <img src="images/tongue_color/綠舌.png" alt="綠舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">綠舌</span>
-                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
-                                            <i data-lucide="check" class="w-3 h-3"></i>
-                                        </div>
-                                    </label>
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                    <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌色:青舌" class="sr-only">
-                                        <span class="text-lg mb-1">🟢</span>
-                                        <span class="text-xs font-medium text-slate-700 text-center">青舌</span>
+                                        <img src="images/tongue_color/cyan_tongue.png" alt="青舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
+                                        <span class="text-[10px] sm:text-xs font-medium text-slate-700 mt-1 text-center leading-tight">青舌<br>（主寒證/瘀血）</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -497,7 +465,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
                     </div><!-- /#panel-tongue -->
 
                     <!-- 面色觀察 -->
@@ -1038,15 +1005,7 @@
             setTimeout(() => lucide.createIcons(), 50);
         }
 
-        // ===== Accordion =====
-        function toggleAccordion(id) {
-            const content = document.getElementById(id + '-accordion');
-            const chevron = document.getElementById(id + '-chevron');
-            content.classList.toggle('open');
-            if (chevron) chevron.classList.toggle('rotate-180');
-        }
-
-        // ===== 觀察類別 Tab 切換 =====
+// ===== 觀察類別 Tab 切換 =====
         function initCategoryTabs() {
             const btns = Array.from(document.querySelectorAll('.tab-btn'));
             const panels = Array.from(document.querySelectorAll('.obs-panel'));
@@ -1069,10 +1028,7 @@
                     const show = targetPanels.includes(p.dataset.panel);
                     p.classList.toggle('active', show);
                 });
-                // 舌象 Tab 自動展開 Accordion
-                if (tabId === 'tab3') {
-                    toggleAccordion('tongue');
-                }
+
                 // 面板切換後重繪 Lucide 圖示
                 if (window.lucide) lucide.createIcons();
             }
