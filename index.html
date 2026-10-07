@@ -750,6 +750,40 @@
                             </div>
                     </div>
 
+                    <!-- 指甲觀察（甲診） -->
+                    <div id="panel-nails" class="obs-panel" data-panel="指甲觀察">
+                            <div class="py-3 border-b border-slate-100 last:border-0">
+                                <div class="text-sm font-medium text-slate-700 mb-2">指甲觀察（甲診）</div>
+                                <p class="text-xs text-slate-500 mb-2">指甲月牙反映氣血與臟腑盛衰（可複選）</p>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" data-subcat="指甲觀察">
+                                    <label class="obs-card has-image relative flex flex-col items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="指甲:月牙適中" class="sr-only">
+                                        <img src="public/images/nails/nail_normal_lula.png" alt="月牙適中指甲示意圖" class="obs-thumb" loading="lazy" decoding="async">
+                                        <span class="text-[10px] sm:text-xs md:text-xs font-medium text-slate-700 mt-1 text-center leading-tight">月牙適中<br>（健康呈粉紅）</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card has-image relative flex flex-col items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="指甲:月牙過大" class="sr-only">
+                                        <img src="public/images/nails/nail_large_lula.png" alt="月牙過大指甲示意圖" class="obs-thumb" loading="lazy" decoding="async">
+                                        <span class="text-[10px] sm:text-xs md:text-xs font-medium text-slate-700 mt-1 text-center leading-tight">月牙過大<br>（氣血偏盛/虛火）</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                    <label class="obs-card has-image relative flex flex-col items-center justify-center p-2 sm:p-2.5 md:p-3 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
+                                        <input type="checkbox" value="指甲:無月牙" class="sr-only">
+                                        <img src="public/images/nails/nail_no_lula.png" alt="無月牙指甲示意圖" class="obs-thumb" loading="lazy" decoding="async">
+                                        <span class="text-[10px] sm:text-xs md:text-xs font-medium text-slate-700 mt-1 text-center leading-tight">無月牙/偏小<br>（氣血不足/陽虛）</span>
+                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
+                                            <i data-lucide="check" class="w-3 h-3"></i>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                    </div>
+
                     <!-- 症狀觀察 -->
                     <div id="panel-symptom" class="obs-panel" data-panel="症狀觀察">
                             <div class="py-3 border-b border-slate-100 last:border-0">
@@ -993,7 +1027,7 @@
             // Tab 到面板的映射
             const tabPanelMap = {
                 'tab1': ['面色觀察', '眼睛觀察'],
-                'tab2': ['聲音觀察', '症狀觀察'],
+                'tab2': ['聲音觀察', '症狀觀察', '指甲觀察'],
                 'tab3': ['舌象觀察']
             };
 
