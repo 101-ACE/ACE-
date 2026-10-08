@@ -1127,101 +1127,6 @@
             "生成個人化調理建識...",
         ];
 
-        // ===== Fast Mode =====
-        let fastMode = false;
-        const fastModeToggle = $('fast-mode-toggle');
-        if (fastModeToggle) {
-            fastModeToggle.addEventListener('change', (e) => {
-                fastMode = e.target.checked;
-                applyFastMode();
-            });
-        }
-
-        function applyFastMode() {
-            const basicSection = document.querySelector('[data-fast-mode="basic"]');
-            const observationsSection = document.querySelector('[data-fast-mode="observations"]');
-            const submitBtn = document.querySelector('[data-fast-mode="submit"]');
-            const tabBtns = document.querySelectorAll('.tab-btn');
-            const panels = document.querySelectorAll('.obs-panel');
-
-            if (fastMode) {
-                // Hide basic info and non-fast-mode panels
-                if (basicSection) basicSection.style.display = 'none';
-                if (observationsSection) observationsSection.style.display = 'block';
-                if (submitBtn) submitBtn.style.display = 'flex';
-
-                // Show fast mode badge
-                const badge = $('fast-mode-badge');
-                if (badge) badge.classList.remove('hidden');
-
-                // Show only tab1 (面色眼部唇色) and tab3 (舌象)
-                tabBtns.forEach(btn => {
-                    const tabId = btn.dataset.tab;
-                    if (tabId === 'tab1' || tabId === 'tab3') {
-                        btn.style.display = 'flex';
-                    } else {
-                        btn.style.display = 'none';
-                    }
-                });
-
-                // Show only 面色, 眼睛, 舌象 panels
-                panels.forEach(panel => {
-                    const panelName = panel.dataset.panel;
-                    if (panelName === '面色觀察' || panelName === '眼睛觀察' || panelName === '舌象觀察') {
-                        panel.classList.add('active');
-                    } else {
-                        panel.classList.remove('active');
-                    }
-                });
-
-                // Activate tab1 by default
-                activateTab('tab1');
-            } else {
-                // Restore all sections
-                if (basicSection) basicSection.style.display = 'block';
-                if (observationsSection) observationsSection.style.display = 'block';
-                if (submitBtn) submitBtn.style.display = 'flex';
-
-                // Hide fast mode badge
-                const badge = $('fast-mode-badge');
-                if (badge) badge.classList.add('hidden');
-
-                // Show all tabs
-                tabBtns.forEach(btn => {
-                    btn.style.display = 'flex';
-                });
-
-                // Show all panels (restore default behavior)
-                panels.forEach(panel => {
-                    panel.classList.add('active');
-                });
-            }
-        }
-
-        function activateTab(tabId) {
-            const btns = Array.from(document.querySelectorAll('.tab-btn'));
-            const panels = Array.from(document.querySelectorAll('.obs-panel'));
-            const tabPanelMap = {
-                'tab1': ['面色觀察', '眼睛觀察', '唇色觀察（唇診）'],
-                'tab2': ['聲音觀察（聲診）', '症狀觀察', '指甲觀察', '體型形態觀察'],
-                'tab3': ['舌象觀察']
-            };
-
-            btns.forEach(b => {
-                const on = b.dataset.tab === tabId;
-                b.classList.toggle('active', on);
-                b.setAttribute('aria-selected', on ? 'true' : 'false');
-            });
-            const targetPanels = tabPanelMap[tabId] || [];
-            panels.forEach(p => {
-                const show = targetPanels.includes(p.dataset.panel);
-                p.classList.toggle('active', show);
-            });
-
-            // Re-init lucide icons after stage switch
-            setTimeout(() => lucide.createIcons(), 50);
-        }
-
         // ===== 工具函式 =====
         const $ = (id) => document.getElementById(id);
 
@@ -1233,7 +1138,6 @@
         }
 
 // ===== 觀察類別 Tab 切換 =====
-        // initCategoryTabs replaced by activateTab in Fast Mode logic
         function initCategoryTabs() {
             const btns = Array.from(document.querySelectorAll('.tab-btn'));
             const panels = Array.from(document.querySelectorAll('.obs-panel'));
