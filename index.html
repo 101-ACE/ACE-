@@ -146,7 +146,7 @@
 
                 <!-- Observation Categories -->
                 <div class="bg-white rounded-2xl shadow-md p-5 md:p-6">
-                    <h3 class="text-lg font-semibold text-slate-800 mb-2">各項身體現況</h3>
+                    <h3 class="text-lg font-semibold text-slate-800 mb-2">各項體徵觀察</h3>
                     <p class="text-sm text-slate-500 mb-4">請選擇過去一個月內較明顯的體徵觀察（可複選）</p>
 
                     <!-- 3 大 Tag 標籤 -->
@@ -164,7 +164,7 @@
                         <button type="button" data-tab="tab3"
                             class="tab-btn flex-1 px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 hover:bg-primary/5 hover:border-primary transition flex items-center justify-center gap-1">
                             <i data-lucide="tongue" class="w-4 h-4"></i>
-                            <span>舌象</span>
+                            <span>👅 舌象</span>
                         </button>
                     </div>
                     <p class="text-xs text-slate-500 mb-4">選填項目，不想選取的項目可直接忽略</p>
@@ -468,9 +468,9 @@
                     </div><!-- /#panel-tongue -->
 
                     <!-- 面色觀察 -->
-                    <div id="panel-face" class="obs-panel" data-panel="面色觀察">
+                    <div id="panel-face" class="obs-panel" data-panel="面診">
                             <div class="py-3 border-b border-slate-100 last:border-0">
-                                <div class="text-sm font-medium text-slate-700 mb-2">面色觀察</div>
+                                <div class="text-sm font-medium text-slate-700 mb-2">面診</div>
                                 <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 gap-1.5 sm:gap-2 md:gap-3" data-subcat="面色觀察">
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="面色:面色紅潤" class="sr-only">
@@ -538,10 +538,10 @@
                                     </label>
                                 </div>
                             </div>
-                            <!-- 眼部觀察（目診） -->
+                            <!-- 目診 -->
                             <div class="py-3 border-b border-slate-100 last:border-0">
-                                <div class="text-sm font-medium text-slate-700 mb-2">眼部觀察（目診）</div>
-                                <p class="text-xs text-slate-500 mb-2">眼部狀態反映肝腎與氣血狀況（可複選）</p>
+                                <div class="text-sm font-medium text-slate-700 mb-2">目診</div>
+                                <p class="text-xs text-slate-500 mb-2"></p>
                                 <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 gap-1.5 sm:gap-2 md:gap-3" data-subcat="眼部觀察">
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="眼睛:雙眼明亮有神" class="sr-only">
@@ -602,10 +602,10 @@
                                 </div>
                             </div>
 
-                            <!-- 唇色觀察（唇診） -->
+                            <!-- 唇診 -->
                             <div class="py-3 border-b border-slate-100 last:border-0">
-                                <div class="text-sm font-medium text-slate-700 mb-2">唇色觀察（唇診）</div>
-                                <p class="text-xs text-slate-500 mb-2">唇色與口唇狀態反映脾胃與氣血運行（可複選）</p>
+                                <div class="text-sm font-medium text-slate-700 mb-2">唇診</div>
+                                <p class="text-xs text-slate-500 mb-2"></p>
                                 <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5 sm:gap-2" data-subcat="唇色觀察">
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="唇色:淡紅紅潤" class="sr-only">
@@ -652,10 +652,7 @@
                     </div>
 
                     <!-- 聲音觀察 -->
-                    <div id="panel-voice" class="obs-panel" data-panel="聲音觀察">
-                            <div class="py-3 border-b border-slate-100 last:border-0">
-                                <div class="text-sm font-medium text-slate-700 mb-2">眼睛觀察</div>
-                                <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2" data-subcat="眼睛觀察">
+<div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2" data-subcat="眼睛觀察">
                                     <label class="obs-card relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="眼睛:眼乾澀痛" class="sr-only">
                                         <span class="text-lg mb-1">💧</span>
@@ -708,11 +705,11 @@
                             </div>
                     </div>
 
-                    <!-- 聲音觀察（聲診） -->
-                    <div id="panel-voice" class="obs-panel" data-panel="聲音觀察（聲診）">
+                    <!-- 聲診 -->
+                    <div id="panel-voice" class="obs-panel" data-panel="聲診">
                             <div class="py-3 border-b border-slate-100 last:border-0">
-                                <div class="text-sm font-medium text-slate-700 mb-2">聲音觀察（聲診）</div>
-                                <p class="text-xs text-slate-500 mb-2">聲音狀況反映肺氣與肝膽情志（可複選）</p>
+                                <div class="text-sm font-medium text-slate-700 mb-2">聲診</div>
+                                <p class="text-xs text-slate-500 mb-2"></p>
                                 <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 gap-1.5 sm:gap-2" data-subcat="聲音觀察">
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="聲音:低微無力" class="sr-only">
@@ -750,12 +747,12 @@
                             </div>
                     </div>
 
-                    <!-- 指甲觀察（甲診） -->
-                    <!-- 體型形態觀察 -->
-                    <div id="panel-body" class="obs-panel" data-panel="體型形態觀察">
+                    <!-- 甲診 -->
+                    <!-- 形態觀察 -->
+                    <div id="panel-body" class="obs-panel" data-panel="形態觀察">
                             <div class="py-3 border-b border-slate-100 last:border-0">
-                                <div class="text-sm font-medium text-slate-700 mb-2">體型形態觀察</div>
-                                <p class="text-xs text-slate-500 mb-2">體型形態反映脾胃與氣血狀態（可複選）</p>
+                                <div class="text-sm font-medium text-slate-700 mb-2">形態觀察</div>
+                                <p class="text-xs text-slate-500 mb-2"></p>
                                 <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 gap-1.5 sm:gap-2" data-subcat="體型形態觀察">
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="體型:勻稱適中" class="sr-only">
@@ -795,8 +792,8 @@
 
                     <div id="panel-nails" class="obs-panel" data-panel="指甲觀察">
                             <div class="py-3 border-b border-slate-100 last:border-0">
-                                <div class="text-sm font-medium text-slate-700 mb-2">指甲觀察（甲診）</div>
-                                <p class="text-xs text-slate-500 mb-2">指甲月牙反映氣血與臟腑盛衰（可複選）</p>
+                                <div class="text-sm font-medium text-slate-700 mb-2">甲診</div>
+                                <p class="text-xs text-slate-500 mb-2"></p>
                                 <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2" data-subcat="指甲觀察">
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="指甲:月牙適中" class="sr-only">
@@ -1144,8 +1141,8 @@
 
             // Tab 到面板的映射
             const tabPanelMap = {
-                'tab1': ['面色觀察', '眼睛觀察', '唇色觀察（唇診）'],
-                'tab2': ['聲音觀察（聲診）', '症狀觀察', '指甲觀察', '體型形態觀察'],
+                'tab1': ['面診', '目診', '唇診'],
+                'tab2': ['聲診', '症狀觀察', '甲診', '形態觀察'],
                 'tab3': ['舌象觀察']
             };
 
