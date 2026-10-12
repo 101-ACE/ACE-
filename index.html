@@ -40,12 +40,18 @@
 /* Card selected state */
         .obs-card.selected {
             border-color: #059669 !important;
-            background: #dcfce7 !important;
+            background: #d1fae5 !important;
+            box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.25), 0 2px 8px rgba(5, 150, 105, 0.12) !important;
+        }
+        .obs-card.selected .check-icon {
+            opacity: 1;
+            transform: scale(1);
         }
         .obs-card .check-icon {
             opacity: 0;
-            transform: scale(0.8);
+            transform: scale(0.7);
             transition: all 0.2s ease;
+            pointer-events: none;
         }
         .obs-card.selected .check-icon {
             opacity: 1;
@@ -337,99 +343,6 @@
                                     </label>
                                 </div>
                             </div>
-                            <!-- 舌苔質觀察 -->
-                            <div class="py-3 border-b border-slate-100 last:border-0">
-                                <div class="text-sm font-medium text-slate-700 mb-2">舌苔質觀察</div>
-                                <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2" data-subcat="舌苔質觀察">
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="舌苔質:薄苔" class="sr-only">
-                                        <span class="text-lg mb-1">🥄</span>
-                                        <span class="text-xs font-medium text-slate-700 text-center">薄苔</span>
-                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
-                                            <i data-lucide="check" class="w-3 h-3"></i>
-                                        </div>
-                                    </label>
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="舌苔質:厚苔" class="sr-only">
-                                        <span class="text-lg mb-1">🧱</span>
-                                        <span class="text-xs font-medium text-slate-700 text-center">厚苔</span>
-                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
-                                            <i data-lucide="check" class="w-3 h-3"></i>
-                                        </div>
-                                    </label>
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="舌苔質:潤苔" class="sr-only">
-                                        <span class="text-lg mb-1">💧</span>
-                                        <span class="text-xs font-medium text-slate-700 text-center">潤苔</span>
-                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
-                                            <i data-lucide="check" class="w-3 h-3"></i>
-                                        </div>
-                                    </label>
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="舌苔質:燥苔" class="sr-only">
-                                        <span class="text-lg mb-1">🔥</span>
-                                        <span class="text-xs font-medium text-slate-700 text-center">燥苔</span>
-                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
-                                            <i data-lucide="check" class="w-3 h-3"></i>
-                                        </div>
-                                    </label>
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="舌苔質:膩苔" class="sr-only">
-                                        <span class="text-lg mb-1">🟤</span>
-                                        <span class="text-xs font-medium text-slate-700 text-center">膩苔</span>
-                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
-                                            <i data-lucide="check" class="w-3 h-3"></i>
-                                        </div>
-                                    </label>
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="舌苔質:腐苔" class="sr-only">
-                                        <span class="text-lg mb-1">🧨</span>
-                                        <span class="text-xs font-medium text-slate-700 text-center">腐苔</span>
-                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
-                                            <i data-lucide="check" class="w-3 h-3"></i>
-                                        </div>
-                                    </label>
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="舌苔質:鏡面苔" class="sr-only">
-                                        <span class="text-lg mb-1">🔍</span>
-                                        <span class="text-xs font-medium text-slate-700 text-center">鏡面苔</span>
-                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
-                                            <i data-lucide="check" class="w-3 h-3"></i>
-                                        </div>
-                                    </label>
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="舌苔質:花剝苔" class="sr-only">
-                                        <span class="text-lg mb-1">🌸</span>
-                                        <span class="text-xs font-medium text-slate-700 text-center">花剝苔</span>
-                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
-                                            <i data-lucide="check" class="w-3 h-3"></i>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-                            <!-- 舌苔形觀察 -->
-                            <div class="py-3 border-b border-slate-100 last:border-0">
-                                <div class="text-sm font-medium text-slate-700 mb-2">舌苔形觀察</div>
-                                <div class="grid grid-cols-3 sm:grid-cols-3 gap-1.5 sm:gap-2" data-subcat="舌苔形觀察">
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="舌苔形:顆粒苔" class="sr-only">
-                                        <span class="text-lg mb-1">🧂</span>
-                                        <span class="text-xs font-medium text-slate-700 text-center">顆粒苔</span>
-                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
-                                            <i data-lucide="check" class="w-3 h-3"></i>
-                                        </div>
-                                    </label>
-                                    <label class="obs-card relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
-                                        <input type="checkbox" value="舌苔形:膩苔" class="sr-only">
-                                        <span class="text-lg mb-1">🟤</span>
-                                        <span class="text-xs font-medium text-slate-700 text-center">膩苔</span>
-                                        <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
-                                            <i data-lucide="check" class="w-3 h-3"></i>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
                     </div><!-- /#panel-tongue -->
 
                     <!-- 面色觀察 -->
