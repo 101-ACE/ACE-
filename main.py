@@ -59,7 +59,6 @@ class Assessment(Base):
     gender = Column(String, nullable=False)
     age_group = Column(String, nullable=False)
     referral_code = Column(String, nullable=True)
-    store = Column(String, nullable=False)
     answers = Column(Text, nullable=False)  # JSON string
     constitution = Column(String, nullable=False)
     health_score = Column(Integer, nullable=False)
@@ -79,15 +78,8 @@ class QuestionnairesSubmit(BaseModel):
     gender: str
     age_group: str
     referral_code: Optional[str] = None
-    store: str
     answers: Dict[str, Any]
 
-    @validator("store")
-    def validate_store(cls, v):
-        valid = ["將軍澳中心", "將軍澳寶琳", "樂富", "柴灣", "佐敦"]
-        if v not in valid:
-            raise ValueError("無效的門市選擇")
-        return v
 
 class BookingSubmit(BaseModel):
     assessment_id: str
@@ -101,7 +93,6 @@ class HealthReportResponse(BaseModel):
     risk_level: str
     risk_indicators: List[str]
     recommendations: List[str]
-    store: str
 
 # ===== 九大體質邏輯 =====
 CONSTITUTION_RULES = {
@@ -351,7 +342,6 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
     score = assessment.health_score
     risk = assessment.risk_level
     constitution = assessment.constitution
-    store = assessment.store
     name = assessment.name
     phone = assessment.phone
     referral = assessment.referral_code or "-"
@@ -383,7 +373,6 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
                     <div>姓名：<strong>{name}</strong></div>
                     <div>電話：<strong>{phone}</strong></div>
                     <div>檢測人員編號：<strong>{referral}</strong></div>
-                    <div>預約門市：<strong>{store}</strong></div>
                   </div>
                 </td></tr>
               </table>
@@ -503,7 +492,6 @@ def submit_questionnaire(data: QuestionnairesSubmit):
             gender=data.gender,
             age_group=data.age_group,
             referral_code=data.referral_code,
-            store=data.store,
             answers=json.dumps(data.answers, ensure_ascii=False),
             constitution=analysis["constitution"],
             health_score=analysis["score"],
@@ -546,7 +534,6 @@ def get_report(assessment_id: str):
             risk_level=record.risk_level,
             risk_indicators=json.loads(record.risk_indicators) if record.risk_indicators else [],
             recommendations=get_recommendations(record.constitution),
-            store=record.store,
         )
     finally:
         db.close()
