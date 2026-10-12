@@ -1171,7 +1171,7 @@
             activate(initial);
         }
 
-        // ===== 觀察卡片互動 =====
+        // ===== 觀察卡片互動（多選支援）=====
         function initObservationCards() {
             const cards = document.querySelectorAll('.obs-card');
             cards.forEach(card => {
@@ -1183,11 +1183,9 @@
                         card.classList.remove('selected');
                     }
                 };
-                card.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    input.checked = !input.checked;
-                    updateUI();
-                });
+                // 直接綁定 input 的 change 事件：無論原生 label 點擊或 JS 觸發，皆能正確響應
+                input.addEventListener('change', updateUI);
+                // 初始狀態同步
                 updateUI();
             });
         }
