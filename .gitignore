@@ -27,7 +27,6 @@ build/
 
 # 鎖定檔（本專案為靜態頁，可視需求保留或忽略）
 # package-lock.json
--e 
 # Python
 __pycache__/
 *.py[cod]
