@@ -3,6 +3,7 @@ COSWAY AI 中醫體質檢測 Web App
 獨立全棧專案：FastAPI + SQLite + 響應式前端
 通知策略：靜默 Email（取消 WhatsApp 推播）
 數據來源：動態 Google Sheet 拍檔名單
+Google Sheets 客戶記錄：自動寫入「客戶記錄」工作表
 """
 
 import os
@@ -18,7 +19,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, Text, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -40,9 +41,14 @@ SENDER_EMAIL = os.getenv("SENDER_EMAIL", SMTP_USERNAME)
 # 判斷 SMTP 是否可實際使用（密碼未配置時視為未啟用）
 SMTP_ENABLED = bool(SMTP_PASSWORD)
 
-# Google Sheet 設定
+# Google Sheet 設定 - 拍檔名單
 GOOGLE_SHEET_ID = "1iZaN0AKtQT6d9zFc_K7tmWjN15q2WpytAN26kxu32H4"
 GOOGLE_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv"
+
+# Google Sheet 設定 - 客戶記錄 (自動寫入)
+GOOGLE_CUSTOMER_SHEET_ID = "18mTJy0wUPdvNSc-CM-o2XtDrKICpn2XSqFEmBSaC6ww"
+GOOGLE_CUSTOMER_SHEET_NAME = "客戶記錄"
+GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS", "credentials.json")
 PARTNERS_CACHE: Dict[str, Dict[str, str]] = {}
 PARTNERS_LOADED = False
 
@@ -79,7 +85,6 @@ class QuestionnairesSubmit(BaseModel):
     age_group: str
     referral_code: Optional[str] = None
     answers: Dict[str, Any]
-
 
 class BookingSubmit(BaseModel):
     assessment_id: str
@@ -179,15 +184,26 @@ OBSERVATION_CONSTITUTION_MAP = {
     "舌態:適中": {},
     "舌態:強硬": {"濕熱": 4},
     "舌態:痿軟": {"氣虛": 3, "陰虛": 2},
-    "舌態:歪斜": {"血瘀": 5},
+    "舌態:舌歪斜": {"血瘀": 5},
     # ===== 舌苔色觀察 =====
+    "舌苔色:白苔": {"陽虛": 3},
+    "舌苔色:黃苔": {"濕熱": 4},
+    "舌苔色:灰苔": {"痰濕": 3, "濕熱": 2},
+    "舌苔色:黑苔": {"濕熱": 4, "痰濕": 3},
     "舌苔色:無苔": {"陰虛": 4},
-    "舌苔色:淡黃苔": {"濕熱": 2},
-    "舌苔色:深黃苔": {"濕熱": 4},
-    "舌苔色:灰潤苔": {"痰濕": 3},
-    "舌苔色:灰燥苔": {"痰濕": 2, "濕熱": 2},
-    "舌苔色:黑潤苔": {"痰濕": 4, "陽虛": 3},
-    "舌苔色:黑燥苔": {"濕熱": 4, "痰濕": 3},
+    # ===== 舌苔質觀察 =====
+    "舌苔質:薄苔": {},
+    "舌苔質:厚苔": {"痰濕": 4},
+    "舌苔質:潤苔": {},
+    "舌苔質:燥苔": {"陰虛": 3, "濕熱": 2},
+    "舌苔質:滑苔": {"痰濕": 4, "陽虛": 3},
+    "舌苔質:膩苔": {"痰濕": 5},
+    "舌苔質:腐苔": {"痰濕": 4, "濕熱": 3},
+    "舌苔質:花剝苔": {"氣虛": 4, "陰虛": 3},
+    "舌苔質:鏡面苔": {"氣虛": 5, "陰虛": 4},
+    # ===== 舌苔形觀察 =====
+    "舌苔形:顆粒苔": {"濕熱": 3},
+    "舌苔形:膩苔": {"痰濕": 4},
     # ===== 面色觀察 =====
     "面色:面色紅潤": {},
     "面色:面色淡白": {"氣虛": 4},
@@ -325,6 +341,63 @@ def find_partner(referral_code: Optional[str]) -> Optional[Dict[str, str]]:
     return partners.get(normalized)
 
 # ===== HTML 郵件範本生成 =====
+# ===== Google Sheets 客戶記錄寫入 =====
+def write_customer_record_to_sheet(assessment: Assessment, observations: List[str]) -> None:
+    """將客戶記錄寫入 Google Sheet「客戶記錄」工作表"""
+    try:
+        from google.oauth2.service_account import Credentials
+        import gspread
+
+        if not os.path.exists(GOOGLE_CREDENTIALS_FILE):
+            logger.warning("Google credentials file not found: %s", GOOGLE_CREDENTIALS_FILE)
+            return
+
+        creds = Credentials.from_service_account_file(
+            GOOGLE_CREDENTIALS_FILE,
+            scopes=["https://www.googleapis.com/auth/spreadsheets"]
+        )
+        gc = gspread.authorize(creds)
+        sh = gc.open_by_key(GOOGLE_CUSTOMER_SHEET_ID)
+        ws = sh.worksheet(GOOGLE_CUSTOMER_SHEET_NAME)
+
+        # 確保表頭存在
+        headers = ws.row_values(1)
+        if not headers:
+            ws.update_cell(1, 1, "提交時間")
+            ws.update_cell(1, 2, "客戶姓名")
+            ws.update_cell(1, 3, "聯絡電話")
+            ws.update_cell(1, 4, "性別")
+            ws.update_cell(1, 5, "年齡層")
+            ws.update_cell(1, 6, "檢測人員編號")
+            ws.update_cell(1, 7, "觀察項摘要")
+            ws.update_cell(1, 8, "主體質結果")
+            ws.update_cell(1, 9, "健康風險與建議")
+
+        # 格式化觀察項摘要
+        obs_summary = ", ".join(observations[:10]) if observations else "-"
+
+        # 格式化建議
+        recs = get_recommendations(assessment.constitution)
+        rec_summary = "; ".join(recs[:3]) if recs else "-"
+
+        # 寫入新行
+        row_data = [
+            assessment.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if assessment.submitted_at else "-",
+            assessment.name,
+            assessment.phone,
+            assessment.gender,
+            assessment.age_group,
+            assessment.referral_code or "-",
+            obs_summary,
+            f"{assessment.constitution} (分數: {assessment.health_score})",
+            rec_summary,
+        ]
+        ws.append_row(row_data)
+        logger.info("Customer record written to Google Sheet for assessment %s", assessment.id)
+    except Exception as e:
+        logger.exception("Failed to write customer record to Google Sheet: %s", e)
+
+
 def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
     score = assessment.health_score
     risk = assessment.risk_level
@@ -457,7 +530,13 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
 app = FastAPI(title="COSWAY TCM Health Assessment API", version="4.0.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://healthcheck.acesc01gp.workers.dev", "http://localhost:8080", "http://localhost:3000", "*"],
+    allow_origins=[
+        "https://healthcheck-bel.pages.dev",
+        "https://healthcheck.acesc01gp.workers.dev",
+        "http://localhost:8080",
+        "http://localhost:3000",
+        "*",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -496,6 +575,9 @@ def submit_questionnaire(data: QuestionnairesSubmit):
             email_result = send_email_report(partner["email"], record, recommendations)
             record.email_sent = 1 if email_result.get("success") else 0
             db.commit()
+        # 寫入 Google Sheets 客戶記錄
+        symptoms = data.answers.get("symptoms", [])
+        write_customer_record_to_sheet(record, symptoms)
         return {
             "success": True,
             "assessment_id": record.id,
