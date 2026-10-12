@@ -13,6 +13,7 @@ import re
 import json
 import requests
 import logging
+import base64
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from email.mime.text import MIMEText
@@ -49,6 +50,7 @@ GOOGLE_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID
 GOOGLE_CUSTOMER_SHEET_ID = "18mTJy0wUPdvNSc-CM-o2XtDrKICpn2XSqFEmBSaC6ww"
 GOOGLE_CUSTOMER_SHEET_NAME = "客戶記錄"
 GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS", "credentials.json")
+GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "")
 PARTNERS_CACHE: Dict[str, Dict[str, str]] = {}
 PARTNERS_LOADED = False
 
@@ -348,14 +350,25 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
         from google.oauth2.service_account import Credentials
         import gspread
 
-        if not os.path.exists(GOOGLE_CREDENTIALS_FILE):
-            logger.warning("Google credentials file not found: %s", GOOGLE_CREDENTIALS_FILE)
+        creds = None
+        # 優先使用環境變數（雲端部署推薦）
+        if GOOGLE_SERVICE_ACCOUNT_JSON:
+            try:
+                json_data = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+                creds = Credentials.from_service_account_info(json_data, scopes=["https://www.googleapis.com/auth/spreadsheets"])
+            except Exception as e:
+                logger.warning("Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON: %s", e)
+        # fallback: 讀取憑證檔案
+        if creds is None and os.path.exists(GOOGLE_CREDENTIALS_FILE):
+            creds = Credentials.from_service_account_file(
+                GOOGLE_CREDENTIALS_FILE,
+                scopes=["https://www.googleapis.com/auth/spreadsheets"]
+            )
+
+        if creds is None:
+            logger.warning("No Google credentials available (set GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_CREDENTIALS_FILE)")
             return
 
-        creds = Credentials.from_service_account_file(
-            GOOGLE_CREDENTIALS_FILE,
-            scopes=["https://www.googleapis.com/auth/spreadsheets"]
-        )
         gc = gspread.authorize(creds)
         sh = gc.open_by_key(GOOGLE_CUSTOMER_SHEET_ID)
         ws = sh.worksheet(GOOGLE_CUSTOMER_SHEET_NAME)

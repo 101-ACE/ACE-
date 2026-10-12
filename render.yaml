@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: tcm-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: DATABASE_URL
+        value: sqlite:///./tcm_assessments.db
