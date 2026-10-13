@@ -942,19 +942,23 @@
             <!-- O2O Coupon Card -->
             <div class="bg-white rounded-2xl shadow-md p-5 md:p-6 border-2 border-dashed border-primary/30">
                 <div class="text-center mb-3">
-                    <div class="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full mb-2">COSWAY 實體門市專屬體驗券</div>
-                    <h3 class="text-lg font-bold text-slate-800 mb-1">免費微循環檢測體驗</h3>
+                    <div class="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full mb-2">專屬免費健康檢測體驗券</div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-1">免費微電流磁共檢測體驗</h3>
                     <p class="text-slate-600 text-sm leading-relaxed">
-                        憑此 AI 體質報告截圖，至指定 COSWAY 門市可免費享用<br>
-                        <strong>【高倍數微循環顯微檢測】</strong>一次（價值 $380）
+                        免費預約進行微電流磁共檢測/微循環進階檢測（價值 $380）
                     </p>
                 </div>
-                <div class="flex items-center justify-center gap-3 text-xs text-slate-400">
-                    <span>#COSWAY-ACE</span>
-                    <span>|</span>
+                <div class="mb-3">
+                    <img src="images/微電流磁共檢測.png" alt="微電流磁共檢測" class="w-full rounded-xl shadow-sm" loading="lazy" decoding="async">
+                </div>
+                <button id="download-coupon" class="w-full py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition flex items-center justify-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    下載體驗券
+                </button>
+                <div class="flex items-center justify-center gap-3 text-xs text-slate-400 flex-wrap">
                     <span id="coupon-agent-id">檢測員：未填寫</span>
                     <span>|</span>
-                    <span>有效期至 2025-12-31</span>
+                    <span id="coupon-expiry">有效期至 2025-12-31</span>
                 </div>
             </div>
         </div>
@@ -1367,6 +1371,37 @@
             const agentId = urlParams.get('id') || urlParams.get('agent_id') || '未填寫';
             const couponAgentId = $('coupon-agent-id');
             if (couponAgentId) couponAgentId.textContent = `檢測員：${agentId}`;
+
+            // Dynamic expiry date calculation
+            const now = new Date();
+            const day = now.getDate();
+            const month = now.getMonth();
+            const year = now.getFullYear();
+            let expiryDate;
+            if (day <= 15) {
+                // 1~15日 → 當月最後一天
+                expiryDate = new Date(year, month + 1, 0);
+            } else {
+                // 16~31日 → 下個月15號
+                expiryDate = new Date(year, month + 1, 15);
+            }
+            const expiryStr = `${expiryDate.getFullYear()}年${expiryDate.getMonth() + 1}月${expiryDate.getDate()}日`;
+            const couponExpiry = $('coupon-expiry');
+            if (couponExpiry) couponExpiry.textContent = `有效期至 ${expiryStr}`;
+
+            // Download coupon image
+            const downloadBtn = $('download-coupon');
+            if (downloadBtn) {
+                downloadBtn.onclick = () => {
+                    const img = document.querySelector('.bg-white.rounded-2xl img');
+                    if (img) {
+                        const link = document.createElement('a');
+                        link.href = img.src;
+                        link.download = '微電流磁共檢測體驗券.png';
+                        link.click();
+                    }
+                };
+            }
 
             // Setup WhatsApp CTA
             const whatsappBtn = $('whatsapp-cta');
