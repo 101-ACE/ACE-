@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, Text, Float
@@ -32,12 +32,15 @@ logger = logging.getLogger(__name__)
 # ===== 配置 =====
 DATABASE_URL = "sqlite:///./tcm_assessments.db"
 
-# 靜默 Email 設定（環境變數，具備 Graceful Fallback）
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+# ===== 靜默 Email 設定（環境變數，具備 Graceful Fallback） =====
+SMTP_SERVER = os.getenv("SMTP_HOST", os.getenv("SMTP_SERVER", "smtp.gmail.com"))
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USERNAME = os.getenv("SMTP_USERNAME", "acesc01gp@gmail.com")
+SMTP_USERNAME = os.getenv("SMTP_USER", os.getenv("SMTP_USERNAME", "acesc01gp@gmail.com"))
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", SMTP_USERNAME)
+
+# 管理員備用電郵
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", SMTP_USERNAME)
 
 # 判斷 SMTP 是否可實際使用（密碼未配置時視為未啟用）
 SMTP_ENABLED = bool(SMTP_PASSWORD)
@@ -537,7 +540,7 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
         return {"success": False, "error": str(e)}
 
 # ===== Admin Email Fallback =====
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", os.getenv("SMTP_USERNAME", ""))
+# ADMIN_EMAIL already defined above
 
 # ===== FastAPI 應用 =====
 app = FastAPI(title="COSWAY TCM Health Assessment API", version="4.0.0")
@@ -569,7 +572,10 @@ def health_legacy():
     return {"status": "ok", "time": datetime.utcnow().isoformat()}
 
 @app.post("/api/questionnaire/submit")
-def submit_questionnaire(data: QuestionnairesSubmit):
+def submit_questionnaire(
+    data: QuestionnairesSubmit,
+    background_tasks: BackgroundTasks
+):
     """提交問卷並生成報告，返回完整 JSON 結構"""
     try:
         # 體質分析
@@ -603,21 +609,27 @@ def submit_questionnaire(data: QuestionnairesSubmit):
             db.commit()
             db.refresh(record)
             
-            # 發送 Email（拍檔優先，備用管理員）
+            # 準備 Email 發送任務（非同步背景任務）
             recommendations = get_recommendations(analysis["constitution"])
-            email_result = {"success": False, "error": "No partner mapped"}
-            target_email = partner["email"] if partner else ADMIN_EMAIL
-            if target_email:
-                email_result = send_email_report(target_email, record, recommendations)
-                record.email_sent = 1 if email_result.get("success") else 0
-                db.commit()
+            
+            # 確定接收電郵：拍檔優先，否則使用管理員備用
+            partner_email = partner["email"] if partner else None
+            target_email = partner_email or ADMIN_EMAIL
+            
+            if target_email and SMTP_ENABLED:
+                # 註冊背景任務，非同步發送 Email
+                background_tasks.add_task(
+                    send_email_report,
+                    target_email,
+                    record,
+                    recommendations
+                )
+                logger.info("Email background task scheduled for %s (to: %s)", record.id, target_email)
             
             # 寫入 Google Sheets 客戶記錄（背景任務，不阻塞回應）
             symptoms = data.answers.get("symptoms", [])
-            try:
-                write_customer_record_to_sheet(record, symptoms)
-            except Exception as sheet_err:
-                logger.warning("Google Sheets write failed (non-fatal): %s", sheet_err)
+            background_tasks.add_task(write_customer_record_to_sheet, record, symptoms)
+            logger.info("Google Sheets background task scheduled for %s", record.id)
             
             # 返回完整報告 JSON
             return {
@@ -631,8 +643,9 @@ def submit_questionnaire(data: QuestionnairesSubmit):
                     "severe_risks": severe_risks,
                     "risk_indicators": risk_indicators,
                 },
-                "email_sent": bool(record.email_sent),
-                "email_result": email_result,
+                "email_sent": target_email is not None and SMTP_ENABLED,
+                "email_target": target_email,
+                "email_status": "queued" if target_email else "skipped",
             }
         finally:
             db.close()
