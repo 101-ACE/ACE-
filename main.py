@@ -539,6 +539,9 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
         logger.exception("Failed to send email for assessment %s: %s", assessment.id, e)
         return {"success": False, "error": str(e)}
 
+# ===== Admin Email Fallback =====
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", os.getenv("SMTP_USERNAME", ""))
+
 # ===== FastAPI 應用 =====
 app = FastAPI(title="COSWAY TCM Health Assessment API", version="4.0.0")
 app.add_middleware(
@@ -555,51 +558,101 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/health")
+# 健康檢查路由（避免 Render 404）
+@app.get("/")
+def root():
+    return {"status": "ok"}
+
+@app.get("/api/health")
 def health():
+    return {"status": "ok"}
+
+@app.get("/health")
+def health_legacy():
     return {"status": "ok", "time": datetime.utcnow().isoformat()}
 
-@app.post("/api/questionnaire/submit", response_model=Dict[str, Any])
+@app.post("/api/questionnaire/submit")
 def submit_questionnaire(data: QuestionnairesSubmit):
-    analysis = analyze_constitution(data.answers)
-    db: Session = SessionLocal()
+    """提交問卷並生成報告，返回完整 JSON 結構"""
     try:
-        partner = find_partner(data.referral_code)
-        record = Assessment(
-            name=data.name,
-            phone=data.phone,
-            gender=data.gender,
-            age_group=data.age_group,
-            referral_code=data.referral_code,
-            answers=json.dumps(data.answers, ensure_ascii=False),
-            constitution=analysis["constitution"],
-            health_score=analysis["score"],
-            risk_level=analysis["risk_level"],
-            risk_indicators=json.dumps(analysis["risk_indicators"], ensure_ascii=False),
-            partner_email=partner["email"] if partner else None,
-            partner_name=partner["name"] if partner else None,
-        )
-        db.add(record)
-        db.commit()
-        db.refresh(record)
-        recommendations = get_recommendations(analysis["constitution"])
-        email_result = {"success": False, "error": "No partner mapped"}
-        if partner:
-            email_result = send_email_report(partner["email"], record, recommendations)
-            record.email_sent = 1 if email_result.get("success") else 0
+        # 體質分析
+        analysis = analyze_constitution(data.answers)
+        
+        # 分離潛在與嚴重風險
+        risk_indicators = analysis.get("risk_indicators", [])
+        split_idx = max(1, len(risk_indicators) // 2)
+        potential_risks = risk_indicators[:split_idx] if split_idx < len(risk_indicators) else risk_indicators
+        severe_risks = risk_indicators[split_idx:] if split_idx < len(risk_indicators) else []
+        
+        # 儲存至資料庫
+        db: Session = SessionLocal()
+        try:
+            partner = find_partner(data.referral_code)
+            record = Assessment(
+                name=data.name,
+                phone=data.phone,
+                gender=data.gender,
+                age_group=data.age_group,
+                referral_code=data.referral_code,
+                answers=json.dumps(data.answers, ensure_ascii=False),
+                constitution=analysis["constitution"],
+                health_score=analysis["score"],
+                risk_level=analysis["risk_level"],
+                risk_indicators=json.dumps(risk_indicators, ensure_ascii=False),
+                partner_email=partner["email"] if partner else None,
+                partner_name=partner["name"] if partner else None,
+            )
+            db.add(record)
             db.commit()
-        # 寫入 Google Sheets 客戶記錄
-        symptoms = data.answers.get("symptoms", [])
-        write_customer_record_to_sheet(record, symptoms)
+            db.refresh(record)
+            
+            # 發送 Email（拍檔優先，備用管理員）
+            recommendations = get_recommendations(analysis["constitution"])
+            email_result = {"success": False, "error": "No partner mapped"}
+            target_email = partner["email"] if partner else ADMIN_EMAIL
+            if target_email:
+                email_result = send_email_report(target_email, record, recommendations)
+                record.email_sent = 1 if email_result.get("success") else 0
+                db.commit()
+            
+            # 寫入 Google Sheets 客戶記錄（背景任務，不阻塞回應）
+            symptoms = data.answers.get("symptoms", [])
+            try:
+                write_customer_record_to_sheet(record, symptoms)
+            except Exception as sheet_err:
+                logger.warning("Google Sheets write failed (non-fatal): %s", sheet_err)
+            
+            # 返回完整報告 JSON
+            return {
+                "success": True,
+                "assessment_id": record.id,
+                "report": {
+                    "constitution": analysis["constitution"],
+                    "score": analysis["score"],
+                    "risk_level": analysis["risk_level"],
+                    "potential_risks": potential_risks,
+                    "severe_risks": severe_risks,
+                    "risk_indicators": risk_indicators,
+                },
+                "email_sent": bool(record.email_sent),
+                "email_result": email_result,
+            }
+        finally:
+            db.close()
+    except Exception as e:
+        logger.exception("Submit questionnaire failed: %s", e)
         return {
-            "success": True,
-            "assessment_id": record.id,
-            "report": analysis,
-            "email_sent": bool(record.email_sent),
-            "email_result": email_result,
+            "success": False,
+            "error": str(e),
+            "report": {
+                "constitution": "未知",
+                "score": 50,
+                "risk_level": "中",
+                "potential_risks": ["系統錯誤，請重試"],
+                "severe_risks": [],
+                "risk_indicators": [],
+            },
         }
-    finally:
-        db.close()
 
 @app.get("/api/report/{assessment_id}", response_model=HealthReportResponse)
 def get_report(assessment_id: str):

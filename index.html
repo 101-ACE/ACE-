@@ -1079,6 +1079,7 @@
             };
 
             function activate(tabId) {
+                console.log("[TCM] activate tab:", tabId);
                 btns.forEach(b => {
                     const on = b.dataset.tab === tabId;
                     b.classList.toggle('active', on);
@@ -1089,6 +1090,12 @@
                     const show = targetPanels.includes(p.dataset.panel);
                     p.classList.toggle('active', show);
                 });
+                const activePanels = Array.from(panels).filter(p => p.classList.contains('active'));
+                console.log("Current active panels:", activePanels.map(p => p.id + "(" + p.dataset.panel + ")"));
+                if (activePanels.length === 0) {
+                    console.warn("[TCM] No active panels found, forcing all visible");
+                    panels.forEach(p => p.classList.add('active'));
+                }
 
                 // 面板切換後重繪 Lucide 圖示
                 if (window.lucide) lucide.createIcons();
