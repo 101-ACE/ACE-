@@ -1426,9 +1426,12 @@
 
         // ===== 事件監聽 =====
         document.addEventListener("DOMContentLoaded", () => {
-            $("questionnaire-form").addEventListener("submit", submitQuestionnaire);
-            $("confirm-booking").addEventListener("click", confirmBooking);
-            $("popup-close").addEventListener("click", hidePopup);
+            const form = $("questionnaire-form");
+            if (form) form.addEventListener("submit", submitQuestionnaire);
+            const confirmBtn = $("confirm-booking");
+            if (confirmBtn) confirmBtn.addEventListener("click", confirmBooking);
+            const closeBtn = $("popup-close");
+            if (closeBtn) closeBtn.addEventListener("click", hidePopup);
             initCategoryTabs();
             initObservationCards();
             autoFillReferralCode();
