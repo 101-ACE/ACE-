@@ -1033,7 +1033,7 @@
         // ===== 配置 =====
         // 支援透過 URL 參數覆寫 API 基底網址，例如：?api_url=https://backend.example.com/api
         const getQueryParam = (name) => new URLSearchParams(window.location.search).get(name);
-        const API_BASE = getQueryParam("api_url") || "https://healthcheck-sj4l.onrender.com/api";
+        const API_BASE = getQueryParam("api_url") || "https://healthcheck-sj4i.onrender.com/api";
 
         // 9 大中醫體質名稱映射（簡寫 → 完整名稱）
         const CONSTITUTION_FULL_NAMES = {
