@@ -375,16 +375,8 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
 
         # 確保表頭存在
         headers = ws.row_values(1)
-        if not headers:
-            ws.update_cell(1, 1, "提交時間")
-            ws.update_cell(1, 2, "客戶姓名")
-            ws.update_cell(1, 3, "聯絡電話")
-            ws.update_cell(1, 4, "性別")
-            ws.update_cell(1, 5, "年齡層")
-            ws.update_cell(1, 6, "檢測人員編號")
-            ws.update_cell(1, 7, "觀察項摘要")
-            ws.update_cell(1, 8, "主體質結果")
-            ws.update_cell(1, 9, "健康風險與建議")
+        if not headers or headers[0] != "提交時間":
+            ws.update("A1:I1", [["提交時間", "客戶姓名", "聯絡電話", "性別", "年齡層", "檢測人員編號", "觀察項摘要", "主體質結果", "健康風險與建議"]])
 
         # 格式化觀察項摘要
         obs_summary = ", ".join(observations[:10]) if observations else "-"
@@ -393,20 +385,25 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
         recs = get_recommendations(assessment.constitution)
         rec_summary = "; ".join(recs[:3]) if recs else "-"
 
-        # 寫入新行
+        # 使用 values_append 批次寫入（更穩定，支援批量操作）
         row_data = [
-            assessment.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if assessment.submitted_at else "-",
-            assessment.name,
-            assessment.phone,
-            assessment.gender,
-            assessment.age_group,
-            assessment.referral_code or "-",
-            obs_summary,
-            f"{assessment.constitution} (分數: {assessment.health_score})",
-            rec_summary,
+            [assessment.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if assessment.submitted_at else "-"],
+            [assessment.name],
+            [assessment.phone],
+            [assessment.gender],
+            [assessment.age_group],
+            [assessment.referral_code or "-"],
+            [obs_summary],
+            [f"{assessment.constitution} (分數: {assessment.health_score})"],
+            [rec_summary],
         ]
-        ws.append_row(row_data)
-        logger.info("Customer record written to Google Sheet for assessment %s", assessment.id)
+        # values_append 接受 2D 陣列，一次寫入一整行
+        ws.values_append(
+            f"'{GOOGLE_CUSTOMER_SHEET_NAME}'!A:I",
+            value_input_option="USER_ENTERED",
+            body={"values": [row_data[i][0] for i in range(len(row_data))]}
+        )
+        logger.info("Customer record written to Google Sheet via values_append for assessment %s", assessment.id)
     except Exception as e:
         logger.exception("Failed to write customer record to Google Sheet: %s", e)
 
