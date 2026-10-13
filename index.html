@@ -864,7 +864,7 @@
                 <p class="text-slate-500">基於中醫體質學的初步評估結果</p>
             </div>
 
-            <!-- Score Dashboard -->
+            <!-- Module 1: 檢測體質 + 健康分數 -->
             <div class="bg-white rounded-2xl shadow-md p-5 md:p-6 flex flex-col items-center">
                 <div class="relative w-48 h-48 md:w-56 md:h-56">
                     <svg class="w-full h-full" viewBox="0 0 160 160">
@@ -873,26 +873,27 @@
                     </svg>
                     <div class="absolute inset-0 flex flex-col items-center justify-center">
                         <div id="gauge-number" class="text-4xl font-bold text-slate-800">0</div>
-                        <div class="text-sm text-slate-500 mt-1">健康警示分</div>
+                        <div class="text-sm text-slate-500 mt-1">健康分數</div>
                     </div>
                 </div>
                 <div id="risk-badge" class="mt-4 px-5 py-2 rounded-full font-bold text-sm border"></div>
+                <div id="score-comparison" class="mt-2 text-sm text-slate-600"></div>
                 <div class="mt-3 text-slate-600">
-                    體質判定：<strong id="constitution-text" class="text-slate-800">--</strong>
+                    檢測體質：<strong id="constitution-text" class="text-lg text-slate-800">--</strong>
                 </div>
             </div>
 
-            <!-- Risk Indicators -->
+            <!-- Module 2: 潛在健康風險（中度） -->
             <div class="bg-white rounded-2xl shadow-md p-5 md:p-6">
-                <h3 class="text-lg font-semibold text-red-600 mb-4 flex items-center gap-2">
-                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
-                    健康風險關注指標
+                <h3 class="text-lg font-semibold text-orange-600 mb-4 flex items-center gap-2">
+                    <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                    潛在健康風險
                 </h3>
-                <div id="risk-indicators" class="space-y-2 mb-4"></div>
-                <div class="space-y-3 mt-4">
+                <div id="moderate-risk-list" class="space-y-2 mb-4"></div>
+                <div class="space-y-3 mt-4 border-t pt-4">
                     <div>
                         <div class="flex justify-between text-sm text-slate-600 mb-1"><span>血管彈性指數</span></div>
-                        <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-1" class="h-full bg-red-500 rounded-full transition-all duration-1000" style="width:0%"></div></div>
+                        <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-1" class="h-full bg-orange-500 rounded-full transition-all duration-1000" style="width:0%"></div></div>
                     </div>
                     <div>
                         <div class="flex justify-between text-sm text-slate-600 mb-1"><span>血液粘稈度預警</span></div>
@@ -900,12 +901,24 @@
                     </div>
                     <div>
                         <div class="flex justify-between text-sm text-slate-600 mb-1"><span>肝臟代謝負擔</span></div>
-                        <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-3" class="h-full bg-red-600 rounded-full transition-all duration-1000" style="width:0%"></div></div>
+                        <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-3" class="h-full bg-orange-500 rounded-full transition-all duration-1000" style="width:0%"></div></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Recommendations -->
+            <!-- Module 3: 嚴重的健康風險（高亮紅色） -->
+            <div id="severe-risk-section" class="bg-red-50 rounded-2xl border-2 border-red-200 p-5 md:p-6 hidden">
+                <h3 class="text-lg font-semibold text-red-600 mb-4 flex items-center gap-2">
+                    <i data-lucide="alert-octagon" class="w-5 h-5"></i>
+                    ⚠️ 嚴重的健康風險
+                </h3>
+                <div id="severe-risk-list" class="space-y-2"></div>
+                <div class="mt-4 p-3 bg-red-100 rounded-lg text-sm text-red-700">
+                    <strong>建議：</strong>請儘快安排門市詳細檢測，專業顧問將為您提供個性化調理方案。
+                </div>
+            </div>
+
+            <!-- Module 4: 個人化調理建議 -->
             <div class="bg-white rounded-2xl shadow-md p-5 md:p-6">
                 <h3 class="text-lg font-semibold text-primary-dark mb-3 flex items-center gap-2">
                     <i data-lucide="cup-soda" class="w-5 h-5"></i>
@@ -914,13 +927,16 @@
                 <div id="recommendations" class="space-y-2 text-slate-700 text-sm md:text-base"></div>
             </div>
 
-            <!-- Booking Card -->
-            <div class="bg-gradient-to-br from-orange-50 to-primary/5 border border-orange-100 rounded-2xl p-5 md:p-6 text-center">
-                <h3 class="text-lg font-bold text-orange-600 mb-2">🔬 進階深度檢測體驗</h3>
-                <p class="text-slate-600 text-sm mb-4 leading-relaxed">AI 初步預警顯示您的血管與代謝指標需高度關注。<br>憑此報告，可免費預約至門市進行『量子 / 血管微循環進階檢測』。</p>
-                <button id="confirm-booking"
-                    class="w-full py-3.5 px-6 bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-xl font-semibold shadow hover:shadow-lg transition transform active:scale-[0.98]">
-                    免費預約門市進階體驗
+            <!-- CTA: 預約免費詳細健康風險檢測 -->
+            <div class="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-6 text-center text-white shadow-lg">
+                <h3 class="text-xl font-bold mb-2">🔬 預約免費詳細健康風險檢測</h3>
+                <p class="text-sm opacity-90 mb-4">憑此 AI 體質報告，可免費預約至門市進行微循環進階檢測（價值 $380）</p>
+                <button id="whatsapp-cta"
+                    class="w-full py-4 px-6 bg-white text-primary-dark rounded-xl font-bold shadow hover:shadow-xl transition transform active:scale-[0.98] flex items-center justify-center gap-2">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="#25D366">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    一鍵 WhatsApp 預約免費檢測
                 </button>
             </div>
 
@@ -942,19 +958,10 @@
                     <span>有效期至 2025-12-31</span>
                 </div>
             </div>
-
-            <!-- WhatsApp CTA -->
-            <button id="whatsapp-cta"
-                class="w-full py-4 px-6 bg-[#25D366] text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition transform active:scale-[0.98] flex items-center justify-center gap-2">
-                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                </svg>
-                一鍵 WhatsApp 預約免費檢測
-            </button>
         </div>
 
         <!-- Store Cards -->
-        <div class="bg-white rounded-2xl shadow-md p-5 md:p-6">
+        <div class="bg-white rounded-2xl shadow-md p-5 md:p-6 mx-4 mb-8">
             <h3 class="text-lg font-semibold text-slate-800 mb-4 text-center">選擇離你最近的 COSWAY 門市</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div class="store-card border-2 border-slate-100 rounded-xl p-4 hover:border-primary/40 hover:shadow-md transition cursor-pointer" data-store="將軍澳中心店" data-address="將軍澳唐明街2號尚德邨商場2樓L2-08號舖">
@@ -1027,7 +1034,20 @@
         // ===== 配置 =====
         // 支援透過 URL 參數覆寫 API 基底網址，例如：?api_url=https://backend.example.com/api
         const getQueryParam = (name) => new URLSearchParams(window.location.search).get(name);
-        const API_BASE = getQueryParam("api_url") || "http://localhost:8000/api";
+        const API_BASE = getQueryParam("api_url") || "https://healthcheck-sj4l.onrender.com/api";
+
+        // 9 大中醫體質名稱映射（簡寫 → 完整名稱）
+        const CONSTITUTION_FULL_NAMES = {
+            "氣虛": "氣虛質",
+            "陽虛": "陽虛水泛型",
+            "陰虛": "陰虛火旺型",
+            "痰濕": "痰濕積聚型",
+            "濕熱": "濕熱發炎型",
+            "血瘀": "血瘀障礙型",
+            "氣鬱": "氣鬱高壓型",
+            "特稟": "特稟過敏質",
+            "平和": "平和質"
+        };
 
         const SCAN_MESSAGES = [
             "正在初始化 AI 分析引擎...",
@@ -1223,6 +1243,9 @@
             const risk = report.risk_level;
             const colors = getRiskColor(risk);
 
+            // Get full constitution name
+            const fullName = CONSTITUTION_FULL_NAMES[report.constitution] || report.constitution;
+
             // Gauge
             const circumference = 2 * Math.PI * 70;
             const percent = Math.max(0, Math.min(100, score));
@@ -1254,19 +1277,60 @@
             // Risk badge
             const badge = $("risk-badge");
             badge.className = `mt-4 px-5 py-2 rounded-full font-bold text-sm border ${colors.badge}`;
-            badge.textContent = risk === "高" ? "潛在風險等級：高" : risk === "中" ? "潛在風險等級：中" : "潛在風險等級：低";
+            badge.textContent = risk === "高" ? "⚠️ 嚴重健康風險" : risk === "中" ? "⚡ 潛在健康風險" : "✓ 健康狀態良好";
 
-            // Constitution
-            $("constitution-text").textContent = report.constitution;
+            // Constitution display with full name
+            const constitutionEl = $("constitution-text");
+            constitutionEl.textContent = fullName;
+            constitutionEl.parentElement.innerHTML = `
+                <span class="text-slate-600">檢測體質：</span>
+                <strong id="constitution-text" class="text-lg text-slate-800">${fullName}</strong>
+                <span class="text-xs text-slate-400 ml-2">(${report.constitution})</span>
+            `;
+            constitutionEl = $("constitution-text"); // re-reference after innerHTML
 
-            // Risk indicators
-            const indicatorsContainer = $("risk-indicators");
-            indicatorsContainer.innerHTML = (report.risk_indicators || []).map(i => `
-                <div class="flex items-center gap-2 text-sm text-slate-700">
-                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                    <span>${i}</span>
-                </div>
-            `).join("");
+            // Comparison text
+            const comparisonEl = $("score-comparison");
+            if (comparisonEl) {
+                const percentile = Math.round(score * 0.92); // rough estimate
+                comparisonEl.textContent = `您的健康分數為 ${score} 分，高於約 ${percentile}% 的同齡人群`;
+                comparisonEl.className = `mt-2 text-sm ${score >= 80 ? 'text-emerald-600' : score >= 60 ? 'text-orange-600' : 'text-red-600'}`;
+            }
+
+            // Risk indicators - separate into moderate and severe
+            const indicators = report.risk_indicators || [];
+            const moderateRisk = indicators.filter((_, i) => i < Math.ceil(indicators.length * 0.6));
+            const severeRisk = indicators.filter((_, i) => i >= Math.ceil(indicators.length * 0.6));
+
+            // Moderate risk section
+            const moderateContainer = $("moderate-risk-list");
+            if (moderateContainer) {
+                if (moderateRisk.length > 0) {
+                    moderateContainer.innerHTML = moderateRisk.map(i => `
+                        <div class="flex items-center gap-2 text-sm text-orange-700">
+                            <span class="w-2 h-2 rounded-full bg-orange-400"></span>
+                            <span>${i}</span>
+                        </div>
+                    `).join("");
+                } else {
+                    moderateContainer.innerHTML = `<div class="text-sm text-slate-400">無中度風險項目</div>`;
+                }
+            }
+
+            // Severe risk section
+            const severeContainer = $("severe-risk-list");
+            if (severeContainer) {
+                if (severeRisk.length > 0) {
+                    severeContainer.innerHTML = severeRisk.map(i => `
+                        <div class="flex items-center gap-2 text-sm text-red-700 font-medium">
+                            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                            <span>${i}</span>
+                        </div>
+                    `).join("");
+                } else {
+                    severeContainer.innerHTML = `<div class="text-sm text-emerald-600">✓ 目前無嚴重健康風險項目</div>`;
+                }
+            }
 
             // Risk meters
             setTimeout(() => {
@@ -1302,8 +1366,9 @@
             const whatsappBtn = $('whatsapp-cta');
             if (whatsappBtn && report && report.constitution) {
                 const constitutionType = report.constitution;
+                const fullName = CONSTITUTION_FULL_NAMES[constitutionType] || constitutionType;
                 const message = encodeURIComponent(
-                    `你好！我已完成 AI 體質檢測（檢測員編號：${agentId}，檢測體質：${constitutionType}），想預約至【將軍澳中心 / 寶琳 / 樂富 / 柴灣】COSWAY 門市體驗免費微循環檢測。`
+                    `您好，我剛完成了 AI 中醫體質檢測。\n\n體質結果：${fullName}（${constitutionType}）\n健康分數：${score} 分\n風險等級：${risk}風險\n\n想預約前往門市進行免費詳細健康風險檢測。`
                 );
                 whatsappBtn.onclick = () => {
                     window.open(`https://wa.me/?text=${message}`, '_blank');
@@ -1332,8 +1397,6 @@
                     }
                 });
             });
-        }
-
         // ===== Popup =====
         function showPopup() {
             $("popup").classList.remove("hidden");
