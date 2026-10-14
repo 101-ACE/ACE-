@@ -1445,13 +1445,9 @@
             // Setup WhatsApp CTA
             const whatsappBtn = $('whatsapp-cta');
             if (whatsappBtn && report && report.constitution) {
-                const constitutionType = report.constitution;
-                const fullName = CONSTITUTION_FULL_NAMES[constitutionType] || constitutionType;
-                const message = encodeURIComponent(
-                    `您好，我剛完成了 AI 中醫體質檢測。\n\n體質結果：${fullName}（${constitutionType}）\n健康分數：${score} 分\n風險等級：${risk}風險\n\n想預約前往門市進行免費詳細健康風險檢測。`
-                );
                 // 使用後端動態回傳的 inspector_phone，自動去除非數字字元
                 const rawPhone = (data.inspector_phone || '').toString().replace(/\D/g, '');
+                const message = encodeURIComponent('我想預約免費詳細健康風險檢測');
                 const waUrl = rawPhone
                     ? `https://api.whatsapp.com/send?phone=${rawPhone}&text=${message}`
                     : `https://wa.me/?text=${message}`;
