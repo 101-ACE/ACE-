@@ -1437,21 +1437,16 @@
             const storeCards = document.querySelectorAll('.store-card');
             storeCards.forEach(card => {
                 card.addEventListener('click', () => {
-                    const storeName = card.dataset.store;
                     const address = card.dataset.address;
-                    const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-
-                    // Show options: copy address or open Google Maps
-                    if (confirm(`【${storeName}】\n\n地址：${address}\n\n點擊「確定」複製地址，點擊「取消」開啟 Google 地圖`)) {
-                        // Copy address
+                    const mapsUrl = card.dataset.maps;
+                    if (mapsUrl) {
+                        window.open(mapsUrl, '_blank');
+                    } else if (navigator.clipboard) {
                         navigator.clipboard.writeText(address).then(() => {
                             alert('地址已複製到剪貼板！');
                         }).catch(() => {
                             alert('複製失敗，請手動複製：' + address);
                         });
-                    } else {
-                        // Open Google Maps
-                        window.open(googleMapsUrl, '_blank');
                     }
                 });
             });
