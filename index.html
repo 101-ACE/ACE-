@@ -1415,12 +1415,14 @@
             if (whatsappBtn && report && report.constitution) {
                 const constitutionType = report.constitution;
                 const fullName = CONSTITUTION_FULL_NAMES[constitutionType] || constitutionType;
-                const inspectorName = (data.inspector_name || '').trim() || '檢測員';
-                const inspectorPhone = (data.inspector_phone || '').toString().replace(/\D/g, '');
+                // 後端已預設 852 前綴，前端只做最終校驗
+                let inspectorPhone = (data.inspector_phone || '85252706980').toString().replace(/\D/g, '');
+                if (inspectorPhone.startsWith('52706980') && !inspectorPhone.startsWith('852')) {
+                    inspectorPhone = '852' + inspectorPhone;
+                }
+                const inspectorName = (data.inspector_name || '客服專員').trim() || '客服專員';
                 const message = `HI ${inspectorName}，\n我剛完成了 AI 中醫體質檢測\n${fullName}\n想預約你進行免費詳細健康風險檢測。`;
-                const whatsappUrl = inspectorPhone
-                    ? `https://api.whatsapp.com/send?phone=${inspectorPhone}&text=${encodeURIComponent(message)}`
-                    : `https://wa.me/?text=${encodeURIComponent(message)}`;
+                const whatsappUrl = `https://api.whatsapp.com/send?phone=${inspectorPhone}&text=${encodeURIComponent(message)}`;
                 whatsappBtn.onclick = async () => {
                     window.open(whatsappUrl, '_blank');
                     try {

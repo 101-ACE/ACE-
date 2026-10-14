@@ -354,8 +354,9 @@ def find_partner(referral_code: Optional[str]) -> Optional[Dict[str, str]]:
         return None
     return partners.get(normalized)
 
-# 預設聯絡電話（查無檢測員時使用）
-DEFAULT_INSPECTOR_PHONE = os.getenv("DEFAULT_INSPECTOR_PHONE", "85291234567")
+# 預設聯絡電話（查無檢測員時使用，國際格式）
+DEFAULT_INSPECTOR_PHONE = os.getenv("DEFAULT_INSPECTOR_PHONE", "85252706980")
+DEFAULT_INSPECTOR_NAME = os.getenv("DEFAULT_INSPECTOR_NAME", "客服專員")
 
 def find_inspector_phone(referral_code: Optional[str]) -> str:
     """根據 referral_code 查詢對應檢測員電話，找不到則回傳預設值"""
@@ -365,17 +366,19 @@ def find_inspector_phone(referral_code: Optional[str]) -> str:
     return DEFAULT_INSPECTOR_PHONE
 
 def find_inspector_name(referral_code: Optional[str]) -> str:
-    """根據 referral_code 查詢對應檢測員暱稱，找不到則回傳空字串"""
+    """根據 referral_code 查詢對應檢測員暱稱，找不到則回傳預設值"""
     partner = find_partner(referral_code)
     if partner and partner.get("name"):
         return partner["name"]
-    return ""
+    return DEFAULT_INSPECTOR_NAME
 
 # ===== HTML 郵件範本生成 =====
 # ===== Google Sheets 客戶記錄寫入 =====
 def write_customer_record_to_sheet(assessment: Assessment, observations: List[str], contacted: int = 0) -> None:
     """將客戶記錄寫入 Google Sheet「客戶記錄」工作表（11 欄）"""
+    import traceback as tb
     try:
+        logger.info("[SHEET] Starting write for assessment %s (contacted=%s)", assessment.id, contacted)
         from google.oauth2.service_account import Credentials
         import gspread
 
@@ -385,64 +388,76 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
             try:
                 json_data = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
                 creds = Credentials.from_service_account_info(json_data, scopes=["https://www.googleapis.com/auth/spreadsheets"])
+                logger.info("[SHEET] Using SERVICE_ACCOUNT_JSON credential")
             except Exception as e:
-                logger.warning("Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON: %s", e)
+                logger.warning("[SHEET] Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON: %s", e)
         # fallback: 讀取憑證檔案
         if creds is None and os.path.exists(GOOGLE_CREDENTIALS_FILE):
-            creds = Credentials.from_service_account_file(
-                GOOGLE_CREDENTIALS_FILE,
-                scopes=["https://www.googleapis.com/auth/spreadsheets"]
-            )
+            try:
+                creds = Credentials.from_service_account_file(
+                    GOOGLE_CREDENTIALS_FILE,
+                    scopes=["https://www.googleapis.com/auth/spreadsheets"]
+                )
+                logger.info("[SHEET] Using credentials file: %s", GOOGLE_CREDENTIALS_FILE)
+            except Exception as e:
+                logger.warning("[SHEET] Failed to load credentials file: %s", e)
 
         if creds is None:
-            logger.warning("No Google credentials available (set GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_CREDENTIALS_FILE)")
+            logger.error("[SHEET] No Google credentials available (set GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_CREDENTIALS_FILE)")
             return
 
         gc = gspread.authorize(creds)
         sh = gc.open_by_key(GOOGLE_CUSTOMER_SHEET_ID)
         ws = sh.worksheet(GOOGLE_CUSTOMER_SHEET_NAME)
+        logger.info("[SHEET] Connected to sheet: %s", GOOGLE_CUSTOMER_SHEET_NAME)
 
         # 確保表頭存在（11 欄）
         headers = ws.row_values(1)
-        if not headers or headers[0] != "日期及時間":
-            ws.update("A1:K1", [
-                ["日期及時間", "檢測員", "姓名", "聯絡電話", "性別", "年齡", "體質", "觀察項", "分數", "有否聯絡檢測員", "備註"]
-            ])
+        expected_headers = ["日期及時間", "檢測員", "姓名", "聯絡電話", "性別", "年齡", "體質", "觀察項", "分數", "有否聯絡檢測員", "備註"]
+        if not headers or headers[0] != expected_headers[0]:
+            ws.update("A1:K1", [expected_headers])
+            logger.info("[SHEET] Written headers: %s", expected_headers)
 
-        # 格式化觀察項摘要
+        # 格式化觀察項摘要（完整，不限前10項）
         obs_summary = ", ".join(observations) if observations else "-"
 
         # 聯絡狀態
         contacted_status = "有" if contacted else "未"
         notes = "AI網頁檢測"
 
+        # 檢測員顯示：有 referral_code 顯示代碼，否則顯示預設
+        inspector_display = (assessment.referral_code or "預設").strip()
+
         # 11 欄資料
         row_data = [
             [assessment.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if assessment.submitted_at else "-"],
-            [assessment.referral_code or "預設/無"],
+            [inspector_display],
             [assessment.name or "-"],
             [assessment.phone or "-"],
             [assessment.gender or "-"],
             [assessment.age_group or "-"],
-            [f"{assessment.constitution} (分數: {assessment.health_score})"],
+            [assessment.constitution or "-"],
             [obs_summary],
-            [str(assessment.health_score)],
+            [str(assessment.health_score) if assessment.health_score else "-"],
             [contacted_status],
             [notes],
         ]
+        logger.info("[SHEET] Row data: %s", row_data)
         ws.values_append(
             f"'{GOOGLE_CUSTOMER_SHEET_NAME}'!A:K",
             value_input_option="USER_ENTERED",
             body={"values": [row_data[i][0] for i in range(len(row_data))]}
         )
-        logger.info("Customer record written to Google Sheet (11 cols) for assessment %s (contacted=%s)", assessment.id, contacted_status)
+        logger.info("[SHEET] ✅ Customer record written successfully for assessment %s (contacted=%s)", assessment.id, contacted_status)
     except Exception as e:
-        logger.exception("Failed to write customer record to Google Sheet: %s", e)
+        logger.error("[SHEET] ❌ Failed to write customer record to Google Sheet: %s\n%s", e, tb.format_exc())
 
 
 def update_contact_status_in_sheet(assessment_id: str) -> None:
-    """找到 assessment_id 對應的列，將「有否聯絡檢測員」更新為「有」"""
+    """找到最後一行「有否聯絡檢測員」為「未」的列，更新為「有」"""
+    import traceback as tb
     try:
+        logger.info("[SHEET] Updating contact status for assessment %s", assessment_id)
         from google.oauth2.service_account import Credentials
         import gspread
 
@@ -459,30 +474,31 @@ def update_contact_status_in_sheet(assessment_id: str) -> None:
                 scopes=["https://www.googleapis.com/auth/spreadsheets"]
             )
         if creds is None:
+            logger.warning("[SHEET] No credentials for contact status update")
             return
 
         gc = gspread.authorize(creds)
         sh = gc.open_by_key(GOOGLE_CUSTOMER_SHEET_ID)
         ws = sh.worksheet(GOOGLE_CUSTOMER_SHEET_NAME)
 
-        # 讀取所有資料列（跳過表頭）
         all_rows = ws.get_all_values()
+        logger.info("[SHEET] Total rows in sheet: %d", len(all_rows))
+
         if len(all_rows) <= 1:
+            logger.warning("[SHEET] No data rows found")
             return
 
-        # 找到該 assessment_id 所在的列（假設 C 欄=姓名，需進一步比對）
-        # 改為讀取所有行並找 submitted_at + name 匹配
-        # 簡單做法：從最後一列往前找，更新「有否聯絡檢測員」為「有」
-        # 因為 submit 時是最新寫入的行，我們直接找最後一行且「有否聯絡檢測員」為「未」的行
+        # 從最後一行往前找「有否聯絡檢測員」=「未」的列
         for row_idx in range(len(all_rows) - 1, 0, -1):
             row = all_rows[row_idx]
             if len(row) >= 10 and row[9] == "未":
-                ws.update(f"F{row_idx + 1}", [["有"]])  # J 欄 = index 9 (0-based) → 實際是第10欄
-                logger.info("Updated contact status to 有 at row %d", row_idx + 1)
+                ws.update(f"J{row_idx + 1}", [["有"]])
+                logger.info("[SHEET] ✅ Updated contact status to 有 at row %d", row_idx + 1)
                 return
-        logger.info("No matching row found to update contact status for assessment %s", assessment_id)
+
+        logger.warning("[SHEET] No row with '未' found for contact update")
     except Exception as e:
-        logger.exception("Failed to update contact status in Google Sheet: %s", e)
+        logger.error("[SHEET] ❌ Failed to update contact status: %s\n%s", e, tb.format_exc())
 
 
 def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
