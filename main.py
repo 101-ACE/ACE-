@@ -79,6 +79,7 @@ class Assessment(Base):
     email_sent = Column(Integer, default=0)
     partner_email = Column(String, nullable=True)
     partner_name = Column(String, nullable=True)
+    contacted = Column(Integer, default=0)  # 1 = 已聯絡檢測員
 
 Base.metadata.create_all(bind=engine)
 
@@ -363,9 +364,16 @@ def find_inspector_phone(referral_code: Optional[str]) -> str:
         return partner["phone"]
     return DEFAULT_INSPECTOR_PHONE
 
+def find_inspector_name(referral_code: Optional[str]) -> str:
+    """根據 referral_code 查詢對應檢測員暱稱，找不到則回傳空字串"""
+    partner = find_partner(referral_code)
+    if partner and partner.get("name"):
+        return partner["name"]
+    return ""
+
 # ===== HTML 郵件範本生成 =====
 # ===== Google Sheets 客戶記錄寫入 =====
-def write_customer_record_to_sheet(assessment: Assessment, observations: List[str]) -> None:
+def write_customer_record_to_sheet(assessment: Assessment, observations: List[str], contacted: int = 0) -> None:
     """將客戶記錄寫入 Google Sheet「客戶記錄」工作表"""
     try:
         from google.oauth2.service_account import Credentials
@@ -402,8 +410,8 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
         # 格式化觀察項摘要
         obs_summary = ", ".join(observations[:10]) if observations else "-"
 
-        # 聯絡狀態與備註
-        contacted = "否"
+        # 聯絡狀態：1=已聯絡(有), 0=未聯絡(未)
+        contacted_status = "有" if contacted else "未"
         notes = f"檢測員編號: {assessment.referral_code or '-'} | 門市預約待跟進"
 
         # 使用 values_append 批次寫入（更穩定，支援批量操作）
@@ -413,7 +421,7 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
             [f"{assessment.constitution}"],
             [obs_summary],
             [str(assessment.health_score)],
-            [contacted],
+            [contacted_status],
             [notes],
         ]
         # values_append 接受 2D 陣列，一次寫入一整行
@@ -422,7 +430,7 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
             value_input_option="USER_ENTERED",
             body={"values": [row_data[i][0] for i in range(len(row_data))]}
         )
-        logger.info("Customer record written to Google Sheet via values_append for assessment %s", assessment.id)
+        logger.info("Customer record written to Google Sheet via values_append for assessment %s (contacted=%s)", assessment.id, contacted_status)
     except Exception as e:
         logger.exception("Failed to write customer record to Google Sheet: %s", e)
 
@@ -642,18 +650,20 @@ def submit_questionnaire(
                 )
                 logger.info("Email background task scheduled for %s (to: %s)", record.id, target_email)
             
-            # 寫入 Google Sheets 客戶記錄（背景任務，不阻塞回應）
+            # 寫入 Google Sheets 客戶記錄（背景任務，不阻塞回應；initial contacted=0）
             symptoms = data.answers.get("symptoms", [])
-            background_tasks.add_task(write_customer_record_to_sheet, record, symptoms)
+            background_tasks.add_task(write_customer_record_to_sheet, record, symptoms, 0)
             logger.info("Google Sheets background task scheduled for %s", record.id)
             
             # 返回完整報告 JSON
             inspector_phone = find_inspector_phone(data.referral_code)
+            inspector_name = find_inspector_name(data.referral_code)
             return {
                 "success": True,
                 "assessment_id": record.id,
                 "referral_code": record.referral_code,
                 "inspector_phone": inspector_phone,
+                "inspector_name": inspector_name,
                 "report": {
                     "constitution": analysis["constitution"],
                     "score": analysis["score"],
@@ -699,6 +709,23 @@ def get_report(assessment_id: str):
             risk_indicators=json.loads(record.risk_indicators) if record.risk_indicators else [],
             recommendations=get_recommendations(record.constitution),
         )
+    finally:
+        db.close()
+
+@app.post("/api/contact/update")
+def update_contact_status(data: BookingSubmit):
+    """用戶點擊 WhatsApp 按鈕後，標記為已聯絡檢測員"""
+    db: Session = SessionLocal()
+    try:
+        record = db.query(Assessment).filter(Assessment.id == data.assessment_id).first()
+        if not record:
+            raise HTTPException(status_code=404, detail="未找到檢測記錄")
+        record.contacted = 1
+        db.commit()
+        # 重新寫入 Sheet 更新聯絡狀態
+        symptoms = json.loads(record.answers).get("symptoms", [])
+        write_customer_record_to_sheet(record, symptoms, 1)
+        return {"success": True, "message": "聯絡狀態已更新"}
     finally:
         db.close()
 
