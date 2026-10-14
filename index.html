@@ -1290,7 +1290,7 @@
             badge.textContent = risk === "高" ? "⚠️ 嚴重健康風險" : risk === "中" ? "⚡ 潛在健康風險" : "✓ 健康狀態良好";
 
             // Constitution display with full name
-            const constitutionEl = $("constitution-text");
+            let constitutionEl = $("constitution-text");
             constitutionEl.textContent = fullName;
             constitutionEl.parentElement.innerHTML = `
                 <span class="text-slate-600">檢測體質：</span>
@@ -1367,7 +1367,7 @@
             lucide.createIcons();
 
             // Update coupon agent ID from submitted referral_code
-            const referralCode = $("referral_code") ? $("referral_code").value.trim() : '';
+            const referralCode = (data.referral_code || ($("referral_code") ? $("referral_code").value.trim() : ''));
             const agentId = referralCode || '預設/無';
             const couponAgentId = $('coupon-agent-id');
             if (couponAgentId) couponAgentId.textContent = `檢測員：${agentId}`;

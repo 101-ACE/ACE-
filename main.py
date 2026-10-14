@@ -635,6 +635,7 @@ def submit_questionnaire(
             return {
                 "success": True,
                 "assessment_id": record.id,
+                "referral_code": record.referral_code,
                 "report": {
                     "constitution": analysis["constitution"],
                     "score": analysis["score"],
