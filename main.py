@@ -374,7 +374,7 @@ def find_inspector_name(referral_code: Optional[str]) -> str:
 # ===== HTML 郵件範本生成 =====
 # ===== Google Sheets 客戶記錄寫入 =====
 def write_customer_record_to_sheet(assessment: Assessment, observations: List[str], contacted: int = 0) -> None:
-    """將客戶記錄寫入 Google Sheet「客戶記錄」工作表"""
+    """將客戶記錄寫入 Google Sheet「客戶記錄」工作表（11 欄）"""
     try:
         from google.oauth2.service_account import Credentials
         import gspread
@@ -402,37 +402,87 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
         sh = gc.open_by_key(GOOGLE_CUSTOMER_SHEET_ID)
         ws = sh.worksheet(GOOGLE_CUSTOMER_SHEET_NAME)
 
-        # 確保表頭存在
+        # 確保表頭存在（11 欄）
         headers = ws.row_values(1)
         if not headers or headers[0] != "日期及時間":
-            ws.update("A1:G1", [["日期及時間", "檢測員", "體質", "觀察項", "分數", "有否聯絡檢測員", "備註"]])
+            ws.update("A1:K1", [
+                ["日期及時間", "檢測員", "姓名", "聯絡電話", "性別", "年齡", "體質", "觀察項", "分數", "有否聯絡檢測員", "備註"]
+            ])
 
         # 格式化觀察項摘要
-        obs_summary = ", ".join(observations[:10]) if observations else "-"
+        obs_summary = ", ".join(observations) if observations else "-"
 
-        # 聯絡狀態：1=已聯絡(有), 0=未聯絡(未)
+        # 聯絡狀態
         contacted_status = "有" if contacted else "未"
-        notes = f"檢測員編號: {assessment.referral_code or '-'} | 門市預約待跟進"
+        notes = "AI網頁檢測"
 
-        # 使用 values_append 批次寫入（更穩定，支援批量操作）
+        # 11 欄資料
         row_data = [
             [assessment.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if assessment.submitted_at else "-"],
-            [assessment.referral_code or "-"],
-            [f"{assessment.constitution}"],
+            [assessment.referral_code or "預設/無"],
+            [assessment.name or "-"],
+            [assessment.phone or "-"],
+            [assessment.gender or "-"],
+            [assessment.age_group or "-"],
+            [f"{assessment.constitution} (分數: {assessment.health_score})"],
             [obs_summary],
             [str(assessment.health_score)],
             [contacted_status],
             [notes],
         ]
-        # values_append 接受 2D 陣列，一次寫入一整行
         ws.values_append(
-            f"'{GOOGLE_CUSTOMER_SHEET_NAME}'!A:G",
+            f"'{GOOGLE_CUSTOMER_SHEET_NAME}'!A:K",
             value_input_option="USER_ENTERED",
             body={"values": [row_data[i][0] for i in range(len(row_data))]}
         )
-        logger.info("Customer record written to Google Sheet via values_append for assessment %s (contacted=%s)", assessment.id, contacted_status)
+        logger.info("Customer record written to Google Sheet (11 cols) for assessment %s (contacted=%s)", assessment.id, contacted_status)
     except Exception as e:
         logger.exception("Failed to write customer record to Google Sheet: %s", e)
+
+
+def update_contact_status_in_sheet(assessment_id: str) -> None:
+    """找到 assessment_id 對應的列，將「有否聯絡檢測員」更新為「有」"""
+    try:
+        from google.oauth2.service_account import Credentials
+        import gspread
+
+        creds = None
+        if GOOGLE_SERVICE_ACCOUNT_JSON:
+            try:
+                json_data = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+                creds = Credentials.from_service_account_info(json_data, scopes=["https://www.googleapis.com/auth/spreadsheets"])
+            except Exception:
+                pass
+        if creds is None and os.path.exists(GOOGLE_CREDENTIALS_FILE):
+            creds = Credentials.from_service_account_file(
+                GOOGLE_CREDENTIALS_FILE,
+                scopes=["https://www.googleapis.com/auth/spreadsheets"]
+            )
+        if creds is None:
+            return
+
+        gc = gspread.authorize(creds)
+        sh = gc.open_by_key(GOOGLE_CUSTOMER_SHEET_ID)
+        ws = sh.worksheet(GOOGLE_CUSTOMER_SHEET_NAME)
+
+        # 讀取所有資料列（跳過表頭）
+        all_rows = ws.get_all_values()
+        if len(all_rows) <= 1:
+            return
+
+        # 找到該 assessment_id 所在的列（假設 C 欄=姓名，需進一步比對）
+        # 改為讀取所有行並找 submitted_at + name 匹配
+        # 簡單做法：從最後一列往前找，更新「有否聯絡檢測員」為「有」
+        # 因為 submit 時是最新寫入的行，我們直接找最後一行且「有否聯絡檢測員」為「未」的行
+        for row_idx in range(len(all_rows) - 1, 0, -1):
+            row = all_rows[row_idx]
+            if len(row) >= 10 and row[9] == "未":
+                ws.update(f"F{row_idx + 1}", [["有"]])  # J 欄 = index 9 (0-based) → 實際是第10欄
+                logger.info("Updated contact status to 有 at row %d", row_idx + 1)
+                return
+        logger.info("No matching row found to update contact status for assessment %s", assessment_id)
+    except Exception as e:
+        logger.exception("Failed to update contact status in Google Sheet: %s", e)
 
 
 def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
@@ -722,9 +772,8 @@ def update_contact_status(data: BookingSubmit):
             raise HTTPException(status_code=404, detail="未找到檢測記錄")
         record.contacted = 1
         db.commit()
-        # 重新寫入 Sheet 更新聯絡狀態
-        symptoms = json.loads(record.answers).get("symptoms", [])
-        write_customer_record_to_sheet(record, symptoms, 1)
+        # 更新 Sheet 最後一行的「有否聯絡檢測員」為「有」
+        background_tasks.add_task(update_contact_status_in_sheet, data.assessment_id)
         return {"success": True, "message": "聯絡狀態已更新"}
     finally:
         db.close()
