@@ -49,8 +49,8 @@ SMTP_ENABLED = bool(SMTP_PASSWORD)
 GOOGLE_SHEET_ID = "1iZaN0AKtQT6d9zFc_K7tmWjN15q2WpytAN26kxu32H4"
 GOOGLE_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv"
 
-# Google Sheet 設定 - 客戶記錄 (自動寫入)
-GOOGLE_CUSTOMER_SHEET_ID = "18mTJy0wUPdvNSc-CM-o2XtDrKICpn2XSqFEmBSaC6ww"
+# Google Sheet 設定 - 客戶記錄 (自動寫入，使用同一份 Sheet 的不同分頁)
+GOOGLE_CUSTOMER_SHEET_ID = "1iZaN0AKtQT6d9zFc_K7tmWjN15q2WpytAN26kxu32H4"
 GOOGLE_CUSTOMER_SHEET_NAME = "客戶記錄"
 GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS", "credentials.json")
 GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "")
@@ -396,31 +396,29 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
 
         # 確保表頭存在
         headers = ws.row_values(1)
-        if not headers or headers[0] != "提交時間":
-            ws.update("A1:I1", [["提交時間", "客戶姓名", "聯絡電話", "性別", "年齡層", "檢測人員編號", "觀察項摘要", "主體質結果", "健康風險與建議"]])
+        if not headers or headers[0] != "日期及時間":
+            ws.update("A1:G1", [["日期及時間", "檢測員", "體質", "觀察項", "分數", "有否聯絡檢測員", "備註"]])
 
         # 格式化觀察項摘要
         obs_summary = ", ".join(observations[:10]) if observations else "-"
 
-        # 格式化建議
-        recs = get_recommendations(assessment.constitution)
-        rec_summary = "; ".join(recs[:3]) if recs else "-"
+        # 聯絡狀態與備註
+        contacted = "否"
+        notes = f"檢測員編號: {assessment.referral_code or '-'} | 門市預約待跟進"
 
         # 使用 values_append 批次寫入（更穩定，支援批量操作）
         row_data = [
             [assessment.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if assessment.submitted_at else "-"],
-            [assessment.name],
-            [assessment.phone],
-            [assessment.gender],
-            [assessment.age_group],
             [assessment.referral_code or "-"],
+            [f"{assessment.constitution}"],
             [obs_summary],
-            [f"{assessment.constitution} (分數: {assessment.health_score})"],
-            [rec_summary],
+            [str(assessment.health_score)],
+            [contacted],
+            [notes],
         ]
         # values_append 接受 2D 陣列，一次寫入一整行
         ws.values_append(
-            f"'{GOOGLE_CUSTOMER_SHEET_NAME}'!A:I",
+            f"'{GOOGLE_CUSTOMER_SHEET_NAME}'!A:G",
             value_input_option="USER_ENTERED",
             body={"values": [row_data[i][0] for i in range(len(row_data))]}
         )
