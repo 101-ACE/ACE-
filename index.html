@@ -949,7 +949,7 @@
                     </p>
                 </div>
                 <div class="mb-3">
-                    <img src="images/微電流檢測報告.png" alt="微電流檢測報告" class="w-full rounded-xl shadow-sm" loading="lazy" decoding="async">
+                    <img id="coupon-card-img" src="images/微電流檢測報告.png" alt="微電流檢測報告" class="w-full rounded-xl shadow-sm" loading="lazy" decoding="async">
                 </div>
                 <button id="download-coupon" class="w-full py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition flex items-center justify-center gap-2">
                     <i data-lucide="download" class="w-4 h-4"></i>
@@ -1392,52 +1392,20 @@
             const couponExpiry = $('coupon-expiry');
             if (couponExpiry) couponExpiry.textContent = `有效期至 ${expiryStr}`;
 
-            // Download coupon as image using html2canvas
+            // Download coupon as image — direct file download
             const downloadBtn = $('download-coupon');
             if (downloadBtn) {
-                downloadBtn.onclick = async () => {
-                    const couponEl = document.querySelector('.bg-white.rounded-2xl');
-                    if (!couponEl) {
-                        alert('找不到體驗券區塊');
-                        return;
-                    }
-                    try {
-                        // 使用原生 Canvas 繪製（避免外部依賴）
-                        const img = couponEl.querySelector('img');
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        
-                        if (img && img.complete) {
-                            canvas.width = img.naturalWidth;
-                            canvas.height = img.naturalHeight;
-                            ctx.drawImage(img, 0, 0);
-                        } else {
-                            // Fallback: 建立純文字圖片
-                            canvas.width = 800;
-                            canvas.height = 400;
-                            ctx.fillStyle = '#1e40af';
-                            ctx.fillRect(0, 0, 800, 400);
-                            ctx.fillStyle = '#ffffff';
-                            ctx.font = 'bold 32px sans-serif';
-                            ctx.textAlign = 'center';
-                            ctx.fillText('專屬免費健康檢測體驗券', 400, 120);
-                            ctx.font = '20px sans-serif';
-                            ctx.fillText('微電流磁共檢測', 400, 200);
-                            ctx.fillText('免費預約進行微電流磁共檢測', 400, 280);
-                        }
-                        
-                        canvas.toBlob((blob) => {
-                            if (blob) {
-                                const url = URL.createObjectURL(blob);
-                                const link = document.createElement('a');
-                                link.href = url;
-                                link.download = '專屬健康檢測體驗券.png';
-                                link.click();
-                                URL.revokeObjectURL(url);
-                            }
-                        }, 'image/png');
-                    } catch (err) {
-                        alert('下载失敗：' + err.message);
+                downloadBtn.onclick = () => {
+                    const imgEl = document.querySelector('#coupon-card-img');
+                    if (imgEl && imgEl.src) {
+                        const a = document.createElement('a');
+                        a.href = imgEl.src;
+                        a.download = '專屬健康檢測體驗券.png';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    } else {
+                        alert('找不到體驗券圖片');
                     }
                 };
             }
