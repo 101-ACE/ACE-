@@ -302,21 +302,29 @@ def parse_sheet_csv(text: str) -> Dict[str, Dict[str, str]]:
     id_idx = next((i for i, h in enumerate(header) if "推薦人號碼" in h or "檢測人員編號" in h), None)
     email_idx = next((i for i, h in enumerate(header) if h == "電郵"), None)
     name_idx = next((i for i, h in enumerate(header) if h == "你的暱稱"), None)
+    phone_idx = next((i for i, h in enumerate(header) if "電話" in h), None)
     if id_idx is None or email_idx is None or name_idx is None:
         return partners
     for line in lines[1:]:
         cells = [cell.strip() for cell in line.split(",")]
-        if len(cells) <= max(id_idx, email_idx, name_idx):
+        max_idx = max(id_idx, email_idx, name_idx)
+        if phone_idx is not None:
+            max_idx = max(max_idx, phone_idx)
+        if len(cells) <= max_idx:
             continue
         raw_id = cells[id_idx]
         email = cells[email_idx]
         name = cells[name_idx]
+        phone = cells[phone_idx] if phone_idx is not None and phone_idx < len(cells) else ""
         if not raw_id or not email:
             continue
         normalized = normalize_partner_id(raw_id)
         if not normalized:
             continue
-        partners[normalized] = {"name": name, "email": email}
+        entry: Dict[str, str] = {"name": name, "email": email}
+        if phone:
+            entry["phone"] = phone
+        partners[normalized] = entry
     return partners
 
 def refresh_partners_from_sheet() -> Dict[str, Dict[str, str]]:
@@ -344,6 +352,16 @@ def find_partner(referral_code: Optional[str]) -> Optional[Dict[str, str]]:
     if not normalized:
         return None
     return partners.get(normalized)
+
+# 預設聯絡電話（查無檢測員時使用）
+DEFAULT_INSPECTOR_PHONE = os.getenv("DEFAULT_INSPECTOR_PHONE", "85291234567")
+
+def find_inspector_phone(referral_code: Optional[str]) -> str:
+    """根據 referral_code 查詢對應檢測員電話，找不到則回傳預設值"""
+    partner = find_partner(referral_code)
+    if partner and partner.get("phone"):
+        return partner["phone"]
+    return DEFAULT_INSPECTOR_PHONE
 
 # ===== HTML 郵件範本生成 =====
 # ===== Google Sheets 客戶記錄寫入 =====
@@ -632,10 +650,12 @@ def submit_questionnaire(
             logger.info("Google Sheets background task scheduled for %s", record.id)
             
             # 返回完整報告 JSON
+            inspector_phone = find_inspector_phone(data.referral_code)
             return {
                 "success": True,
                 "assessment_id": record.id,
                 "referral_code": record.referral_code,
+                "inspector_phone": inspector_phone,
                 "report": {
                     "constitution": analysis["constitution"],
                     "score": analysis["score"],
