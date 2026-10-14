@@ -958,7 +958,7 @@
                 <div class="flex items-center justify-center gap-3 text-xs text-slate-400 flex-wrap">
                     <span id="coupon-agent-id">檢測員：未填寫</span>
                     <span>|</span>
-                    <span id="coupon-expiry">有效期至 2025-12-31</span>
+                    <span id="coupon-expiry">有效期至 2026-12-31</span>
                 </div>
             </div>
         </div>
@@ -1366,39 +1366,82 @@
 
             lucide.createIcons();
 
-            // Update coupon agent ID
-            const urlParams = new URLSearchParams(window.location.search);
-            const agentId = urlParams.get('id') || urlParams.get('agent_id') || '未填寫';
+            // Update coupon agent ID from submitted referral_code
+            const referralCode = $("referral_code") ? $("referral_code").value.trim() : '';
+            const agentId = referralCode || '預設/無';
             const couponAgentId = $('coupon-agent-id');
             if (couponAgentId) couponAgentId.textContent = `檢測員：${agentId}`;
 
-            // Dynamic expiry date calculation
+            // Dynamic expiry date calculation (uses current system date)
             const now = new Date();
-            const day = now.getDate();
-            const month = now.getMonth();
-            const year = now.getFullYear();
+            const currentDay = now.getDate();
+            const currentMonth = now.getMonth(); // 0-indexed
+            const currentYear = now.getFullYear();
             let expiryDate;
-            if (day <= 15) {
+            if (currentDay <= 15) {
                 // 1~15日 → 當月最後一天
-                expiryDate = new Date(year, month + 1, 0);
+                expiryDate = new Date(currentYear, currentMonth + 1, 0);
             } else {
                 // 16~31日 → 下個月15號
-                expiryDate = new Date(year, month + 1, 15);
+                // 若當月為 12 月，年份自動 +1
+                let nextMonth = currentMonth + 1;
+                let nextYear = currentYear;
+                if (nextMonth > 11) {
+                    nextMonth = 0;
+                    nextYear = currentYear + 1;
+                }
+                expiryDate = new Date(nextYear, nextMonth, 15);
             }
             const expiryStr = `${expiryDate.getFullYear()}年${expiryDate.getMonth() + 1}月${expiryDate.getDate()}日`;
             const couponExpiry = $('coupon-expiry');
             if (couponExpiry) couponExpiry.textContent = `有效期至 ${expiryStr}`;
 
-            // Download coupon image
+            // Download coupon as image using html2canvas
             const downloadBtn = $('download-coupon');
             if (downloadBtn) {
-                downloadBtn.onclick = () => {
-                    const img = document.querySelector('.bg-white.rounded-2xl img');
-                    if (img) {
-                        const link = document.createElement('a');
-                        link.href = img.src;
-                        link.download = '微電流磁共檢測體驗券.png';
-                        link.click();
+                downloadBtn.onclick = async () => {
+                    const couponEl = document.querySelector('.bg-white.rounded-2xl');
+                    if (!couponEl) {
+                        alert('找不到體驗券區塊');
+                        return;
+                    }
+                    try {
+                        // 使用原生 Canvas 繪製（避免外部依賴）
+                        const img = couponEl.querySelector('img');
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        if (img && img.complete) {
+                            canvas.width = img.naturalWidth;
+                            canvas.height = img.naturalHeight;
+                            ctx.drawImage(img, 0, 0);
+                        } else {
+                            // Fallback: 建立純文字圖片
+                            canvas.width = 800;
+                            canvas.height = 400;
+                            ctx.fillStyle = '#1e40af';
+                            ctx.fillRect(0, 0, 800, 400);
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 32px sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.fillText('專屬免費健康檢測體驗券', 400, 120);
+                            ctx.font = '20px sans-serif';
+                            ctx.fillText('微電流磁共檢測', 400, 200);
+                            ctx.fillText('免費預約進行微電流磁共檢測', 400, 280);
+                        }
+                        
+                        canvas.toBlob((blob) => {
+                            if (blob) {
+                                const url = URL.createObjectURL(blob);
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.download = '專屬健康檢測體驗券.png';
+                                link.click();
+                                URL.revokeObjectURL(url);
+                            }
+                        }, 'image/png');
+                    } catch (err) {
+                        alert('下载失敗：' + err.message);
                     }
                 };
             }
