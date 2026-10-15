@@ -331,6 +331,7 @@ def parse_sheet_csv(text: str) -> Dict[str, Dict[str, str]]:
     return partners
 
 def refresh_partners_from_sheet() -> Dict[str, Dict[str, str]]:
+    global PARTNERS_REFRESHED_AT
     try:
         resp = requests.get(GOOGLE_SHEET_CSV_URL, timeout=15)
         if resp.status_code == 200 and resp.text.strip():
