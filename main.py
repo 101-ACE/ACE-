@@ -47,6 +47,11 @@ ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "acesc01gp@gmail.com")
 # 判斷 SMTP 是否可實際使用（密碼未配置時視為未啟用）
 SMTP_ENABLED = bool(SMTP_PASSWORD)
 
+# ===== CRITICAL: 密碼缺失偵測 =====
+if not SMTP_PASSWORD:
+    print("[CRITICAL] Missing Gmail App Password! Set GMAIL_APP_PASSWORD or SMTP_PASSWORD environment variable.")
+    logger.critical("[CRITICAL] Missing Gmail App Password! Email will NOT be sent.")
+
 # Google Sheet 設定 - 拍檔名單
 GOOGLE_SHEET_ID = "1iZaN0AKtQT6d9zFc_K7tmWjN15q2WpytAN26kxu32H4"
 GOOGLE_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv"
@@ -503,8 +508,11 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
         logger.info("[SHEET] ✅ Customer record written successfully for assessment %s (contacted=%s)", assessment.id, contacted_status)
         print(f"[SHEET_LOG] ✅ 寫入客戶記錄成功 | assessment_id={assessment.id} | 體質={assessment.constitution} | 檢測員={inspector_display}")
     except Exception as e:
-        logger.error("[SHEET] ❌ Failed to write customer record to Google Sheet: %s\n%s", e, tb.format_exc())
-        print(f"[SHEET_LOG] ❌ 寫入客戶記錄失敗 | assessment_id={assessment.id} | 錯誤: {e}")
+        _sheet_tb = __import__('traceback').format_exc()
+        logger.error("[SHEET] ❌ Failed to write customer record: %s\n%s", e, _sheet_tb)
+        print(f"[SHEET_LOG] ❌ 寫入客戶記錄失敗 | assessment_id={assessment.id}")
+        print(f"[SHEET_LOG]    錯誤: {e}")
+        print(f"[SHEET_LOG]    完整 traceback:\n{_sheet_tb}")
 
 
 def update_contact_status_in_sheet(assessment_id: str) -> None:
@@ -701,20 +709,27 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
         return {"success": True, "method": "email", "to": partner_email}
     except socket.timeout:
         print(f"[EMAIL_LOG] ❌ SMTP 連線超時（10秒）| 目標: {partner_email} | {SMTP_SERVER}:{SMTP_PORT}")
+        _email_tb = __import__('traceback').format_exc()
         logger.exception("SMTP connection timeout for assessment %s", assessment.id)
+        print(f"[EMAIL_LOG]    完整 traceback:\n{_email_tb}")
         return {"success": False, "error": "SMTP connection timeout (10s)"}
     except smtplib.SMTPAuthenticationError as e:
-        print(f"[EMAIL_LOG] ❌ SMTP 認證失敗 | 寄件者: {SENDER_EMAIL} | 錯誤: {e}")
-        logger.exception("SMTP authentication failed for assessment %s: {e}", assessment.id)
+        print(f"[EMAIL_LOG] ❌ SMTP 認證失敗 | 寄件者: {SENDER_EMAIL} | 收件者: {partner_email} | 錯誤: {e}")
+        _email_tb = __import__('traceback').format_exc()
+        logger.exception("SMTP authentication failed for assessment %s: %s", assessment.id, e)
+        print(f"[EMAIL_LOG]    完整 traceback:\n{_email_tb}")
         return {"success": False, "error": f"SMTPAuthenticationError: {e}"}
     except smtplib.SMTPConnectError as e:
         print(f"[EMAIL_LOG] ❌ SMTP 連線失敗 | 目標: {partner_email} | 錯誤: {e}")
-        logger.exception("SMTP connect failed for assessment %s: {e}", assessment.id)
+        _email_tb = __import__('traceback').format_exc()
+        logger.exception("SMTP connect failed for assessment %s: %s", assessment.id, e)
+        print(f"[EMAIL_LOG]    完整 traceback:\n{_email_tb}")
         return {"success": False, "error": f"SMTPConnectError: {e}"}
     except Exception as e:
-        print(f"[EMAIL_LOG] ❌ 郵件發送失敗 | 目標: {partner_email} | 錯誤: {e}")
-        print(f"[EMAIL_LOG]    完整 traceback:\n{tb.format_exc()}")
+        print(f"[EMAIL_LOG] ❌ 郵件發送失敗 | 寄件者: {SENDER_EMAIL} | 收件者: {partner_email} | 錯誤: {e}")
+        _email_tb = __import__('traceback').format_exc()
         logger.exception("Failed to send email for assessment %s: %s", assessment.id, e)
+        print(f"[EMAIL_LOG]    完整 traceback:\n{_email_tb}")
         return {"success": False, "error": str(e)}
 
 # ===== Admin Email Fallback =====
@@ -806,33 +821,52 @@ def submit_questionnaire(
             db.commit()
             db.refresh(record)
             
-            # 準備 Email 發送任務（非同步背景任務）
+            # 準備推薦建議
             recommendations = get_recommendations(analysis["constitution"])
-
-            # 【Step 1】同步寫入 Google Sheet 客戶記錄（確保不阻塞回應）
             symptoms = data.answers.get("symptoms", [])
+
+            # ═══════════════════════════════════════════════════════════
+            # Step A: 同步寫入 Google Sheet 客戶記錄
+            # ═══════════════════════════════════════════════════════════
             try:
                 write_customer_record_to_sheet(record, symptoms, 0)
-                logger.info("[SHEET] Synchronous write completed for %s", record.id)
-            except Exception as e:
-                logger.warning("[SHEET] Synchronous write failed (non-fatal): %s", e)
+                sheet_result = "success"
+            except Exception as _sheet_e:
+                _sheet_tb = __import__('traceback').format_exc()
+                logger.error("[SHEET] Synchronous write FAILED (non-fatal): %s\n%s", _sheet_e, _sheet_tb)
+                print(f"[SHEET_LOG] ❌ 寫入客戶記錄失敗（非致命，繼續執行）")
+                print(f"[SHEET_LOG]    錯誤: {_sheet_e}")
+                print(f"[SHEET_LOG]    完整 traceback:\n{_sheet_tb}")
+                sheet_result = f"error: {_sheet_e}"
 
-            # 【Step 2】非同步發送 Email（使用 BackgroundTasks，不阻塞回應）
+            # ═══════════════════════════════════════════════════════════
+            # Step B: 同步發送 Email（確保錯誤可見）
+            # ═══════════════════════════════════════════════════════════
             inspector_email = find_inspector_email(data.referral_code)
-            email_target = inspector_email  # 此函數永不回傳 None
+            email_target = inspector_email
+            email_status = "skipped"
+            email_result_detail = ""
 
             if SMTP_ENABLED:
-                background_tasks.add_task(
-                    send_email_report,
-                    inspector_email,
-                    record,
-                    recommendations,
-                    "【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
-                )
-                logger.info("Email background task scheduled for %s (to: %s)", record.id, inspector_email)
-                email_status = "queued"
+                try:
+                    _email_result = send_email_report(
+                        inspector_email,
+                        record,
+                        recommendations,
+                        "【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
+                    )
+                    email_status = "sent" if _email_result.get("success") else "failed"
+                    email_result_detail = _email_result.get("error", "")
+                except Exception as _email_e:
+                    _email_tb = __import__('traceback').format_exc()
+                    logger.error("[EMAIL] Synchronous send FAILED (non-fatal): %s\n%s", _email_e, _email_tb)
+                    print(f"[EMAIL_LOG] ❌ 同步發送郵件失敗（非致命，繼續執行）")
+                    print(f"[EMAIL_LOG]    錯誤: {_email_e}")
+                    print(f"[EMAIL_LOG]    完整 traceback:\n{_email_tb}")
+                    email_status = "exception"
+                    email_result_detail = str(_email_e)
             else:
-                print(f"[EMAIL_LOG] ⚠️ SMTP 未配置，跳過郵件發送 | assessment_id={record.id}")
+                print(f"[EMAIL_LOG] ⚠️ SMTP 未配置（SMTP_PASSWORD 為空），跳過郵件發送 | assessment_id={record.id}")
                 logger.info("SMTP not configured; skip email for assessment %s", record.id)
                 email_status = "skipped (SMTP disabled)"
             
