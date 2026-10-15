@@ -655,31 +655,58 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
     </html>
     """
 
-# ===== Email 推播服務（靜默通知 + Graceful Fallback） =====
+# ===== Email 推播服務（詳細日誌 + 完整 traceback 輸出） =====
 def send_email_report(partner_email: str, assessment: Assessment, recommendations: List[str], subject: str = None) -> Dict[str, Any]:
+    import traceback as tb
     if not partner_email:
+        print(f"[EMAIL_DEBUG] ❌ No partner email mapped for assessment {assessment.id}")
         logger.info("No partner email mapped for assessment %s", assessment.id)
         return {"success": False, "error": "No partner email"}
     if not SMTP_ENABLED:
+        print(f"[EMAIL_DEBUG] ⚠️ SMTP not configured (SMTP_PASSWORD empty); skip sending email for assessment {assessment.id} to {partner_email}")
         logger.info("SMTP not configured; skip sending email for assessment %s to %s", assessment.id, partner_email)
         return {"success": False, "error": "SMTP not configured"}
+
     # 若未指定主旨，使用預設標題
     if subject is None:
         subject = f"【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
+
+    print(f"[EMAIL_DEBUG] 📧 準備發送郵件")
+    print(f"[EMAIL_DEBUG]    收件人: {partner_email}")
+    print(f"[EMAIL_DEBUG]    寄件人: {SENDER_EMAIL}")
+    print(f"[EMAIL_DEBUG]    SMTP: {SMTP_SERVER}:{SMTP_PORT}")
+    print(f"[EMAIL_DEBUG]    主旨: {subject}")
+    print(f"[EMAIL_DEBUG]    客戶: {assessment.name} ({assessment.phone})")
+    print(f"[EMAIL_DEBUG]    體質: {assessment.constitution} 分數: {assessment.health_score}")
+
     html = build_email_html(assessment, recommendations)
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = SENDER_EMAIL
     msg["To"] = partner_email
     msg.attach(MIMEText(html, "html", "utf-8"))
+
     try:
+        print(f"[EMAIL_DEBUG] 🔌 SMTP 連線中... ({SMTP_SERVER}:{SMTP_PORT})")
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.set_debuglevel(1)  # 啟用 SMTP 通訊協定日誌
             server.starttls()
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
             server.sendmail(SENDER_EMAIL, [partner_email], msg.as_string())
+        print(f"[EMAIL_DEBUG] ✅ 郵件發送成功 → {partner_email}")
         logger.info("Email sent for assessment %s to %s (subject: %s)", assessment.id, partner_email, subject)
         return {"success": True, "method": "email", "to": partner_email}
+    except smtplib.SMTPAuthenticationError as e:
+        print(f"[EMAIL_DEBUG] ❌ SMTP 認證失敗: {e}")
+        logger.exception("SMTP authentication failed for assessment %s: %s", assessment.id, e)
+        return {"success": False, "error": f"SMTPAuthenticationError: {e}"}
+    except smtplib.SMTPConnectError as e:
+        print(f"[EMAIL_DEBUG] ❌ SMTP 連線失敗: {e}")
+        logger.exception("SMTP connect failed for assessment %s: %s", assessment.id, e)
+        return {"success": False, "error": f"SMTPConnectError: {e}"}
     except Exception as e:
+        print(f"[EMAIL_DEBUG] ❌ 郵件發送失敗: {e}")
+        print(f"[EMAIL_DEBUG]    完整 traceback:\n{tb.format_exc()}")
         logger.exception("Failed to send email for assessment %s: %s", assessment.id, e)
         return {"success": False, "error": str(e)}
 
@@ -777,35 +804,36 @@ def submit_questionnaire(
             
             # 確定接收電郵：有檢測員發給檢測員，無檢測員（散客）發給總部信箱
             inspector_email = find_inspector_email(data.referral_code)
-            
+
             if inspector_email and SMTP_ENABLED:
-                # 註冊背景任務，非同步發送 Email（檢測員通知）
-                background_tasks.add_task(
-                    send_email_report,
+                # 同步發送 Email（檢測員通知）- 不使用 BackgroundTasks 以確保錯誤可見
+                print(f"\n[EMAIL_DEBUG] === 同步發送檢測員通知郵件 ===")
+                email_result = send_email_report(
                     inspector_email,
                     record,
                     recommendations,
                     "【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
                 )
-                logger.info("Email background task scheduled for %s (to: %s, 檢測員通知)", record.id, inspector_email)
+                print(f"[EMAIL_DEBUG] 檢測員郵件結果: {email_result}")
                 email_target = inspector_email
-                email_status = "queued (inspector)"
+                email_status = "sent" if email_result.get("success") else f"failed: {email_result.get('error', 'unknown')}"
             elif not SMTP_ENABLED:
+                print(f"[EMAIL_DEBUG] ⚠️ SMTP 未配置，跳過郵件發送")
                 logger.info("SMTP not configured; skip email for assessment %s", record.id)
                 email_target = None
                 email_status = "skipped (SMTP disabled)"
             else:
-                # 散客/無主客戶：發送至總部信箱
-                background_tasks.add_task(
-                    send_email_report,
+                # 散客/無主客戶：同步發送至總部信箱
+                print(f"\n[EMAIL_DEBUG] === 同步發送散客通知郵件至總部 ===")
+                email_result = send_email_report(
                     DEFAULT_EMAIL_TARGET,
                     record,
                     recommendations,
                     "【COSWAY 總部通知】新散客/無主客戶已完成 AI 中醫體質檢測！"
                 )
-                logger.info("Email background task scheduled for %s (to: %s, 總部散客通知)", record.id, DEFAULT_EMAIL_TARGET)
+                print(f"[EMAIL_DEBUG] 總部郵件結果: {email_result}")
                 email_target = DEFAULT_EMAIL_TARGET
-                email_status = "queued (default/散客)"
+                email_status = "sent" if email_result.get("success") else f"failed: {email_result.get('error', 'unknown')}"
             
             # 寫入 Google Sheets 客戶記錄（背景任務，不阻塞回應；initial contacted=0）
             symptoms = data.answers.get("symptoms", [])
@@ -829,7 +857,7 @@ def submit_questionnaire(
                     "severe_risks": severe_risks,
                     "risk_indicators": risk_indicators,
                 },
-                "email_sent": email_target is not None and SMTP_ENABLED,
+                "email_sent": email_target is not None and SMTP_ENABLED and email_status.startswith("sent"),
                 "email_target": email_target,
                 "email_status": email_status,
             }
