@@ -1161,16 +1161,65 @@
                 const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
                 if (path && /^[A-Za-z]*\d+$/.test(path)) {
                     ref = path;
-                    // 將路徑轉為 query 參數，避免 reload 後遺失
                     const url = new URL(window.location);
                     url.searchParams.set("ref", ref);
                     window.history.replaceState({}, "", url);
                 }
             }
-            if (!ref) {
-                ref = "HK111557";
+            if (ref && $("referral_code")) {
+                // 帶入 URL 參數後，呼叫後端驗證白名單
+                validateAndLockReferral(ref);
+            } else {
+                // 無號碼：顯示預設提示
+                setupReferralPlaceholder();
             }
-            if (ref && $("referral_code")) $("referral_code").value = ref;
+        }
+
+        function setupReferralPlaceholder() {
+            const el = $("referral_code");
+            if (!el) return;
+            el.value = '';
+            el.placeholder = '如沒有，即留空（備註：如沒有，即留空）';
+            el.disabled = false;
+            el.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+            el.classList.add('bg-white', 'text-slate-800');
+        }
+
+        async function validateAndLockReferral(rawCode) {
+            const el = $("referral_code");
+            if (!el) return;
+            // 顯示載入中
+            el.value = rawCode;
+            el.placeholder = '驗證中...';
+            try {
+                const resp = await fetch(`${API_BASE}/referral/validate?code=${encodeURIComponent(rawCode)}`);
+                const data = await resp.json();
+                if (data.valid) {
+                    // 白名單內：鎖定
+                    el.value = data.code;
+                    el.placeholder = `已鎖定專屬檢測員：${data.code}`;
+                    el.disabled = true;
+                    el.readOnly = true;
+                    el.classList.add('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+                    el.classList.remove('bg-white', 'text-slate-800');
+                } else {
+                    // 不在白名單：留空 + 可編輯
+                    el.value = '';
+                    el.placeholder = '如沒有，即留空（備註：如沒有，即留空）';
+                    el.disabled = false;
+                    el.readOnly = false;
+                    el.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+                    el.classList.add('bg-white', 'text-slate-800');
+                }
+            } catch (err) {
+                // 網絡錯誤：降级為可編輯
+                el.value = '';
+                el.placeholder = '如沒有，即留空（備註：如沒有，即留空）';
+                el.disabled = false;
+                el.readOnly = false;
+                el.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+                el.classList.add('bg-white', 'text-slate-800');
+            }
         }
 
         // ===== 掃描動畫 =====

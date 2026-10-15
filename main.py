@@ -56,6 +56,8 @@ GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS", "credentials.json")
 GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "")
 PARTNERS_CACHE: Dict[str, Dict[str, str]] = {}
 PARTNERS_LOADED = False
+PARTNERS_REFRESHED_AT: float = 0.0
+REFRESH_INTERVAL_SECONDS = 300  # 5 分鐘快取
 
 # ===== 資料庫 =====
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -334,13 +336,19 @@ def refresh_partners_from_sheet() -> Dict[str, Dict[str, str]]:
         if resp.status_code == 200 and resp.text.strip():
             PARTNERS_CACHE.clear()
             PARTNERS_CACHE.update(parse_sheet_csv(resp.text))
-    except Exception:
-        pass
+            PARTNERS_REFRESHED_AT = __import__('time').time()
+            logger.info("[SHEET] Partners cache refreshed: %d entries", len(PARTNERS_CACHE))
+        else:
+            logger.warning("[SHEET] Failed to fetch partners CSV: status=%d", resp.status_code)
+    except Exception as e:
+        logger.warning("[SHEET] Error refreshing partners: %s", e)
     return PARTNERS_CACHE
 
 def get_partners() -> Dict[str, Dict[str, str]]:
-    global PARTNERS_LOADED
-    if not PARTNERS_LOADED or not PARTNERS_CACHE:
+    import time as _time
+    global PARTNERS_LOADED, PARTNERS_REFRESHED_AT
+    now = _time.time()
+    if not PARTNERS_LOADED or (now - PARTNERS_REFRESHED_AT > REFRESH_INTERVAL_SECONDS and PARTNERS_REFRESHED_AT > 0):
         refresh_partners_from_sheet()
         PARTNERS_LOADED = True
     return PARTNERS_CACHE
@@ -660,6 +668,25 @@ def health():
 @app.get("/health")
 def health_legacy():
     return {"status": "ok", "time": datetime.utcnow().isoformat()}
+
+@app.get("/api/referral/validate")
+def validate_referral(code: str = None):
+    """驗證檢測員號碼是否存在於 Google Sheet 白名單中（含 5 分鐘快取）"""
+    if not code:
+        return {"valid": False, "message": "missing code"}
+    normalized = normalize_partner_id(code)
+    if not normalized:
+        return {"valid": False, "message": "invalid code format"}
+    partner = find_partner(normalized)
+    if partner:
+        return {
+            "valid": True,
+            "code": code,
+            "normalized": normalized,
+            "name": partner.get("name", ""),
+            "phone": partner.get("phone", DEFAULT_INSPECTOR_PHONE),
+        }
+    return {"valid": False, "message": "not found in whitelist"}
 
 @app.post("/api/questionnaire/submit")
 def submit_questionnaire(
