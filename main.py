@@ -60,6 +60,8 @@ GOOGLE_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID
 GOOGLE_CUSTOMER_SHEET_ID = "1iZaN0AKtQT6d9zFc_K7tmWjN15q2WpytAN26kxu32H4"
 GOOGLE_CUSTOMER_SHEET_NAME = "客戶記錄"
 GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS", "credentials.json")
+# 優先順序：GOOGLE_CREDENTIALS_JSON > GOOGLE_SERVICE_ACCOUNT_JSON > 檔案
+GOOGLE_CREDENTIALS_JSON = os.getenv("GOOGLE_CREDENTIALS_JSON", "")
 GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "")
 PARTNERS_CACHE: Dict[str, Dict[str, str]] = {}
 PARTNERS_LOADED = False
@@ -432,34 +434,51 @@ DEFAULT_EMAIL_TARGET = os.getenv("DEFAULT_EMAIL_TARGET", "acesc01gp@gmail.com")
 # ===== Google Sheets 客戶記錄寫入 =====
 def write_customer_record_to_sheet(assessment: Assessment, observations: List[str], contacted: int = 0) -> None:
     """將客戶記錄寫入 Google Sheet「客戶記錄」工作表（11 欄）"""
-    import traceback as tb
     try:
         logger.info("[SHEET] Starting write for assessment %s (contacted=%s)", assessment.id, contacted)
         from google.oauth2.service_account import Credentials
         import gspread
 
         creds = None
-        # 優先使用環境變數（雲端部署推薦）
-        if GOOGLE_SERVICE_ACCOUNT_JSON:
+        # 【優先順序 1】GOOGLE_CREDENTIALS_JSON（Render 環境變數，最高優先）
+        if GOOGLE_CREDENTIALS_JSON:
+            try:
+                json_data = json.loads(GOOGLE_CREDENTIALS_JSON)
+                creds = Credentials.from_service_account_info(json_data, scopes=["https://www.googleapis.com/auth/spreadsheets"])
+                print(f"[SHEET_LOG] ✅ 使用 GOOGLE_CREDENTIALS_JSON 憑證")
+                logger.info("[SHEET] Using GOOGLE_CREDENTIALS_JSON credential")
+            except Exception as e:
+                print(f"[SHEET_CRITICAL] ❌ 解析 GOOGLE_CREDENTIALS_JSON 失敗: {e}")
+                logger.error("[SHEET] Failed to parse GOOGLE_CREDENTIALS_JSON: %s", e)
+        # 【優先順序 2】GOOGLE_SERVICE_ACCOUNT_JSON
+        if creds is None and GOOGLE_SERVICE_ACCOUNT_JSON:
             try:
                 json_data = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
                 creds = Credentials.from_service_account_info(json_data, scopes=["https://www.googleapis.com/auth/spreadsheets"])
+                print(f"[SHEET_LOG] ✅ 使用 GOOGLE_SERVICE_ACCOUNT_JSON 憑證")
                 logger.info("[SHEET] Using SERVICE_ACCOUNT_JSON credential")
             except Exception as e:
-                logger.warning("[SHEET] Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON: %s", e)
-        # fallback: 讀取憑證檔案
+                print(f"[SHEET_CRITICAL] ❌ 解析 GOOGLE_SERVICE_ACCOUNT_JSON 失敗: {e}")
+                logger.error("[SHEET] Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON: %s", e)
+        # 【優先順序 3】憑證檔案
         if creds is None and os.path.exists(GOOGLE_CREDENTIALS_FILE):
             try:
                 creds = Credentials.from_service_account_file(
                     GOOGLE_CREDENTIALS_FILE,
                     scopes=["https://www.googleapis.com/auth/spreadsheets"]
                 )
+                print(f"[SHEET_LOG] ✅ 使用憑證檔案: {GOOGLE_CREDENTIALS_FILE}")
                 logger.info("[SHEET] Using credentials file: %s", GOOGLE_CREDENTIALS_FILE)
             except Exception as e:
-                logger.warning("[SHEET] Failed to load credentials file: %s", e)
+                print(f"[SHEET_CRITICAL] ❌ 讀取憑證檔案失敗: {e}")
+                logger.error("[SHEET] Failed to load credentials file: %s", e)
 
         if creds is None:
-            logger.error("[SHEET] No Google credentials available (set GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_CREDENTIALS_FILE)")
+            print(f"[SHEET_CRITICAL] ❌ 無法取得 Google 憑證！已檢查以下來源：")
+            print(f"[SHEET_CRITICAL]    1. GOOGLE_CREDENTIALS_JSON: {'[已設定]' if GOOGLE_CREDENTIALS_JSON else '[未設定]'}")
+            print(f"[SHEET_CRITICAL]    2. GOOGLE_SERVICE_ACCOUNT_JSON: {'[已設定]' if GOOGLE_SERVICE_ACCOUNT_JSON else '[未設定]'}")
+            print(f"[SHEET_CRITICAL]    3. 憑證檔案 ({GOOGLE_CREDENTIALS_FILE}): {'[存在]' if os.path.exists(GOOGLE_CREDENTIALS_FILE) else '[不存在]'}")
+            logger.critical("[SHEET] No Google credentials available. Check env vars: GOOGLE_CREDENTIALS_JSON, GOOGLE_SERVICE_ACCOUNT_JSON")
             return
 
         gc = gspread.authorize(creds)
@@ -517,25 +536,35 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
 
 def update_contact_status_in_sheet(assessment_id: str) -> None:
     """找到最後一行「有否聯絡檢測員」為「未」的列，更新為「有」"""
-    import traceback as tb
     try:
         logger.info("[SHEET] Updating contact status for assessment %s", assessment_id)
         from google.oauth2.service_account import Credentials
         import gspread
 
         creds = None
-        if GOOGLE_SERVICE_ACCOUNT_JSON:
+        # 【優先順序 1】GOOGLE_CREDENTIALS_JSON
+        if GOOGLE_CREDENTIALS_JSON:
+            try:
+                json_data = json.loads(GOOGLE_CREDENTIALS_JSON)
+                creds = Credentials.from_service_account_info(json_data, scopes=["https://www.googleapis.com/auth/spreadsheets"])
+                print(f"[SHEET_LOG] ✅ 使用 GOOGLE_CREDENTIALS_JSON 憑證（聯絡更新）")
+            except Exception:
+                pass
+        # 【優先順序 2】GOOGLE_SERVICE_ACCOUNT_JSON
+        if creds is None and GOOGLE_SERVICE_ACCOUNT_JSON:
             try:
                 json_data = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
                 creds = Credentials.from_service_account_info(json_data, scopes=["https://www.googleapis.com/auth/spreadsheets"])
             except Exception:
                 pass
+        # 【優先順序 3】憑證檔案
         if creds is None and os.path.exists(GOOGLE_CREDENTIALS_FILE):
             creds = Credentials.from_service_account_file(
                 GOOGLE_CREDENTIALS_FILE,
                 scopes=["https://www.googleapis.com/auth/spreadsheets"]
             )
         if creds is None:
+            print(f"[SHEET_CRITICAL] ❌ 無法取得 Google 憑證（聯絡更新）| assessment_id={assessment_id}")
             logger.warning("[SHEET] No credentials for contact status update")
             return
 
