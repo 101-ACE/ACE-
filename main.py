@@ -553,26 +553,22 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
         # 檢測員顯示：有 referral_code 顯示代碼，否則顯示預設
         inspector_display = (assessment.referral_code or "預設").strip()
 
-        # 11 欄資料
+        # 11 欄資料（一維列表，供 append_row 使用）
         row_data = [
-            [assessment.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if assessment.submitted_at else "-"],
-            [inspector_display],
-            [assessment.name or "-"],
-            [assessment.phone or "-"],
-            [assessment.gender or "-"],
-            [assessment.age_group or "-"],
-            [assessment.constitution or "-"],
-            [obs_summary],
-            [str(assessment.health_score) if assessment.health_score else "-"],
-            [contacted_status],
-            [notes],
+            assessment.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if assessment.submitted_at else "-",
+            inspector_display,
+            assessment.name or "-",
+            assessment.phone or "-",
+            assessment.gender or "-",
+            assessment.age_group or "-",
+            assessment.constitution or "-",
+            obs_summary,
+            str(assessment.health_score) if assessment.health_score else "-",
+            contacted_status,
+            notes,
         ]
         logger.info("[SHEET] Row data: %s", row_data)
-        ws.values_append(
-            "客戶記錄!A:K",
-            value_input_option="USER_ENTERED",
-            body={"values": [str(row_data[i][0]) for i in range(len(row_data))]}
-        )
+        ws.append_row(row_data)
         logger.info("[SHEET] ✅ Customer record written successfully for assessment %s (contacted=%s)", assessment.id, contacted_status)
         print(f"[SHEET_LOG] ✅ 寫入客戶記錄成功 | assessment_id={assessment.id} | 體質={assessment.constitution} | 檢測員={inspector_display}")
     except Exception as e:
