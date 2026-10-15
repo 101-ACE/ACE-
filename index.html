@@ -691,11 +691,17 @@
                     <div id="panel-symptom" class="obs-panel" data-panel="症狀觀察">
                             <div class="py-3 border-b border-slate-100 last:border-0">
                                 <div class="text-sm font-medium text-slate-700 mb-2">症狀觀察</div>
+                                <!-- 提示卡片 -->
+                                <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-3">
+                                    <p class="text-sm text-amber-800 mb-1">💡 提示：不需要每一個項目都填寫，有符合的才勾選，不確定或不知道的可直接忽略。</p>
+                                    <p class="text-xs text-amber-600">所有觀察項皆為多選，請依據您近期的真實感受勾選即可。</p>
+                                </div>
                                 <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2" data-subcat="症狀觀察">
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="症狀:睡眠差" class="sr-only">
                                         <img src="images/symptoms/睡眠差.png" alt="睡眠差" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">睡眠差</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">睡眠差</span>
+                                        <span class="text-[10px] text-slate-400 text-center leading-tight">(睡醒仍疲倦)</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -703,7 +709,8 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="症狀:手腳冰冷" class="sr-only">
                                         <img src="images/symptoms/手腳冰冷.png" alt="手腳冰冷" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">手腳冰冷</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">怕冷</span>
+                                        <span class="text-[10px] text-slate-400 text-center leading-tight">(手腳冰冷/特別怕風)</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -711,7 +718,8 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="症狀:口乾" class="sr-only">
                                         <img src="images/symptoms/口乾.png" alt="口乾" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">口乾</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">口乾</span>
+                                        <span class="text-[10px] text-slate-400 text-center leading-tight">(經常口渴想喝水)</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -719,7 +727,8 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="症狀:易倦" class="sr-only">
                                         <img src="images/symptoms/容易疲勞.png" alt="容易疲勞" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">容易疲勞</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">易累</span>
+                                        <span class="text-[10px] text-slate-400 text-center leading-tight">(沒精打采/稍微動就喘)</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -727,7 +736,8 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="症狀:消化不良" class="sr-only">
                                         <img src="images/symptoms/消化不良.png" alt="消化不良" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">消化不良</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">面油</span>
+                                        <span class="text-[10px] text-slate-400 text-center leading-tight">(皮膚易冒油/起痘)</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -735,7 +745,8 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="症狀:容易水腫" class="sr-only">
                                         <img src="images/symptoms/容易水腫.png" alt="容易水腫" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">容易水腫</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">身重</span>
+                                        <span class="text-[10px] text-slate-400 text-center leading-tight">(身體沉重/起床困難)</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -743,7 +754,8 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="症狀:皮膚敏感" class="sr-only">
                                         <img src="images/symptoms/皮膚敏感.png" alt="皮膚敏感" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">皮膚敏感</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">易過敏</span>
+                                        <span class="text-[10px] text-slate-400 text-center leading-tight">(對花粉/塵蟎過敏/常打噴嚏)</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -751,7 +763,8 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="症狀:容易生氣" class="sr-only">
                                         <img src="images/symptoms/容易生氣.png" alt="容易生氣" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">容易生氣</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">胸悶</span>
+                                        <span class="text-[10px] text-slate-400 text-center leading-tight">(情緒低落/經常想嘆氣)</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -759,7 +772,8 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="症狀:頭暈" class="sr-only">
                                         <img src="images/symptoms/頭暈.png" alt="頭暈" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">頭暈</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">頭暈</span>
+                                        <span class="text-[10px] text-slate-400 text-center leading-tight">(頭暈目眩/站起來發黑)</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -767,7 +781,8 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="症狀:夜尿頻繁" class="sr-only">
                                         <img src="images/symptoms/夜尿頻繁.png" alt="夜尿頻繁" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">夜尿頻繁</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">夜尿頻繁</span>
+                                        <span class="text-[10px] text-slate-400 text-center leading-tight">(夜間起床超過2次)</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
