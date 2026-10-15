@@ -35,12 +35,14 @@ DATABASE_URL = "sqlite:///./tcm_assessments.db"
 # ===== 靜默 Email 設定（環境變數，具備 Graceful Fallback） =====
 SMTP_SERVER = os.getenv("SMTP_HOST", os.getenv("SMTP_SERVER", "smtp.gmail.com"))
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USERNAME = os.getenv("SMTP_USER", os.getenv("SMTP_USERNAME", "acesc01gp@gmail.com"))
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", SMTP_USERNAME)
+# 強制指定寄件端為總部信箱
+SMTP_USERNAME = "acesc01gp@gmail.com"
+# 優先讀 GMAIL_APP_PASSWORD，fallback 到 SMTP_PASSWORD
+SMTP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", os.getenv("SMTP_PASSWORD", ""))
+SENDER_EMAIL = "acesc01gp@gmail.com"
 
 # 管理員備用電郵
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", SMTP_USERNAME)
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "acesc01gp@gmail.com")
 
 # 判斷 SMTP 是否可實際使用（密碼未配置時視為未啟用）
 SMTP_ENABLED = bool(SMTP_PASSWORD)
@@ -410,12 +412,13 @@ def find_inspector_name(referral_code: Optional[str]) -> str:
         return partner["name"]
     return DEFAULT_INSPECTOR_NAME
 
-def find_inspector_email(referral_code: Optional[str]) -> Optional[str]:
-    """根據 referral_code 查詢對應檢測員電郵，找不到則回傳 None"""
+def find_inspector_email(referral_code: Optional[str]) -> str:
+    """根據 referral_code 查詢對應檢測員電郵；查無則回傳總部信箱（绝不回傳 None）"""
     partner = find_partner(referral_code)
     if partner and partner.get("email"):
         return partner["email"]
-    return None
+    # 兜底：發送至總部
+    return DEFAULT_EMAIL_TARGET
 
 # 總部收信信箱（散客/無主客戶專用）
 DEFAULT_EMAIL_TARGET = os.getenv("DEFAULT_EMAIL_TARGET", "acesc01gp@gmail.com")
@@ -498,8 +501,10 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
             body={"values": [str(row_data[i][0]) for i in range(len(row_data))]}
         )
         logger.info("[SHEET] ✅ Customer record written successfully for assessment %s (contacted=%s)", assessment.id, contacted_status)
+        print(f"[SHEET_LOG] ✅ 寫入客戶記錄成功 | assessment_id={assessment.id} | 體質={assessment.constitution} | 檢測員={inspector_display}")
     except Exception as e:
         logger.error("[SHEET] ❌ Failed to write customer record to Google Sheet: %s\n%s", e, tb.format_exc())
+        print(f"[SHEET_LOG] ❌ 寫入客戶記錄失敗 | assessment_id={assessment.id} | 錯誤: {e}")
 
 
 def update_contact_status_in_sheet(assessment_id: str) -> None:
@@ -658,12 +663,8 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
 # ===== Email 推播服務（詳細日誌 + 完整 traceback 輸出） =====
 def send_email_report(partner_email: str, assessment: Assessment, recommendations: List[str], subject: str = None) -> Dict[str, Any]:
     import traceback as tb
-    if not partner_email:
-        print(f"[EMAIL_DEBUG] ❌ No partner email mapped for assessment {assessment.id}")
-        logger.info("No partner email mapped for assessment %s", assessment.id)
-        return {"success": False, "error": "No partner email"}
     if not SMTP_ENABLED:
-        print(f"[EMAIL_DEBUG] ⚠️ SMTP not configured (SMTP_PASSWORD empty); skip sending email for assessment {assessment.id} to {partner_email}")
+        print(f"[EMAIL_LOG] ⚠️ SMTP 未配置（SMTP_PASSWORD 為空），跳過郵件發送 | assessment_id={assessment.id}")
         logger.info("SMTP not configured; skip sending email for assessment %s to %s", assessment.id, partner_email)
         return {"success": False, "error": "SMTP not configured"}
 
@@ -671,13 +672,13 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
     if subject is None:
         subject = f"【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
 
-    print(f"[EMAIL_DEBUG] 📧 準備發送郵件")
-    print(f"[EMAIL_DEBUG]    收件人: {partner_email}")
-    print(f"[EMAIL_DEBUG]    寄件人: {SENDER_EMAIL}")
-    print(f"[EMAIL_DEBUG]    SMTP: {SMTP_SERVER}:{SMTP_PORT}")
-    print(f"[EMAIL_DEBUG]    主旨: {subject}")
-    print(f"[EMAIL_DEBUG]    客戶: {assessment.name} ({assessment.phone})")
-    print(f"[EMAIL_DEBUG]    體質: {assessment.constitution} 分數: {assessment.health_score}")
+    print(f"[EMAIL_LOG] 📧 準備發送郵件")
+    print(f"[EMAIL_LOG]    寄件者: {SENDER_EMAIL}")
+    print(f"[EMAIL_LOG]    收件者: {partner_email}")
+    print(f"[EMAIL_LOG]    SMTP: {SMTP_SERVER}:{SMTP_PORT}")
+    print(f"[EMAIL_LOG]    主旨: {subject}")
+    print(f"[EMAIL_LOG]    客戶: {assessment.name} ({assessment.phone})")
+    print(f"[EMAIL_LOG]    體質: {assessment.constitution} 分數: {assessment.health_score}")
 
     html = build_email_html(assessment, recommendations)
     msg = MIMEMultipart("alternative")
@@ -687,33 +688,32 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
     msg.attach(MIMEText(html, "html", "utf-8"))
 
     try:
-        print(f"[EMAIL_DEBUG] 🔌 SMTP 連線中... ({SMTP_SERVER}:{SMTP_PORT})")
+        print(f"[EMAIL_LOG] 🔌 SMTP 連線中... ({SMTP_SERVER}:{SMTP_PORT})")
         # 使用超時設定避免無限等待（10 秒）
         import socket
         socket.setdefaulttimeout(10)
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
-            server.set_debuglevel(0)  # 不使用 debuglevel（避免日誌雜亂），改由自訂 print 輸出
             server.starttls()
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
             server.sendmail(SENDER_EMAIL, [partner_email], msg.as_string())
-        print(f"[EMAIL_DEBUG] ✅ 郵件發送成功 → {partner_email}")
+        print(f"[EMAIL_LOG] ✅ 郵件發送成功 | {SENDER_EMAIL} → {partner_email} | assessment_id={assessment.id}")
         logger.info("Email sent for assessment %s to %s (subject: %s)", assessment.id, partner_email, subject)
         return {"success": True, "method": "email", "to": partner_email}
     except socket.timeout:
-        print(f"[EMAIL_DEBUG] ❌ SMTP 連線超時（10秒）: {SMTP_SERVER}:{SMTP_PORT}")
+        print(f"[EMAIL_LOG] ❌ SMTP 連線超時（10秒）| 目標: {partner_email} | {SMTP_SERVER}:{SMTP_PORT}")
         logger.exception("SMTP connection timeout for assessment %s", assessment.id)
         return {"success": False, "error": "SMTP connection timeout (10s)"}
     except smtplib.SMTPAuthenticationError as e:
-        print(f"[EMAIL_DEBUG] ❌ SMTP 認證失敗: {e}")
-        logger.exception("SMTP authentication failed for assessment %s: %s", assessment.id, e)
+        print(f"[EMAIL_LOG] ❌ SMTP 認證失敗 | 寄件者: {SENDER_EMAIL} | 錯誤: {e}")
+        logger.exception("SMTP authentication failed for assessment %s: {e}", assessment.id)
         return {"success": False, "error": f"SMTPAuthenticationError: {e}"}
     except smtplib.SMTPConnectError as e:
-        print(f"[EMAIL_DEBUG] ❌ SMTP 連線失敗: {e}")
-        logger.exception("SMTP connect failed for assessment %s: %s", assessment.id, e)
+        print(f"[EMAIL_LOG] ❌ SMTP 連線失敗 | 目標: {partner_email} | 錯誤: {e}")
+        logger.exception("SMTP connect failed for assessment %s: {e}", assessment.id)
         return {"success": False, "error": f"SMTPConnectError: {e}"}
     except Exception as e:
-        print(f"[EMAIL_DEBUG] ❌ 郵件發送失敗: {e}")
-        print(f"[EMAIL_DEBUG]    完整 traceback:\n{tb.format_exc()}")
+        print(f"[EMAIL_LOG] ❌ 郵件發送失敗 | 目標: {partner_email} | 錯誤: {e}")
+        print(f"[EMAIL_LOG]    完整 traceback:\n{tb.format_exc()}")
         logger.exception("Failed to send email for assessment %s: %s", assessment.id, e)
         return {"success": False, "error": str(e)}
 
@@ -808,12 +808,20 @@ def submit_questionnaire(
             
             # 準備 Email 發送任務（非同步背景任務）
             recommendations = get_recommendations(analysis["constitution"])
-            
-            # 確定接收電郵：有檢測員發給檢測員，無檢測員（散客）發給總部信箱
-            inspector_email = find_inspector_email(data.referral_code)
 
-            if inspector_email and SMTP_ENABLED:
-                # 非同步發送 Email（檢測員通知）- 使用 BackgroundTasks 避免阻塞回應
+            # 【Step 1】同步寫入 Google Sheet 客戶記錄（確保不阻塞回應）
+            symptoms = data.answers.get("symptoms", [])
+            try:
+                write_customer_record_to_sheet(record, symptoms, 0)
+                logger.info("[SHEET] Synchronous write completed for %s", record.id)
+            except Exception as e:
+                logger.warning("[SHEET] Synchronous write failed (non-fatal): %s", e)
+
+            # 【Step 2】非同步發送 Email（使用 BackgroundTasks，不阻塞回應）
+            inspector_email = find_inspector_email(data.referral_code)
+            email_target = inspector_email  # 此函數永不回傳 None
+
+            if SMTP_ENABLED:
                 background_tasks.add_task(
                     send_email_report,
                     inspector_email,
@@ -821,31 +829,12 @@ def submit_questionnaire(
                     recommendations,
                     "【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
                 )
-                logger.info("Email background task scheduled for %s (to: %s, 檢測員通知)", record.id, inspector_email)
-                email_target = inspector_email
-                email_status = "queued (inspector)"
-            elif not SMTP_ENABLED:
-                print(f"[EMAIL_DEBUG] ⚠️ SMTP 未配置，跳過郵件發送")
-                logger.info("SMTP not configured; skip email for assessment %s", record.id)
-                email_target = None
-                email_status = "skipped (SMTP disabled)"
+                logger.info("Email background task scheduled for %s (to: %s)", record.id, inspector_email)
+                email_status = "queued"
             else:
-                # 散客/無主客戶：非同步發送至總部信箱
-                background_tasks.add_task(
-                    send_email_report,
-                    DEFAULT_EMAIL_TARGET,
-                    record,
-                    recommendations,
-                    "【COSWAY 總部通知】新散客/無主客戶已完成 AI 中醫體質檢測！"
-                )
-                logger.info("Email background task scheduled for %s (to: %s, 總部散客通知)", record.id, DEFAULT_EMAIL_TARGET)
-                email_target = DEFAULT_EMAIL_TARGET
-                email_status = "queued (default/散客)"
-            
-            # 寫入 Google Sheets 客戶記錄（背景任務，不阻塞回應；initial contacted=0）
-            symptoms = data.answers.get("symptoms", [])
-            background_tasks.add_task(write_customer_record_to_sheet, record, symptoms, 0)
-            logger.info("Google Sheets background task scheduled for %s", record.id)
+                print(f"[EMAIL_LOG] ⚠️ SMTP 未配置，跳過郵件發送 | assessment_id={record.id}")
+                logger.info("SMTP not configured; skip email for assessment %s", record.id)
+                email_status = "skipped (SMTP disabled)"
             
             # 返回完整報告 JSON
             inspector_phone = find_inspector_phone(data.referral_code)
@@ -864,7 +853,7 @@ def submit_questionnaire(
                     "severe_risks": severe_risks,
                     "risk_indicators": risk_indicators,
                 },
-                "email_sent": email_target is not None and SMTP_ENABLED,
+                "email_sent": SMTP_ENABLED,
                 "email_target": email_target,
                 "email_status": email_status,
             }
