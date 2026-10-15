@@ -497,7 +497,10 @@ def update_contact_status_in_sheet(assessment_id: str) -> None:
 
         gc = gspread.authorize(creds)
         sh = gc.open_by_key(GOOGLE_CUSTOMER_SHEET_ID)
-        ws = sh.worksheet(GOOGLE_CUSTOMER_SHEET_NAME)
+        # 使用 gid=1552781706 對應「客戶記錄」工作表
+        CUSTOMER_RECORD_GID = 1552781706
+        ws = sh.worksheet(CUSTOMER_RECORD_GID)
+        logger.info("[SHEET] Connected to sheet gid=%d for contact update", CUSTOMER_RECORD_GID)
 
         all_rows = ws.get_all_values()
         logger.info("[SHEET] Total rows in sheet: %d", len(all_rows))
