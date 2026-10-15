@@ -105,7 +105,12 @@
                 <!-- Observation Categories -->
                 <div class="bg-white rounded-2xl shadow-md p-5 md:p-6">
                     <h3 class="text-lg font-semibold text-slate-800 mb-2">各項體徵觀察</h3>
-                    <p class="text-sm text-slate-500 mb-4">請選擇過去一個月內較明顯的體徵觀察（可複選）</p>
+
+                    <!-- 提示卡片 -->
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+                        <p class="text-sm text-amber-800 mb-1">💡 提示：不需要每一個項目都填寫，有符合的才勾選，不確定或不知道的可直接忽略。</p>
+                        <p class="text-xs text-amber-600">所有觀察項皆為多選，請依據您近期的真實感受勾選即可。</p>
+                    </div>
 
                     <!-- 3 大 Tag 標籤 -->
                     <div class="flex gap-2 mb-2">
@@ -122,7 +127,6 @@
                             <span>👅 舌象</span>
                         </button>
                     </div>
-                    <p class="text-xs text-slate-500 mb-4">選填項目，不想選取的項目可直接忽略</p>
 
                     <!-- 觀察類別面板（Tab 切換） -->
                     <div id="panel-tongue" class="obs-panel" data-panel="舌象觀察">
@@ -691,11 +695,6 @@
                     <div id="panel-symptom" class="obs-panel" data-panel="症狀觀察">
                             <div class="py-3 border-b border-slate-100 last:border-0">
                                 <div class="text-sm font-medium text-slate-700 mb-2">症狀觀察</div>
-                                <!-- 提示卡片 -->
-                                <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-3">
-                                    <p class="text-sm text-amber-800 mb-1">💡 提示：不需要每一個項目都填寫，有符合的才勾選，不確定或不知道的可直接忽略。</p>
-                                    <p class="text-xs text-amber-600">所有觀察項皆為多選，請依據您近期的真實感受勾選即可。</p>
-                                </div>
                                 <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-2" data-subcat="症狀觀察">
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="症狀:睡眠差" class="sr-only">
