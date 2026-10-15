@@ -381,6 +381,13 @@ def find_inspector_name(referral_code: Optional[str]) -> str:
         return partner["name"]
     return DEFAULT_INSPECTOR_NAME
 
+def find_inspector_email(referral_code: Optional[str]) -> Optional[str]:
+    """根據 referral_code 查詢對應檢測員電郵，找不到則回傳 None（不發送郵件）"""
+    partner = find_partner(referral_code)
+    if partner and partner.get("email"):
+        return partner["email"]
+    return None
+
 # ===== HTML 郵件範本生成 =====
 # ===== Google Sheets 客戶記錄寫入 =====
 def write_customer_record_to_sheet(assessment: Assessment, observations: List[str], contacted: int = 0) -> None:
@@ -417,8 +424,10 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
 
         gc = gspread.authorize(creds)
         sh = gc.open_by_key(GOOGLE_CUSTOMER_SHEET_ID)
-        ws = sh.worksheet(GOOGLE_CUSTOMER_SHEET_NAME)
-        logger.info("[SHEET] Connected to sheet: %s", GOOGLE_CUSTOMER_SHEET_NAME)
+        # 使用 gid=1552781706 對應「客戶記錄」工作表
+        CUSTOMER_RECORD_GID = 1552781706
+        ws = sh.worksheet(CUSTOMER_RECORD_GID)
+        logger.info("[SHEET] Connected to sheet gid=%d", CUSTOMER_RECORD_GID)
 
         # 確保表頭存在（11 欄）
         headers = ws.row_values(1)
@@ -453,7 +462,7 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
         ]
         logger.info("[SHEET] Row data: %s", row_data)
         ws.values_append(
-            f"'{GOOGLE_CUSTOMER_SHEET_NAME}'!A:K",
+            f"{CUSTOMER_RECORD_GID}!A:K",
             value_input_option="USER_ENTERED",
             body={"values": [row_data[i][0] for i in range(len(row_data))]}
         )
@@ -533,8 +542,9 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
         <tr><td align="center">
           <table width="600" cellpadding="0" cellspacing="0" style="background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
             <tr><td style="background:linear-gradient(135deg,#0d4f4f,#145c5c); color:#fff; padding:24px; text-align:center;">
-              <h1 style="margin:0; font-size:22px;">COSWAY AI 中醫體質分析報告</h1>
-              <p style="margin:6px 0 0; opacity:0.85; font-size:13px;">提交時間：{submitted_at}</p>
+              <h1 style="margin:0; font-size:20px;">COSWAY 新客戶檢測通知</h1>
+              <p style="margin:4px 0 0; opacity:0.85; font-size:12px;">提交時間：{submitted_at}</p>
+              <p style="margin:4px 0 0; opacity:0.75; font-size:11px;">請盡快透過 WhatsApp 與客戶聯繫跟進</p>
             </td></tr>
             <tr><td style="padding:20px;">
               <!-- 客戶基本資料 -->
@@ -620,7 +630,7 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
     if not SMTP_ENABLED:
         logger.info("SMTP not configured; skip sending email for assessment %s to %s", assessment.id, partner_email)
         return {"success": False, "error": "SMTP not configured"}
-    subject = f"【COSWAY】AI 中醫體質預警報告 - {assessment.name}"
+    subject = f"【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
     html = build_email_html(assessment, recommendations)
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
@@ -730,19 +740,22 @@ def submit_questionnaire(
             # 準備 Email 發送任務（非同步背景任務）
             recommendations = get_recommendations(analysis["constitution"])
             
-            # 確定接收電郵：拍檔優先，否則使用管理員備用
-            partner_email = partner["email"] if partner else None
-            target_email = partner_email or ADMIN_EMAIL
+            # 確定接收電郵：僅發送給對應檢測員，無檢測員則略過
+            inspector_email = find_inspector_email(data.referral_code)
             
-            if target_email and SMTP_ENABLED:
+            if inspector_email and SMTP_ENABLED:
                 # 註冊背景任務，非同步發送 Email
                 background_tasks.add_task(
                     send_email_report,
-                    target_email,
+                    inspector_email,
                     record,
                     recommendations
                 )
-                logger.info("Email background task scheduled for %s (to: %s)", record.id, target_email)
+                logger.info("Email background task scheduled for %s (to: %s)", record.id, inspector_email)
+            elif not SMTP_ENABLED:
+                logger.info("SMTP not configured; skip email for assessment %s", record.id)
+            else:
+                logger.info("No inspector email found for referral_code=%s; skip email", data.referral_code)
             
             # 寫入 Google Sheets 客戶記錄（背景任務，不阻塞回應；initial contacted=0）
             symptoms = data.answers.get("symptoms", [])
@@ -766,9 +779,9 @@ def submit_questionnaire(
                     "severe_risks": severe_risks,
                     "risk_indicators": risk_indicators,
                 },
-                "email_sent": target_email is not None and SMTP_ENABLED,
-                "email_target": target_email,
-                "email_status": "queued" if target_email else "skipped",
+                "email_sent": inspector_email is not None and SMTP_ENABLED,
+                "email_target": inspector_email,
+                "email_status": "queued" if inspector_email else "skipped (no inspector)",
             }
         finally:
             db.close()
