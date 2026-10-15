@@ -85,6 +85,35 @@ class Assessment(Base):
 
 Base.metadata.create_all(bind=engine)
 
+# ===== 資料庫遷移：確保現有資料庫包含所有欄位 =====
+def migrate_database():
+    """為現有 SQLite 資料庫新增缺失的欄位（不破壞既有資料）"""
+    import sqlite3
+    conn = sqlite3.connect(DATABASE_URL.replace("sqlite:///", ""))
+    cursor = conn.cursor()
+    try:
+        # 檢查 assesseds 表有哪些欄位
+        cursor.execute("PRAGMA table_info(assessments)")
+        existing_cols = {row[1] for row in cursor.fetchall()}
+        needed_cols = {
+            "email_sent": "INTEGER DEFAULT 0",
+            "partner_email": "TEXT",
+            "partner_name": "TEXT",
+            "contacted": "INTEGER DEFAULT 0",
+        }
+        for col, definition in needed_cols.items():
+            if col not in existing_cols:
+                cursor.execute(f"ALTER TABLE assessments ADD COLUMN {col} {definition}")
+                logger.info("[DB] Added missing column: %s", col)
+        conn.commit()
+        logger.info("[DB] Database migration complete")
+    except Exception as e:
+        logger.warning("[DB] Migration skipped (may already be up-to-date): %s", e)
+    finally:
+        conn.close()
+
+migrate_database()
+
 # ===== Pydantic 模式 =====
 class QuestionnairesSubmit(BaseModel):
     name: str = Field(..., max_length=100)
@@ -823,7 +852,7 @@ def get_report(assessment_id: str):
         db.close()
 
 @app.post("/api/contact/update")
-def update_contact_status(data: BookingSubmit):
+def update_contact_status(data: BookingSubmit, background_tasks: BackgroundTasks):
     """用戶點擊 WhatsApp 按鈕後，標記為已聯絡檢測員"""
     db: Session = SessionLocal()
     try:
