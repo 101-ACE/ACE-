@@ -688,14 +688,21 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
 
     try:
         print(f"[EMAIL_DEBUG] 🔌 SMTP 連線中... ({SMTP_SERVER}:{SMTP_PORT})")
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-            server.set_debuglevel(1)  # 啟用 SMTP 通訊協定日誌
+        # 使用超時設定避免無限等待（10 秒）
+        import socket
+        socket.setdefaulttimeout(10)
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
+            server.set_debuglevel(0)  # 不使用 debuglevel（避免日誌雜亂），改由自訂 print 輸出
             server.starttls()
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
             server.sendmail(SENDER_EMAIL, [partner_email], msg.as_string())
         print(f"[EMAIL_DEBUG] ✅ 郵件發送成功 → {partner_email}")
         logger.info("Email sent for assessment %s to %s (subject: %s)", assessment.id, partner_email, subject)
         return {"success": True, "method": "email", "to": partner_email}
+    except socket.timeout:
+        print(f"[EMAIL_DEBUG] ❌ SMTP 連線超時（10秒）: {SMTP_SERVER}:{SMTP_PORT}")
+        logger.exception("SMTP connection timeout for assessment %s", assessment.id)
+        return {"success": False, "error": "SMTP connection timeout (10s)"}
     except smtplib.SMTPAuthenticationError as e:
         print(f"[EMAIL_DEBUG] ❌ SMTP 認證失敗: {e}")
         logger.exception("SMTP authentication failed for assessment %s: %s", assessment.id, e)
@@ -806,34 +813,34 @@ def submit_questionnaire(
             inspector_email = find_inspector_email(data.referral_code)
 
             if inspector_email and SMTP_ENABLED:
-                # 同步發送 Email（檢測員通知）- 不使用 BackgroundTasks 以確保錯誤可見
-                print(f"\n[EMAIL_DEBUG] === 同步發送檢測員通知郵件 ===")
-                email_result = send_email_report(
+                # 非同步發送 Email（檢測員通知）- 使用 BackgroundTasks 避免阻塞回應
+                background_tasks.add_task(
+                    send_email_report,
                     inspector_email,
                     record,
                     recommendations,
                     "【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
                 )
-                print(f"[EMAIL_DEBUG] 檢測員郵件結果: {email_result}")
+                logger.info("Email background task scheduled for %s (to: %s, 檢測員通知)", record.id, inspector_email)
                 email_target = inspector_email
-                email_status = "sent" if email_result.get("success") else f"failed: {email_result.get('error', 'unknown')}"
+                email_status = "queued (inspector)"
             elif not SMTP_ENABLED:
                 print(f"[EMAIL_DEBUG] ⚠️ SMTP 未配置，跳過郵件發送")
                 logger.info("SMTP not configured; skip email for assessment %s", record.id)
                 email_target = None
                 email_status = "skipped (SMTP disabled)"
             else:
-                # 散客/無主客戶：同步發送至總部信箱
-                print(f"\n[EMAIL_DEBUG] === 同步發送散客通知郵件至總部 ===")
-                email_result = send_email_report(
+                # 散客/無主客戶：非同步發送至總部信箱
+                background_tasks.add_task(
+                    send_email_report,
                     DEFAULT_EMAIL_TARGET,
                     record,
                     recommendations,
                     "【COSWAY 總部通知】新散客/無主客戶已完成 AI 中醫體質檢測！"
                 )
-                print(f"[EMAIL_DEBUG] 總部郵件結果: {email_result}")
+                logger.info("Email background task scheduled for %s (to: %s, 總部散客通知)", record.id, DEFAULT_EMAIL_TARGET)
                 email_target = DEFAULT_EMAIL_TARGET
-                email_status = "sent" if email_result.get("success") else f"failed: {email_result.get('error', 'unknown')}"
+                email_status = "queued (default/散客)"
             
             # 寫入 Google Sheets 客戶記錄（背景任務，不阻塞回應；initial contacted=0）
             symptoms = data.answers.get("symptoms", [])
@@ -857,7 +864,7 @@ def submit_questionnaire(
                     "severe_risks": severe_risks,
                     "risk_indicators": risk_indicators,
                 },
-                "email_sent": email_target is not None and SMTP_ENABLED and email_status.startswith("sent"),
+                "email_sent": email_target is not None and SMTP_ENABLED,
                 "email_target": email_target,
                 "email_status": email_status,
             }
