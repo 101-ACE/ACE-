@@ -68,6 +68,55 @@ PARTNERS_LOADED = False
 PARTNERS_REFRESHED_AT: float = 0.0
 REFRESH_INTERVAL_SECONDS = 300  # 5 分鐘快取
 
+# ═══════════════════════════════════════════════════════════════
+# [CONFIG_ERROR] 環境變數健康檢查（啟動時執行）
+# ═══════════════════════════════════════════════════════════════
+_missing_env = []
+_required_sheet_vars = ["GOOGLE_CREDENTIALS_JSON", "GOOGLE_SERVICE_ACCOUNT_JSON", "GOOGLE_CREDENTIALS"]
+_found_sheet_cred = any(os.getenv(v) for v in _required_sheet_vars)
+if not _found_sheet_cred:
+    _missing_env.append("GOOGLE_CREDENTIALS_JSON / GOOGLE_SERVICE_ACCOUNT_JSON / GOOGLE_CREDENTIALS")
+_required_email_vars = ["GMAIL_APP_PASSWORD", "SMTP_PASSWORD"]
+_found_email_cred = any(os.getenv(v) for v in _required_email_vars)
+if not _found_email_cred:
+    _missing_env.append("GMAIL_APP_PASSWORD / SMTP_PASSWORD")
+if _missing_env:
+    for var_group in _missing_env:
+        print(f"[CONFIG_ERROR] 缺少必要環境變數: {var_group}")
+        logger.error("[CONFIG_ERROR] Missing required env vars: %s", var_group)
+else:
+    print("[CONFIG_OK] 所有必要環境變數已設定")
+
+# 啟動時印出所有關鍵變數狀態（掩碼密碼）
+def _print_config_status():
+    import re
+    print("\n" + "=" * 60)
+    print("  [CONFIG_STATUS] 環境變數狀態檢查")
+    print("=" * 60)
+    vars_to_check = [
+        ("GOOGLE_CREDENTIALS_JSON", GOOGLE_CREDENTIALS_JSON),
+        ("GOOGLE_SERVICE_ACCOUNT_JSON", GOOGLE_SERVICE_ACCOUNT_JSON),
+        ("GOOGLE_CUSTOMER_SHEET_ID", GOOGLE_CUSTOMER_SHEET_ID),
+        ("GMAIL_APP_PASSWORD", os.getenv("GMAIL_APP_PASSWORD", "")),
+        ("SMTP_PASSWORD", os.getenv("SMTP_PASSWORD", "")),
+        ("SMTP_SERVER", SMTP_SERVER),
+        ("SMTP_PORT", str(SMTP_PORT)),
+        ("SENDER_EMAIL", SENDER_EMAIL),
+        ("DEFAULT_EMAIL_TARGET", DEFAULT_EMAIL_TARGET),
+    ]
+    for name, value in vars_to_check:
+        if not value:
+            print(f"  ❌ {name}: [未設定]")
+        elif name in ("GMAIL_APP_PASSWORD", "SMTP_PASSWORD", "GOOGLE_CREDENTIALS_JSON", "GOOGLE_SERVICE_ACCOUNT_JSON"):
+            # 掩碼顯示，只顯示前 4 字元
+            masked = f"{value[:4]}...{value[-4:]}" if len(value) > 8 else "***"
+            print(f"  ✅ {name}: [{masked}]")
+        else:
+            print(f"  ✅ {name}: {value}")
+    print("=" * 60 + "\n")
+
+_print_config_status()
+
 # ===== 資料庫 =====
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -529,9 +578,9 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
     except Exception as e:
         _sheet_tb = __import__('traceback').format_exc()
         logger.error("[SHEET] ❌ Failed to write customer record: %s\n%s", e, _sheet_tb)
-        print(f"[SHEET_LOG] ❌ 寫入客戶記錄失敗 | assessment_id={assessment.id}")
-        print(f"[SHEET_LOG]    錯誤: {e}")
-        print(f"[SHEET_LOG]    完整 traceback:\n{_sheet_tb}")
+        print(f"[SHEET_ERROR] ❌ 寫入客戶記錄失敗 | assessment_id={assessment.id}")
+        print(f"[SHEET_ERROR]    錯誤: {e}")
+        print(f"[SHEET_ERROR]    完整 traceback:\n{_sheet_tb}")
 
 
 def update_contact_status_in_sheet(assessment_id: str) -> None:
@@ -701,7 +750,7 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
 def send_email_report(partner_email: str, assessment: Assessment, recommendations: List[str], subject: str = None) -> Dict[str, Any]:
     import traceback as tb
     if not SMTP_ENABLED:
-        print(f"[EMAIL_LOG] ⚠️ SMTP 未配置（SMTP_PASSWORD 為空），跳過郵件發送 | assessment_id={assessment.id}")
+        print(f"[EMAIL_ERROR] ⚠️ SMTP 未配置（GMAIL_APP_PASSWORD / SMTP_PASSWORD 為空），跳過郵件發送 | assessment_id={assessment.id}")
         logger.info("SMTP not configured; skip sending email for assessment %s to %s", assessment.id, partner_email)
         return {"success": False, "error": "SMTP not configured"}
 
@@ -737,28 +786,28 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
         logger.info("Email sent for assessment %s to %s (subject: %s)", assessment.id, partner_email, subject)
         return {"success": True, "method": "email", "to": partner_email}
     except socket.timeout:
-        print(f"[EMAIL_LOG] ❌ SMTP 連線超時（10秒）| 目標: {partner_email} | {SMTP_SERVER}:{SMTP_PORT}")
+        print(f"[EMAIL_ERROR] ❌ SMTP 連線超時（10秒）| 目標: {partner_email} | {SMTP_SERVER}:{SMTP_PORT}")
         _email_tb = __import__('traceback').format_exc()
         logger.exception("SMTP connection timeout for assessment %s", assessment.id)
-        print(f"[EMAIL_LOG]    完整 traceback:\n{_email_tb}")
+        print(f"[EMAIL_ERROR]    完整 traceback:\n{_email_tb}")
         return {"success": False, "error": "SMTP connection timeout (10s)"}
     except smtplib.SMTPAuthenticationError as e:
-        print(f"[EMAIL_LOG] ❌ SMTP 認證失敗 | 寄件者: {SENDER_EMAIL} | 收件者: {partner_email} | 錯誤: {e}")
+        print(f"[EMAIL_ERROR] ❌ SMTP 認證失敗 | 寄件者: {SENDER_EMAIL} | 收件者: {partner_email} | 錯誤: {e}")
         _email_tb = __import__('traceback').format_exc()
         logger.exception("SMTP authentication failed for assessment %s: %s", assessment.id, e)
-        print(f"[EMAIL_LOG]    完整 traceback:\n{_email_tb}")
+        print(f"[EMAIL_ERROR]    完整 traceback:\n{_email_tb}")
         return {"success": False, "error": f"SMTPAuthenticationError: {e}"}
     except smtplib.SMTPConnectError as e:
-        print(f"[EMAIL_LOG] ❌ SMTP 連線失敗 | 目標: {partner_email} | 錯誤: {e}")
+        print(f"[EMAIL_ERROR] ❌ SMTP 連線失敗 | 目標: {partner_email} | 錯誤: {e}")
         _email_tb = __import__('traceback').format_exc()
         logger.exception("SMTP connect failed for assessment %s: %s", assessment.id, e)
-        print(f"[EMAIL_LOG]    完整 traceback:\n{_email_tb}")
+        print(f"[EMAIL_ERROR]    完整 traceback:\n{_email_tb}")
         return {"success": False, "error": f"SMTPConnectError: {e}"}
     except Exception as e:
-        print(f"[EMAIL_LOG] ❌ 郵件發送失敗 | 寄件者: {SENDER_EMAIL} | 收件者: {partner_email} | 錯誤: {e}")
+        print(f"[EMAIL_ERROR] ❌ 郵件發送失敗 | 寄件者: {SENDER_EMAIL} | 收件者: {partner_email} | 錯誤: {e}")
         _email_tb = __import__('traceback').format_exc()
         logger.exception("Failed to send email for assessment %s: %s", assessment.id, e)
-        print(f"[EMAIL_LOG]    完整 traceback:\n{_email_tb}")
+        print(f"[EMAIL_ERROR]    完整 traceback:\n{_email_tb}")
         return {"success": False, "error": str(e)}
 
 # ===== Admin Email Fallback =====
@@ -863,9 +912,9 @@ def submit_questionnaire(
             except Exception as _sheet_e:
                 _sheet_tb = __import__('traceback').format_exc()
                 logger.error("[SHEET] Synchronous write FAILED (non-fatal): %s\n%s", _sheet_e, _sheet_tb)
-                print(f"[SHEET_LOG] ❌ 寫入客戶記錄失敗（非致命，繼續執行）")
-                print(f"[SHEET_LOG]    錯誤: {_sheet_e}")
-                print(f"[SHEET_LOG]    完整 traceback:\n{_sheet_tb}")
+                print(f"[SHEET_ERROR] ❌ 同步寫入客戶記錄失敗（非致命，繼續執行）")
+                print(f"[SHEET_ERROR]    錯誤: {_sheet_e}")
+                print(f"[SHEET_ERROR]    完整 traceback:\n{_sheet_tb}")
                 sheet_result = f"error: {_sheet_e}"
 
             # ═══════════════════════════════════════════════════════════
@@ -889,13 +938,13 @@ def submit_questionnaire(
                 except Exception as _email_e:
                     _email_tb = __import__('traceback').format_exc()
                     logger.error("[EMAIL] Synchronous send FAILED (non-fatal): %s\n%s", _email_e, _email_tb)
-                    print(f"[EMAIL_LOG] ❌ 同步發送郵件失敗（非致命，繼續執行）")
-                    print(f"[EMAIL_LOG]    錯誤: {_email_e}")
-                    print(f"[EMAIL_LOG]    完整 traceback:\n{_email_tb}")
+                    print(f"[EMAIL_ERROR] ❌ 同步發送郵件失敗（非致命，繼續執行）")
+                    print(f"[EMAIL_ERROR]    錯誤: {_email_e}")
+                    print(f"[EMAIL_ERROR]    完整 traceback:\n{_email_tb}")
                     email_status = "exception"
                     email_result_detail = str(_email_e)
             else:
-                print(f"[EMAIL_LOG] ⚠️ SMTP 未配置（SMTP_PASSWORD 為空），跳過郵件發送 | assessment_id={record.id}")
+                print(f"[EMAIL_ERROR] ⚠️ SMTP 未配置（SMTP_PASSWORD 為空），跳過郵件發送 | assessment_id={record.id}")
                 logger.info("SMTP not configured; skip email for assessment %s", record.id)
                 email_status = "skipped (SMTP disabled)"
             
