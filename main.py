@@ -48,13 +48,27 @@ ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "acesc01gp@gmail.com")
 # 判斷 SMTP 是否可實際使用（密碼未配置時視為未啟用）
 SMTP_ENABLED = bool(SMTP_PASSWORD)
 
+# ===== 雲端 Email API 設定（繞過 SMTP 網絡限制）=====
+EMAIL_API_KEY = os.getenv("EMAIL_API_KEY", "")
+EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "sendgrid").lower()  # "sendgrid" or "resend"
+API_EMAIL_ENABLED = bool(EMAIL_API_KEY)
+
+# 使用 API 優先於 SMTP
+EMAIL_ENABLED = API_EMAIL_ENABLED or SMTP_ENABLED
+
+# ===== CRITICAL: 憑證缺失偵測 =====
+if not SMTP_PASSWORD and not EMAIL_API_KEY:
+    print("[CRITICAL] Missing email credentials! Set EMAIL_API_KEY (recommended) or GMAIL_APP_PASSWORD/SMTP_PASSWORD.")
+    logger.critical("[CRITICAL] No email credentials configured. Email will NOT be sent.")
+elif not EMAIL_API_KEY:
+    print("[CONFIG_WARN] EMAIL_API_KEY not set, falling back to SMTP (may be blocked by network)")
+    logger.warning("[CONFIG_WARN] EMAIL_API_KEY missing, using SMTP fallback")
+elif not SMTP_PASSWORD:
+    print("[CONFIG_OK] Using EMAIL_API_KEY for cloud email delivery")
+    logger.info("[CONFIG_OK] Cloud email API configured")
+
 # 總部收信信箱（散客/無主客戶專用）
 DEFAULT_EMAIL_TARGET = os.getenv("DEFAULT_EMAIL_TARGET", "acesc01gp@gmail.com")
-
-# ===== CRITICAL: 密碼缺失偵測 =====
-if not SMTP_PASSWORD:
-    print("[CRITICAL] Missing Gmail App Password! Set GMAIL_APP_PASSWORD or SMTP_PASSWORD environment variable.")
-    logger.critical("[CRITICAL] Missing Gmail App Password! Email will NOT be sent.")
 
 # Google Sheet 設定 - 拍檔名單
 GOOGLE_SHEET_ID = "1iZaN0AKtQT6d9zFc_K7tmWjN15q2WpytAN26kxu32H4"
@@ -187,10 +201,10 @@ _required_sheet_vars = ["GOOGLE_CREDENTIALS_JSON", "GOOGLE_SERVICE_ACCOUNT_JSON"
 _found_sheet_cred = any(os.getenv(v) for v in _required_sheet_vars)
 if not _found_sheet_cred:
     _missing_env.append("GOOGLE_CREDENTIALS_JSON / GOOGLE_SERVICE_ACCOUNT_JSON / GOOGLE_CREDENTIALS")
-_required_email_vars = ["GMAIL_APP_PASSWORD", "SMTP_PASSWORD"]
+_required_email_vars = ["EMAIL_API_KEY", "GMAIL_APP_PASSWORD", "SMTP_PASSWORD"]
 _found_email_cred = any(os.getenv(v) for v in _required_email_vars)
 if not _found_email_cred:
-    _missing_env.append("GMAIL_APP_PASSWORD / SMTP_PASSWORD")
+    _missing_env.append("EMAIL_API_KEY / GMAIL_APP_PASSWORD / SMTP_PASSWORD")
 if _missing_env:
     for var_group in _missing_env:
         print(f"[CONFIG_ERROR] 缺少必要環境變數: {var_group}")
@@ -208,6 +222,8 @@ def _print_config_status():
         ("GOOGLE_CREDENTIALS_JSON", GOOGLE_CREDENTIALS_JSON),
         ("GOOGLE_SERVICE_ACCOUNT_JSON", GOOGLE_SERVICE_ACCOUNT_JSON),
         ("GOOGLE_CUSTOMER_SHEET_ID", GOOGLE_CUSTOMER_SHEET_ID),
+        ("EMAIL_API_KEY", EMAIL_API_KEY),
+        ("EMAIL_PROVIDER", EMAIL_PROVIDER),
         ("GMAIL_APP_PASSWORD", os.getenv("GMAIL_APP_PASSWORD", "")),
         ("SMTP_PASSWORD", os.getenv("SMTP_PASSWORD", "")),
         ("SMTP_SERVER", SMTP_SERVER),
@@ -218,7 +234,7 @@ def _print_config_status():
     for name, value in vars_to_check:
         if not value:
             print(f"  ❌ {name}: [未設定]")
-        elif name in ("GMAIL_APP_PASSWORD", "SMTP_PASSWORD", "GOOGLE_CREDENTIALS_JSON", "GOOGLE_SERVICE_ACCOUNT_JSON"):
+        elif name in ("GMAIL_APP_PASSWORD", "SMTP_PASSWORD", "GOOGLE_CREDENTIALS_JSON", "GOOGLE_SERVICE_ACCOUNT_JSON", "EMAIL_API_KEY"):
             # 掩碼顯示，只顯示前 4 字元
             masked = f"{value[:4]}...{value[-4:]}" if len(value) > 8 else "***"
             print(f"  ✅ {name}: [{masked}]")
@@ -851,98 +867,182 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
     """
 
 # ===== Email 推播服務（詳細日誌 + 完整 traceback 輸出） =====
+def _send_via_sendgrid_api(html_content: str, to_email: str, subject: str, from_email: str) -> Dict[str, Any]:
+    """使用 SendGrid API (HTTP POST) 發送郵件"""
+    import json as _json
+    try:
+        payload = {
+            "personalizations": [{"to": [{"email": to_email}]}],
+            "from": {"email": from_email, "name": "COSWAY 健康檢測"},
+            "subject": subject,
+            "content": [{"type": "text/html", "value": html_content}]
+        }
+        headers = {
+            "Authorization": f"Bearer {EMAIL_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        resp = requests.post(
+            "https://api.sendgrid.com/v3/mail/send",
+            headers=headers,
+            json=payload,
+            timeout=15
+        )
+        if resp.status_code in (200, 202):
+            return {"success": True, "method": "sendgrid_api", "status": resp.status_code}
+        else:
+            error_msg = resp.text[:200]
+            logger.error("[SENDGRID_ERROR] API response %s: %s", resp.status_code, error_msg)
+            return {"success": False, "method": "sendgrid_api", "error": f"HTTP {resp.status_code}: {error_msg}"}
+    except requests.exceptions.Timeout:
+        return {"success": False, "method": "sendgrid_api", "error": "API request timeout (15s)"}
+    except requests.exceptions.ConnectionError as e:
+        return {"success": False, "method": "sendgrid_api", "error": f"Connection error: {e}"}
+    except Exception as e:
+        return {"success": False, "method": "sendgrid_api", "error": str(e)}
+
+
+def _send_via_resend_api(html_content: str, to_email: str, subject: str, from_email: str) -> Dict[str, Any]:
+    """使用 Resend API (HTTP POST) 發送郵件"""
+    import json as _json
+    try:
+        payload = {
+            "from": f"COSWAY 健康檢測 <{from_email}>",
+            "to": [to_email],
+            "subject": subject,
+            "html": html_content
+        }
+        headers = {
+            "Authorization": f"Bearer {EMAIL_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers=headers,
+            json=payload,
+            timeout=15
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            return {"success": True, "method": "resend_api", "id": data.get("id")}
+        else:
+            error_msg = resp.text[:200]
+            logger.error("[RESEND_ERROR] API response %s: %s", resp.status_code, error_msg)
+            return {"success": False, "method": "resend_api", "error": f"HTTP {resp.status_code}: {error_msg}"}
+    except requests.exceptions.Timeout:
+        return {"success": False, "method": "resend_api", "error": "API request timeout (15s)"}
+    except requests.exceptions.ConnectionError as e:
+        return {"success": False, "method": "resend_api", "error": f"Connection error: {e}"}
+    except Exception as e:
+        return {"success": False, "method": "resend_api", "error": str(e)}
+
+
 def send_email_report(partner_email: str, assessment: Assessment, recommendations: List[str], subject: str = None) -> Dict[str, Any]:
     import traceback as tb
-    if not SMTP_ENABLED:
-        print(f"[EMAIL_ERROR] ⚠️ SMTP 未配置（GMAIL_APP_PASSWORD / SMTP_PASSWORD 為空），跳過郵件發送 | assessment_id={assessment.id}")
-        logger.info("SMTP not configured; skip sending email for assessment %s to %s", assessment.id, partner_email)
-        return {"success": False, "error": "SMTP not configured"}
+    if not EMAIL_ENABLED:
+        print(f"[EMAIL_ERROR] ⚠️ 未配置任何郵件憑證（EMAIL_API_KEY 或 SMTP_PASSWORD），跳過郵件發送 | assessment_id={assessment.id}")
+        logger.info("No email credentials configured; skip sending email for assessment %s", assessment.id)
+        return {"success": False, "error": "No email credentials configured"}
 
     # 若未指定主旨，使用預設標題
     if subject is None:
         subject = f"【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
 
+    html = build_email_html(assessment, recommendations)
+
     print(f"[EMAIL_LOG] 📧 準備發送郵件")
     print(f"[EMAIL_LOG]    寄件者: {SENDER_EMAIL}")
     print(f"[EMAIL_LOG]    收件者: {partner_email}")
-    print(f"[EMAIL_LOG]    SMTP: {SMTP_SERVER}:{SMTP_PORT} (SSL)")
+    print(f"[EMAIL_LOG]    方式: {'Cloud API' if API_EMAIL_ENABLED else 'SMTP'}")
     print(f"[EMAIL_LOG]    主旨: {subject}")
     print(f"[EMAIL_LOG]    客戶: {assessment.name} ({assessment.phone})")
     print(f"[EMAIL_LOG]    體質: {assessment.constitution} 分數: {assessment.health_score}")
 
-    html = build_email_html(assessment, recommendations)
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = SENDER_EMAIL
-    msg["To"] = partner_email
-    msg.attach(MIMEText(html, "html", "utf-8"))
+    # ===== 優先使用雲端 Email API（HTTP 443）=====
+    if API_EMAIL_ENABLED:
+        max_retries = 3
+        retry_delays = [2, 5, 10]
+        last_error = ""
 
-    # ===== SSL SMTP 連線（端口 465）+ Retry 退避機制 =====
-    max_retries = 3
-    retry_delays = [2, 5, 10]  # 秒
+        for attempt in range(max_retries):
+            try:
+                print(f"[EMAIL_LOG] 🔌 透過 API 發送郵件 [attempt {attempt + 1}/{max_retries}]...")
+                if EMAIL_PROVIDER == "resend":
+                    result = _send_via_resend_api(html, partner_email, subject, SENDER_EMAIL)
+                else:
+                    result = _send_via_sendgrid_api(html, partner_email, subject, SENDER_EMAIL)
+
+                if result.get("success"):
+                    print(f"[EMAIL_LOG] ✅ API 郵件發送成功 | {SENDER_EMAIL} → {partner_email} | assessment_id={assessment.id}")
+                    logger.info("Email sent via %s API for assessment %s to %s", EMAIL_PROVIDER, assessment.id, partner_email)
+                    return result
+                else:
+                    last_error = result.get("error", "unknown error")
+                    print(f"[EMAIL_ERROR] ❌ API 發送失敗: {last_error}")
+                    if attempt < max_retries - 1:
+                        delay = retry_delays[attempt]
+                        print(f"[EMAIL_LOG] ⏳ {delay}s 後重試...")
+                        import time as _time
+                        _time.sleep(delay)
+                        continue
+            except Exception as e:
+                last_error = str(e)
+                print(f"[EMAIL_ERROR] ❌ API 發送異常: {e}")
+                logger.exception("API email exception for assessment %s", assessment.id)
+                if attempt < max_retries - 1:
+                    delay = retry_delays[attempt]
+                    print(f"[EMAIL_LOG] ⏳ {delay}s 後重試...")
+                    import time as _time
+                    _time.sleep(delay)
+                    continue
+            break
+
+        # API 所有重試失敗，嘗試 SMTP fallback
+        if SMTP_ENABLED:
+            print(f"[EMAIL_LOG] ⚠️ API 失敗，嘗試 SMTP fallback...")
+            logger.warning("API failed, falling back to SMTP for assessment %s", assessment.id)
+            return _send_via_smtp(html, partner_email, subject)
+
+        print(f"[EMAIL_ERROR] ❌ 郵件發送失敗（已嘗試 {max_retries} 次 API + SMTP fallback 不可用）| assessment_id={assessment.id}")
+        return {"success": False, "error": f"All retries exhausted: {last_error}"}
+
+    # ===== 無 API 時使用 SMTP fallback =====
+    elif SMTP_ENABLED:
+        return _send_via_smtp(html, partner_email, subject)
+
+    return {"success": False, "error": "No email method available"}
+
+
+def _send_via_smtp(html_content: str, to_email: str, subject: str) -> Dict[str, Any]:
+    """SMTP fallback 發送郵件（端口 465 SSL）"""
+    import traceback as tb
+    max_retries = 2
+    retry_delays = [2, 5]
     last_error = ""
 
     for attempt in range(max_retries):
         try:
-            print(f"[EMAIL_LOG] 🔌 SMTP SSL 連線中... ({SMTP_SERVER}:{SMTP_PORT}) [attempt {attempt + 1}/{max_retries}]")
+            print(f"[EMAIL_LOG] 🔌 SMTP SSL 連線中... (attempt {attempt + 1}/{max_retries})")
             import socket as _socket
             _socket.setdefaulttimeout(10)
-            # 使用 SMTP_SSL（端口 465）
             with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
                 server.login(SMTP_USERNAME, SMTP_PASSWORD)
-                server.sendmail(SENDER_EMAIL, [partner_email], msg.as_string())
-            print(f"[EMAIL_LOG] ✅ 郵件發送成功 | {SENDER_EMAIL} → {partner_email} | assessment_id={assessment.id}")
-            logger.info("Email sent for assessment %s to %s (subject: %s)", assessment.id, partner_email, subject)
-            return {"success": True, "method": "email", "to": partner_email}
-        except _socket.timeout:
-            last_error = f"SMTP connection timeout (10s) on attempt {attempt + 1}"
-            print(f"[EMAIL_ERROR] ❌ 連線超時 | {last_error} | 目標: {partner_email}")
-            if attempt < max_retries - 1:
-                delay = retry_delays[attempt]
-                print(f"[EMAIL_LOG] ⏳ {delay}s 後重試...")
-                import time as _time
-                _time.sleep(delay)
-                continue
-        except smtplib.SMTPAuthenticationError as e:
-            last_error = f"SMTPAuthenticationError: {e}"
-            print(f"[EMAIL_ERROR] ❌ SMTP 認證失敗 | 寄件者: {SENDER_EMAIL} | 錯誤: {e}")
-            logger.exception("SMTP authentication failed for assessment %s", assessment.id)
-            break  # 認證失敗不重試
-        except smtplib.SMTPConnectError as e:
-            last_error = f"SMTPConnectError: {e}"
-            print(f"[EMAIL_ERROR] ❌ SMTP 連線失敗 | 目標: {partner_email} | 錯誤: {e}")
-            if attempt < max_retries - 1:
-                delay = retry_delays[attempt]
-                print(f"[EMAIL_LOG] ⏳ {delay}s 後重試...")
-                import time as _time
-                _time.sleep(delay)
-                continue
-        except OSError as e:
-            last_error = f"OSError: {e}"
-            print(f"[EMAIL_ERROR] ❌ 網路連線失敗 | {e} | 目標: {SMTP_SERVER}:{SMTP_PORT}")
-            if attempt < max_retries - 1:
-                delay = retry_delays[attempt]
-                print(f"[EMAIL_LOG] ⏳ {delay}s 後重試...")
-                import time as _time
-                _time.sleep(delay)
-                continue
+                msg = MIMEMultipart("alternative")
+                msg["Subject"] = subject
+                msg["From"] = SENDER_EMAIL
+                msg["To"] = to_email
+                msg.attach(MIMEText(html_content, "html", "utf-8"))
+                server.sendmail(SENDER_EMAIL, [to_email], msg.as_string())
+            print(f"[EMAIL_LOG] ✅ SMTP 郵件發送成功 | {SENDER_EMAIL} → {to_email}")
+            return {"success": True, "method": "smtp_ssl"}
         except Exception as e:
             last_error = str(e)
-            print(f"[EMAIL_ERROR] ❌ 郵件發送失敗 | 寄件者: {SENDER_EMAIL} | 收件者: {partner_email} | 錯誤: {e}")
-            logger.exception("Failed to send email for assessment %s: %s", assessment.id, e)
+            print(f"[EMAIL_ERROR] ❌ SMTP 失敗: {e}")
             if attempt < max_retries - 1:
-                delay = retry_delays[attempt]
-                print(f"[EMAIL_LOG] ⏳ {delay}s 後重試...")
                 import time as _time
-                _time.sleep(delay)
-                continue
+                _time.sleep(retry_delays[attempt])
             break
 
-    # 所有重試都失敗
-    print(f"[EMAIL_ERROR] ❌ 郵件發送失敗（已嘗試 {max_retries} 次）| 最後錯誤: {last_error} | assessment_id={assessment.id}")
-    _email_tb = tb.format_exc()
-    logger.error("[EMAIL_ERROR] All retries exhausted for assessment %s: %s\n%s", assessment.id, last_error, _email_tb)
-    return {"success": False, "error": f"All retries exhausted: {last_error}"}
+    return {"success": False, "method": "smtp_ssl", "error": last_error}
 
 # ===== Admin Email Fallback =====
 # ADMIN_EMAIL already defined above
@@ -1139,7 +1239,7 @@ def submit_questionnaire(
                     "severe_risks": severe_risks,
                     "risk_indicators": risk_indicators,
                 },
-                "email_sent": SMTP_ENABLED,
+                "email_sent": EMAIL_ENABLED,
                 "email_target": email_target,
                 "email_status": email_status,
             }
@@ -1245,10 +1345,14 @@ def get_diagnostic():
         "database": db_stats,
         "env_vars": {
             "SMTP_ENABLED": SMTP_ENABLED,
+            "API_EMAIL_ENABLED": API_EMAIL_ENABLED,
+            "EMAIL_PROVIDER": EMAIL_PROVIDER,
             "SENDER_EMAIL": SENDER_EMAIL,
             "SMTP_SERVER": SMTP_SERVER,
+            "SMTP_PORT": str(SMTP_PORT),
             "GOOGLE_CUSTOMER_SHEET_ID": GOOGLE_CUSTOMER_SHEET_ID,
             "has_google_creds": bool(GOOGLE_CREDENTIALS_JSON or GOOGLE_SERVICE_ACCOUNT_JSON),
+            "has_email_api_key": bool(EMAIL_API_KEY),
             "has_email_password": bool(SMTP_PASSWORD),
         },
         "endpoints": {
@@ -1257,6 +1361,7 @@ def get_diagnostic():
             "funnel_metrics": "/api/funnel/metrics",
             "attribution_report": "/api/diagnostic/attribution",
             "submit": "/api/questionnaire/submit",
+            "email_api_info": "See env_vars.API_EMAIL_ENABLED / EMAIL_PROVIDER",
         }
     }
 
