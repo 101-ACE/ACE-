@@ -775,23 +775,35 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         return None
 
     try:
+        # 字型載入：優先使用專案內置字型，fallback 到系統字型
+        _FONT_DIR = os.path.join(os.path.dirname(__file__), "fonts")
+        _SYSTEM_FONTS = [
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansTC-Regular.ttf",
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        ]
+
+        def get_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
+            # 優先從專案 fonts 目錄載入
+            for fname in (f"NotoSansCJK-{('Bold' if bold else 'Regular')}.ttc",
+                          f"NotoSansCJK-Regular.ttf",
+                          f"NotoSansTC-{('Bold' if bold else 'Regular')}.ttf",
+                          f"NotoSansTC-Regular.ttf"):
+                fpath = os.path.join(_FONT_DIR, fname)
+                if os.path.exists(fpath):
+                    return ImageFont.truetype(fpath, size)
+            # 其次嘗試系統字型
+            for fpath in _SYSTEM_FONTS:
+                if os.path.exists(fpath):
+                    return ImageFont.truetype(fpath, size)
+            # 最後 fallback 到預設字型（會無法顯示中文）
+            logger.warning("[EMAIL] No Chinese font found, using default font")
+            return ImageFont.load_default()
+
         W, H = 600, 820
         img = Image.new('RGB', (W, H), color='#FFF8F0')
         draw = ImageDraw.Draw(img)
-
-        # 字型載入（fallback 到預設）
-        def get_font(size, bold=False):
-            for fpath in ['/usr/share/fonts/truetype/noto/NotoSansTC-Bold.ttf',
-                           '/usr/share/fonts/truetype/noto/NotoSansTC-Regular.ttf',
-                           '/usr/share/fonts/opentype/noto/NotoSansTC-Bold.otf',
-                           '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
-                           '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf']:
-                if os.path.exists(fpath):
-                    return ImageFont.truetype(fpath, size)
-            try:
-                return ImageFont.truetype("NotoSansTC-Bold.ttf", size)
-            except Exception:
-                return ImageFont.load_default()
 
         font_title   = get_font(26, bold=True)
         font_label   = get_font(14)
