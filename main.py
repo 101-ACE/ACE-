@@ -15,9 +15,11 @@ import requests
 import logging
 import base64
 from datetime import datetime
+from io import BytesIO
 from typing import Optional, Dict, Any, List
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -763,6 +765,125 @@ def update_contact_status_in_sheet(assessment_id: str) -> None:
         logger.error("[SHEET] ❌ Failed to update contact status: %s\n%s", e, tb.format_exc())
 
 
+def generate_report_image(assessment: Assessment, recommendations: List[str]) -> Optional[bytes]:
+    """生成檢測報告圖片 (PNG)，用於郵件附件或下載"""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        logger.warning("[EMAIL] PIL not available, skipping image generation")
+        return None
+
+    W, H = 600, 820
+    img = Image.new('RGB', (W, H), color='#FFF8F0')
+    draw = ImageDraw.Draw(img)
+
+    # 字型載入（fallback 到預設）
+    def get_font(size, bold=False):
+        for fpath in ['/usr/share/fonts/truetype/noto/NotoSansTC-Bold.ttf',
+                       '/usr/share/fonts/truetype/noto/NotoSansTC-Regular.ttf',
+                       '/usr/share/fonts/opentype/noto/NotoSansTC-Bold.otf',
+                       '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+                       '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf']:
+            if os.path.exists(fpath):
+                return ImageFont.truetype(fpath, size)
+        try:
+            return ImageFont.truetype("NotoSansTC-Bold.ttf", size)
+        except Exception:
+            return ImageFont.load_default()
+
+    font_title   = get_font(26, bold=True)
+    font_label   = get_font(14)
+    font_value   = get_font(16, bold=True)
+    font_small   = get_font(12)
+    font_big     = get_font(48, bold=True)
+    font_cta     = get_font(18, bold=True)
+    font_rec     = get_font(13)
+
+    # 配色
+    ORANGE_DARK  = '#BF360C'
+    ORANGE_MAIN  = '#E65100'
+    ORANGE_LIGHT = '#FF8F00'
+    ORANGE_BG    = '#FFF3E0'
+    WHITE        = '#FFFFFF'
+    DARK         = '#3E2723'
+    GRAY         = '#6D4C41'
+    GREEN        = '#2E7D32'
+    RED          = '#C62828'
+    YELLOW       = '#F9A825'
+
+    score = assessment.health_score
+    risk  = assessment.risk_level
+    risk_color = RED if risk == "高" else (YELLOW if risk == "中" else GREEN)
+
+    # ===== 頂部橙色 Hero 區塊 =====
+    draw.rectangle([(0, 0), (W, 130)], fill=ORANGE_MAIN)
+    draw.text((W // 2, 28), "快速檢測新結果通知", font=font_title, fill=WHITE, anchor='mm')
+    draw.text((W // 2, 72), f"提交時間：{assessment.submitted_at.strftime('%Y-%m-%d %H:%M') if assessment.submitted_at else '-'}",
+              font=font_small, fill='#FFE0B2', anchor='mm')
+    draw.text((W // 2, 100), "請盡快透過 WhatsApp 與客戶聯繫跟進",
+              font=font_cta, fill=WHITE, anchor='mm')
+
+    y = 145
+
+    # ===== SOP 區塊（緊貼 Hero 下方） =====
+    draw.rectangle([(20, y), (W - 20, y + 58)], fill='#FFE0B2', outline=ORANGE_MAIN, width=2)
+    draw.text((30, y + 10), "📋 拍檔跟進 SOP", font=font_label, fill=ORANGE_DARK)
+    draw.text((30, y + 32), "請於 8 小時內聯繫客戶，關心及了解客戶，並安排前往門市/上門檢測。",
+              font=font_small, fill=DARK)
+    y += 72
+
+    # ===== 客戶資料卡片 =====
+    draw.rectangle([(20, y), (W - 20, y + 85)], fill=WHITE, outline='#E0E0E0', width=1)
+    draw.text((30, y + 10), "👤 客戶資料", font=font_label, fill=ORANGE_MAIN)
+    draw.text((30, y + 34), f"姓名：{assessment.name}", font=font_value, fill=DARK)
+    draw.text((30, y + 56), f"電話：{assessment.phone}", font=font_value, fill=DARK)
+    y += 98
+
+    # ===== 健康警示分數 =====
+    draw.rectangle([(20, y), (W - 20, y + 110)], fill=ORANGE_BG, outline='#FFCC80', width=1)
+    draw.text((W // 2, y + 16), "健康警示分", font=font_label, fill=GRAY, anchor='mm')
+    draw.text((W // 2, y + 52), str(score), font=font_big, fill=ORANGE_DARK, anchor='mm')
+    draw.rounded_rectangle([(W // 2 - 80, y + 76), (W // 2 + 80, y + 100)],
+                           radius=20, fill=risk_color)
+    draw.text((W // 2, y + 88), f"風險等級：{risk}", font=font_small, fill=WHITE, anchor='mm')
+    draw.text((W // 2, y + 106), f"體質判定：{assessment.constitution}",
+              font=font_small, fill=GRAY, anchor='mm')
+    y += 122
+
+    # ===== 健康風險指標 =====
+    indicators = []
+    try:
+        indicators = json.loads(assessment.risk_indicators or "[]")
+    except Exception:
+        pass
+    indicators = indicators[:3] if indicators else ["系統尚未量化指標"]
+
+    draw.rectangle([(20, y), (W - 20, y + 60 + len(indicators) * 26)], fill=WHITE, outline='#E0E0E0', width=1)
+    draw.text((30, y + 8), "⚠️ 健康風險關注指標", font=font_label, fill=ORANGE_MAIN)
+    for i, ind in enumerate(indicators):
+        draw.text((30, y + 34 + i * 26), f"●  {ind}", font=font_small, fill=DARK)
+    y += 70 + len(indicators) * 26
+
+    # ===== 飲食與生活建議 =====
+    draw.rectangle([(20, y), (W - 20, y + 20 + len(recommendations) * 24 + 10)],
+                   fill=WHITE, outline='#E0E0E0', width=1)
+    draw.text((30, y + 8), "🍵 飲食與生活作息建議", font=font_label, fill=ORANGE_MAIN)
+    for i, rec in enumerate(recommendations[:5]):
+        draw.text((30, y + 34 + i * 24), f"• {rec}", font=font_rec, fill=DARK)
+    y += 44 + len(recommendations[:5]) * 24
+
+    # ===== Footer =====
+    draw.rectangle([(0, H - 40), (W, H)], fill=ORANGE_BG)
+    draw.text((W // 2, H - 24),
+              f"客戶：{assessment.name}　|　電話：{assessment.phone}　|　檢測編號：{assessment.referral_code or '-'}",
+              font=font_small, fill=GRAY, anchor='mm')
+
+    buf = BytesIO()
+    img.save(buf, format='PNG', quality=95)
+    buf.seek(0)
+    return buf.getvalue()
+
+
 def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
     score = assessment.health_score
     risk = assessment.risk_level
@@ -776,89 +897,86 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
         indicators_list = json.loads(indicators)
     except Exception:
         indicators_list = []
-    risk_color = "#c0392b" if risk == "高" else ("#d4a017" if risk == "中" else "#1e8449")
-    risk_bg = "rgba(192,57,43,0.1)" if risk == "高" else ("rgba(212,160,23,0.1)" if risk == "中" else "rgba(30,132,73,0.1)")
+    risk_color = "#C62828" if risk == "高" else ("#F9A825" if risk == "中" else "#2E7D32")
     return f"""
     <html>
     <head><meta charset="UTF-8"></head>
-    <body style="font-family: Arial, 'Noto Sans TC', sans-serif; background:#f6f8f7; margin:0; padding:0;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f6f8f7; padding:24px 0;">
+    <body style="font-family: Arial, 'Noto Sans TC', sans-serif; background:#FFF8F0; margin:0; padding:0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF8F0; padding:20px 0;">
         <tr><td align="center">
-          <table width="600" cellpadding="0" cellspacing="0" style="background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,0.06);">
-            <tr><td style="background:linear-gradient(135deg,#0d4f4f,#145c5c); color:#fff; padding:24px; text-align:center;">
-              <h1 style="margin:0; font-size:20px;">COSWAY 新客戶檢測通知</h1>
-              <p style="margin:4px 0 0; opacity:0.85; font-size:12px;">提交時間：{submitted_at}</p>
-              <p style="margin:4px 0 0; opacity:0.75; font-size:11px;">請盡快透過 WhatsApp 與客戶聯繫跟進</p>
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 2px 12px rgba(230,81,0,0.12);">
+
+            <!-- ===== 橙色 Hero 區塊 ===== -->
+            <tr><td style="background:linear-gradient(135deg,#E65100,#FF8F00); color:#fff; padding:28px 24px; text-align:center;">
+              <h1 style="margin:0; font-size:22px; font-weight:700;">快速檢測新結果通知</h1>
+              <p style="margin:6px 0 0; opacity:0.85; font-size:13px;">提交時間：{submitted_at}</p>
+              <p style="margin:10px 0 0; font-size:19px; font-weight:700; color:#FFF9C4;">請盡快透過 WhatsApp 與客戶聯繫跟進</p>
             </td></tr>
-            <tr><td style="padding:20px;">
+
+            <!-- ===== 拍檔跟進 SOP 區塊（緊貼 Hero） ===== -->
+            <tr><td style="padding:16px 20px 0;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFE0B2; border:2px solid #E65100; border-radius:12px;">
+                <tr><td style="padding:14px 16px;">
+                  <p style="margin:0 0 4px; font-size:14px; font-weight:700; color:#BF360C;">📋 拍檔跟進 SOP</p>
+                  <p style="margin:0; font-size:15px; color:#3E2723; line-height:1.6;">請於 <strong>8 小時內</strong> 聯繫客戶，關心及了解客戶，並安排前往門市/上門檢測。</p>
+                </td></tr>
+              </table>
+            </td></tr>
+
+            <!-- ===== 一鍵下載圖片按鈕 ===== -->
+            <tr><td style="padding:14px 20px 0; text-align:center;">
+              <a href="cid:report_image.png" style="display:inline-block; background:linear-gradient(135deg,#E65100,#FF6600); color:#fff; text-decoration:none; padding:12px 28px; border-radius:30px; font-size:15px; font-weight:700; box-shadow:0 2px 8px rgba(230,81,0,0.3);">
+                📥 一鍵下載客戶報告圖表（直接傳給客戶）
+              </a>
+            </td></tr>
+
+            <tr><td style="padding:16px 20px 0;">
               <!-- 客戶基本資料 -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:#fbfdfc; border:1px solid #e7edec; border-radius:12px; margin-bottom:14px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF3E0; border:1px solid #FFCC80; border-radius:12px; margin-bottom:14px;">
                 <tr><td style="padding:14px;">
-                  <h3 style="margin:0 0 10px; color:#0d4f4f; font-size:15px;">👤 客戶資料</h3>
-                  <div style="font-size:14px; color:#2a2f2f; line-height:1.8;">
+                  <h3 style="margin:0 0 10px; color:#E65100; font-size:15px;">👤 客戶資料</h3>
+                  <div style="font-size:14px; color:#3E2723; line-height:1.8;">
                     <div>姓名：<strong>{name}</strong></div>
                     <div>電話：<strong>{phone}</strong></div>
                     <div>檢測人員編號：<strong>{referral}</strong></div>
                   </div>
                 </td></tr>
               </table>
+
               <!-- 健康警示分數 -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff4e6; border:1px solid #f0c59b; border-radius:12px; margin-bottom:14px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF8E1; border:1px solid #FFCC80; border-radius:12px; margin-bottom:14px;">
                 <tr><td style="padding:14px; text-align:center;">
-                  <div style="font-size:13px; color:#6b7373;">健康警示分</div>
-                  <div style="font-size:42px; font-weight:700; color:#0d4f4f;">{score}</div>
-                  <div style="margin-top:6px; display:inline-block; padding:6px 14px; border-radius:999px; background:{risk_bg}; color:{risk_color}; font-weight:700;">潛在風險等級：{risk}</div>
-                  <div style="margin-top:8px; font-size:14px; color:#2a2f2f;">體質判定：<strong>{constitution}</strong></div>
+                  <div style="font-size:13px; color:#6D4C41;">健康警示分</div>
+                  <div style="font-size:48px; font-weight:700; color:#E65100;">{score}</div>
+                  <div style="margin-top:6px; display:inline-block; padding:6px 16px; border-radius:999px; background:{risk_color}22; color:{risk_color}; font-weight:700; font-size:14px;">潛在風險等級：{risk}</div>
+                  <div style="margin-top:8px; font-size:14px; color:#3E2723;">體質判定：<strong>{constitution}</strong></div>
                 </td></tr>
               </table>
-              <!-- 三大風險指標 -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff; border:1px solid #e7edec; border-radius:12px; margin-bottom:14px;">
+
+              <!-- 健康風險指標 -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff; border:1px solid #FFE0B2; border-radius:12px; margin-bottom:14px;">
                 <tr><td style="padding:14px;">
-                  <h3 style="margin:0 0 10px; color:#0d4f4f; font-size:15px;">⚠️ 健康風險關注指標</h3>
-                  {(indicators_list or ['系統尚未量化指標'])[:3] if indicators_list else ['系統尚未量化指標']}
-                  {(''.join([f"<div style='display:flex; align-items:center; gap:8px; margin:6px 0; font-size:14px; color:#2a2f2f;'><span style='font-size:16px;'>●</span><span>{i}</span></div>" for i in (indicators_list or ['系統尚未量化指標'])[:3]]))}
-                  <div style="margin-top:12px;">
-                    <div style="display:flex; align-items:center; gap:12px; margin:6px 0;">
-                      <div style="width:120px; font-size:13px; color:#6b7373;">血管彈性指數</div>
-                      <div style="flex:1; height:10px; background:#e7edec; border-radius:999px; overflow:hidden;">
-                        <div style="height:100%; width:{score}%; background:linear-gradient(90deg, {risk_color}, #e07a3d); border-radius:999px;"></div>
-                      </div>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:12px; margin:6px 0;">
-                      <div style="width:120px; font-size:13px; color:#6b7373;">血液粘稠度預警</div>
-                      <div style="flex:1; height:10px; background:#e7edec; border-radius:999px; overflow:hidden;">
-                        <div style="height:100%; width:{min(100, max(20, 100 - score + 10))}%; background:linear-gradient(90deg, {risk_color}, #e07a3d); border-radius:999px;"></div>
-                      </div>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:12px; margin:6px 0;">
-                      <div style="width:120px; font-size:13px; color:#6b7373;">肝臟代謝負擔</div>
-                      <div style="flex:1; height:10px; background:#e7edec; border-radius:999px; overflow:hidden;">
-                        <div style="height:100%; width:{min(100, max(20, 100 - score))}%; background:linear-gradient(90deg, {risk_color}, #e07a3d); border-radius:999px;"></div>
-                      </div>
-                    </div>
-                  </div>
+                  <h3 style="margin:0 0 10px; color:#E65100; font-size:15px;">⚠️ 健康風險關注指標</h3>
+                  {"".join([f"<div style='display:flex; align-items:center; gap:8px; margin:6px 0; font-size:14px; color:#3E2723;'><span style='font-size:16px; color:{risk_color};'>●</span><span>{i}</span></div>" for i in (indicators_list or ['系統尚未量化指標'])[:3]])}
                 </td></tr>
               </table>
-              <!-- 建議 -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff; border:1px solid #e7edec; border-radius:12px; margin-bottom:14px;">
+
+              <!-- 飲食與生活作息建議 -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff; border:1px solid #FFE0B2; border-radius:12px; margin-bottom:14px;">
                 <tr><td style="padding:14px;">
-                  <h3 style="margin:0 0 10px; color:#0d4f4f; font-size:15px;">🍵 飲食與生活作息建議</h3>
-                  {"".join([f"<div style='padding:6px 0; border-bottom:1px solid #eef1f1; font-size:14px; color:#2a2f2f;'>• {r}</div>" for r in recommendations])}
+                  <h3 style="margin:0 0 10px; color:#E65100; font-size:15px;">🍵 飲食與生活作息建議</h3>
+                  {"".join([f"<div style='padding:6px 0; border-bottom:1px solid #FFE0B2; font-size:14px; color:#3E2723;'>• {r}</div>" for r in recommendations])}
                 </td></tr>
               </table>
-              <!-- 跟進 SOP -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff4e6; border:1px solid #f0c59b; border-radius:12px; margin-bottom:14px;">
-                <tr><td style="padding:14px;">
-                  <h3 style="margin:0 0 6px; color:#e07a3d; font-size:15px;">📋 拍檔跟進 SOP</h3>
-                  <p style="margin:0; font-size:13px; color:#2a2f2f; line-height:1.6;">請於 <strong>24 小時內</strong> 聯繫客戶，安排前往門市（將軍澳中心／將軍澳寶琳／樂富／柴灣／佐敦）進行免費進階儀器體驗與諮詢。</p>
-                </td></tr>
-              </table>
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;">
-                <tr><td style="padding:10px; background:#fbfdfc; border-radius:10px; font-size:12px; color:#6b7373; text-align:center;">
+
+              <!-- Footer -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:4px;">
+                <tr><td style="padding:10px; background:#FFF3E0; border-radius:10px; font-size:12px; color:#6D4C41; text-align:center;">
                   客戶：{name}　|　電話：{phone}　|　檢測人員編號：{referral}
                 </td></tr>
               </table>
             </td></tr>
+
           </table>
         </td></tr>
       </table>
@@ -867,15 +985,24 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
     """
 
 # ===== Email 推播服務（詳細日誌 + 完整 traceback 輸出） =====
-def _send_via_sendgrid_api(html_content: str, to_email: str, subject: str, from_email: str) -> Dict[str, Any]:
-    """使用 SendGrid API (HTTP POST) 發送郵件"""
+def _send_via_sendgrid_api(html_content: str, to_email: str, subject: str, from_email: str, image_bytes: bytes = None) -> Dict[str, Any]:
+    """使用 SendGrid API (HTTP POST) 發送郵件（支援圖片附件）"""
     import json as _json
     try:
+        attachments = []
+        if image_bytes:
+            attachments.append({
+                "content": base64.b64encode(image_bytes).decode(),
+                "filename": "報告圖表.png",
+                "type": "image/png",
+                "disposition": "attachment"
+            })
         payload = {
             "personalizations": [{"to": [{"email": to_email}]}],
             "from": {"email": from_email, "name": "COSWAY 健康檢測"},
             "subject": subject,
-            "content": [{"type": "text/html", "value": html_content}]
+            "content": [{"type": "text/html", "value": html_content}],
+            "attachments": attachments
         }
         headers = {
             "Authorization": f"Bearer {EMAIL_API_KEY}",
@@ -888,7 +1015,7 @@ def _send_via_sendgrid_api(html_content: str, to_email: str, subject: str, from_
             timeout=15
         )
         if resp.status_code in (200, 202):
-            return {"success": True, "method": "sendgrid_api", "status": resp.status_code}
+            return {"success": True, "method": "sendgrid_api", "status": resp.status_code, "has_image": bool(image_bytes)}
         else:
             error_msg = resp.text[:200]
             logger.error("[SENDGRID_ERROR] API response %s: %s", resp.status_code, error_msg)
@@ -901,15 +1028,22 @@ def _send_via_sendgrid_api(html_content: str, to_email: str, subject: str, from_
         return {"success": False, "method": "sendgrid_api", "error": str(e)}
 
 
-def _send_via_resend_api(html_content: str, to_email: str, subject: str, from_email: str) -> Dict[str, Any]:
-    """使用 Resend API (HTTP POST) 發送郵件"""
+def _send_via_resend_api(html_content: str, to_email: str, subject: str, from_email: str, image_bytes: bytes = None) -> Dict[str, Any]:
+    """使用 Resend API (HTTP POST) 發送郵件（支援圖片附件）"""
     import json as _json
     try:
+        attachments = []
+        if image_bytes:
+            attachments.append({
+                "filename": "報告圖表.png",
+                "content": base64.b64encode(image_bytes).decode()
+            })
         payload = {
             "from": f"COSWAY 健康檢測 <{from_email}>",
             "to": [to_email],
             "subject": subject,
-            "html": html_content
+            "html": html_content,
+            "attachments": attachments
         }
         headers = {
             "Authorization": f"Bearer {EMAIL_API_KEY}",
@@ -923,7 +1057,7 @@ def _send_via_resend_api(html_content: str, to_email: str, subject: str, from_em
         )
         if resp.status_code == 200:
             data = resp.json()
-            return {"success": True, "method": "resend_api", "id": data.get("id")}
+            return {"success": True, "method": "resend_api", "id": data.get("id"), "has_image": bool(image_bytes)}
         else:
             error_msg = resp.text[:200]
             logger.error("[RESEND_ERROR] API response %s: %s", resp.status_code, error_msg)
@@ -945,9 +1079,19 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
 
     # 若未指定主旨，使用預設標題
     if subject is None:
-        subject = f"【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
+        subject = f"【快速檢測新結果通知】新客戶已完成 AI 中醫體質檢測！"
 
     html = build_email_html(assessment, recommendations)
+
+    # 生成報告圖片
+    report_image = None
+    try:
+        report_image = generate_report_image(assessment, recommendations)
+        if report_image:
+            print(f"[EMAIL_LOG] 🖼️ 報告圖片已生成 ({len(report_image)} bytes)")
+    except Exception as _img_e:
+        logger.warning("[EMAIL] Image generation failed (non-fatal): %s", _img_e)
+        print(f"[EMAIL_LOG] ⚠️ 圖片生成失敗（非致命，繼續發送）: {_img_e}")
 
     print(f"[EMAIL_LOG] 📧 準備發送郵件")
     print(f"[EMAIL_LOG]    寄件者: {SENDER_EMAIL}")
@@ -956,6 +1100,7 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
     print(f"[EMAIL_LOG]    主旨: {subject}")
     print(f"[EMAIL_LOG]    客戶: {assessment.name} ({assessment.phone})")
     print(f"[EMAIL_LOG]    體質: {assessment.constitution} 分數: {assessment.health_score}")
+    print(f"[EMAIL_LOG]    報告圖片: {'已生成' if report_image else '未生成'}")
 
     # ===== 優先使用雲端 Email API（HTTP 443）=====
     if API_EMAIL_ENABLED:
@@ -967,9 +1112,9 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
             try:
                 print(f"[EMAIL_LOG] 🔌 透過 API 發送郵件 [attempt {attempt + 1}/{max_retries}]...")
                 if EMAIL_PROVIDER == "resend":
-                    result = _send_via_resend_api(html, partner_email, subject, SENDER_EMAIL)
+                    result = _send_via_resend_api(html, partner_email, subject, SENDER_EMAIL, report_image)
                 else:
-                    result = _send_via_sendgrid_api(html, partner_email, subject, SENDER_EMAIL)
+                    result = _send_via_sendgrid_api(html, partner_email, subject, SENDER_EMAIL, report_image)
 
                 if result.get("success"):
                     print(f"[EMAIL_LOG] ✅ API 郵件發送成功 | {SENDER_EMAIL} → {partner_email} | assessment_id={assessment.id}")
@@ -1000,20 +1145,20 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
         if SMTP_ENABLED:
             print(f"[EMAIL_LOG] ⚠️ API 失敗，嘗試 SMTP fallback...")
             logger.warning("API failed, falling back to SMTP for assessment %s", assessment.id)
-            return _send_via_smtp(html, partner_email, subject)
+            return _send_via_smtp(html, partner_email, subject, report_image)
 
         print(f"[EMAIL_ERROR] ❌ 郵件發送失敗（已嘗試 {max_retries} 次 API + SMTP fallback 不可用）| assessment_id={assessment.id}")
         return {"success": False, "error": f"All retries exhausted: {last_error}"}
 
     # ===== 無 API 時使用 SMTP fallback =====
     elif SMTP_ENABLED:
-        return _send_via_smtp(html, partner_email, subject)
+        return _send_via_smtp(html, partner_email, subject, report_image)
 
     return {"success": False, "error": "No email method available"}
 
 
-def _send_via_smtp(html_content: str, to_email: str, subject: str) -> Dict[str, Any]:
-    """SMTP fallback 發送郵件（端口 465 SSL）"""
+def _send_via_smtp(html_content: str, to_email: str, subject: str, image_bytes: bytes = None) -> Dict[str, Any]:
+    """SMTP fallback 發送郵件（端口 465 SSL，支援圖片附件）"""
     import traceback as tb
     max_retries = 2
     retry_delays = [2, 5]
@@ -1026,14 +1171,22 @@ def _send_via_smtp(html_content: str, to_email: str, subject: str) -> Dict[str, 
             _socket.setdefaulttimeout(10)
             with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
                 server.login(SMTP_USERNAME, SMTP_PASSWORD)
-                msg = MIMEMultipart("alternative")
+                msg = MIMEMultipart("mixed")
                 msg["Subject"] = subject
                 msg["From"] = SENDER_EMAIL
                 msg["To"] = to_email
-                msg.attach(MIMEText(html_content, "html", "utf-8"))
+                # HTML 部分
+                html_part = MIMEText(html_content, "html", "utf-8")
+                msg.attach(html_part)
+                # 圖片附件
+                if image_bytes:
+                    img_part = MIMEImage(image_bytes)
+                    img_part.add_header("Content-Disposition", "attachment", filename="報告圖表.png")
+                    img_part.add_header("Content-ID", "<report_image.png>")
+                    msg.attach(img_part)
                 server.sendmail(SENDER_EMAIL, [to_email], msg.as_string())
             print(f"[EMAIL_LOG] ✅ SMTP 郵件發送成功 | {SENDER_EMAIL} → {to_email}")
-            return {"success": True, "method": "smtp_ssl"}
+            return {"success": True, "method": "smtp_ssl", "has_image": bool(image_bytes)}
         except Exception as e:
             last_error = str(e)
             print(f"[EMAIL_ERROR] ❌ SMTP 失敗: {e}")
