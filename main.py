@@ -47,6 +47,9 @@ ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "acesc01gp@gmail.com")
 # 判斷 SMTP 是否可實際使用（密碼未配置時視為未啟用）
 SMTP_ENABLED = bool(SMTP_PASSWORD)
 
+# 總部收信信箱（散客/無主客戶專用）
+DEFAULT_EMAIL_TARGET = os.getenv("DEFAULT_EMAIL_TARGET", "acesc01gp@gmail.com")
+
 # ===== CRITICAL: 密碼缺失偵測 =====
 if not SMTP_PASSWORD:
     print("[CRITICAL] Missing Gmail App Password! Set GMAIL_APP_PASSWORD or SMTP_PASSWORD environment variable.")
@@ -582,9 +585,6 @@ def find_inspector_email(referral_code: Optional[str]) -> str:
         return partner["email"]
     # 兜底：發送至總部
     return DEFAULT_EMAIL_TARGET
-
-# 總部收信信箱（散客/無主客戶專用）
-DEFAULT_EMAIL_TARGET = os.getenv("DEFAULT_EMAIL_TARGET", "acesc01gp@gmail.com")
 
 # ===== HTML 郵件範本生成 =====
 # ===== Google Sheets 客戶記錄寫入 =====
