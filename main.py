@@ -886,10 +886,7 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         draw.text((30, y + 78), f"檢測人員：{inspector_name}（{inspector_phone}）", font=font_small, fill=DARK)
         y += 100
 
-        # ===== 健康警示分數 (Progress Ring) =====
-        draw.rectangle([(20, y), (W - 20, y + 150)], fill=WHITE, outline='#FFCC80', width=1)
-        draw.text((W // 2, y + 20), "健康警示分數", font=font_label, fill=GRAY, anchor='mm')
-        
+        # ===== 健康警示分數 - Progress Ring 區塊 =====
         # Progress ring: draw background full ring in gray, then arc for score
         ring_center_x = W // 2
         ring_center_y = y + 70
@@ -902,16 +899,13 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         draw.ellipse(bbox, outline=GRAY_LIGHT, width=ring_width)
         
         # Foreground arc (score percentage)
-        import math
-        start_angle = 90  # Start from top (12 o'clock position)
-        end_angle = start_angle - (score / 100.0) * 360
         # PIL arc: start and end angles in degrees, 3 o'clock is 0
         # We need to convert: 12 o'clock is -90, and arc goes counterclockwise
         arc_start = -90  # 12 o'clock
         arc_end = arc_start - (score / 100.0) * 360
         draw.arc(bbox, start=arc_start, end=arc_end, fill=ring_color, width=ring_width)
         
-        # Center score number
+        # Center score number - using orange/dark red for high visibility
         draw.text((ring_center_x, ring_center_y), str(score), font=font_big, fill=(0xBF, 0x36, 0x0C), anchor='mm')
         
         draw.text((W // 2, y + 118), f"潛在風險等級：{risk}", font=font_small, fill=risk_text_color, anchor='mm')
@@ -1028,36 +1022,38 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
                 </td></tr>
               </table>
 
-              <!-- 健康警示分數 -->
+              <!-- 健康警示分數 - Progress Ring 區塊 -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF8E1; border:1px solid #FFCC80; border-radius:12px; margin-bottom:14px;">
-                <tr><td style="padding:14px; text-align:center;">
+                <tr><td style="padding:20px; text-align:center;">
                   <div style="font-size:13px; color:#6D4C41;">健康警示分數</div>
-                  <div style="margin:8px auto; width:64px; height:64px; border-radius:50%; border:3px solid {risk_circle_color}; display:flex; align-items:center; justify-content:center;">
-                    <span style="font-size:20px; font-weight:700; color:#E65100;">{score}</span>
+                  <div style="margin:12px auto; position:relative; width:100px; height:100px;">
+                    <!-- Background ring -->
+                    <svg width="100" height="100" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r="45" stroke="#E5E7EB" stroke-width="7" fill="none"/>
+                      <!-- Progress ring -->
+                      <circle cx="50" cy="50" r="45" stroke="{ring_color}" stroke-width="7" fill="none"
+                              stroke-dasharray="{283}" stroke-dashoffset="{283 - (score / 100 * 283)}" stroke-linecap="round"/>
+                    </svg>
+                    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:24px; font-weight:700; color:#E65100;">{score}</div>
                   </div>
                   <div style="margin-top:6px; display:inline-block; padding:6px 16px; border-radius:999px; background:{risk_bg_color}; color:{risk_circle_color}; font-weight:700; font-size:14px;">潛在風險等級：{risk}</div>
                   <div style="margin-top:8px; font-size:14px; color:#3E2723;">體質判定：<strong>{constitution}</strong></div>
                 </td></tr>
               </table>
 
-              <!-- 健康風險指標 -->
+              <!-- 健康風險指標 - Progress Bars 區塊 -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff; border:1px solid #FFE0B2; border-radius:12px; margin-bottom:14px;">
                 <tr><td style="padding:14px;">
-                  <h3 style="margin:0 0 10px; color:#E65100; font-size:15px;">⚠️ 健康風險關注指標</h3>
-                  <div style="display:flex; gap:20px; flex-wrap:wrap;">
-                    <div style="display:flex; align-items:center; gap:8px; font-size:14px; color:#3E2723;">
-                      <span style="color:#E65100;">●</span>
-                      <span>血管彈性指數</span>
+                  <h3 style="margin:0 0 12px; color:#E65100; font-size:15px;">⚠️ 健康風險關注指標</h3>
+                  {"".join([f"""
+                    <div style="display:flex; align-items:center; margin:10px 0;">
+                      <div style="width:120px; font-size:14px; color:#3E2723;">{name}</div>
+                      <div style="flex:1; height:14px; background:#E5E7EB; border-radius:7px; overflow:hidden;">
+                        <div style="height:100%; width:{value}%; background:{bar_color}; border-radius:7px;"></div>
+                      </div>
+                      <div style="width:40px; text-align:right; font-size:13px; color:#3E2723;">{value}%</div>
                     </div>
-                    <div style="display:flex; align-items:center; gap:8px; font-size:14px; color:#3E2723;">
-                      <span style="color:#E65100;">●</span>
-                      <span>血液粘稠度預警</span>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:8px; font-size:14px; color:#3E2723;">
-                      <span style="color:#E65100;">●</span>
-                      <span>肝臟代謝負擔</span>
-                    </div>
-                  </div>
+                  """.format(name=name, value=value, bar_color=bar_color) for name, value in indicators])}
                 </td></tr>
               </table>
 
