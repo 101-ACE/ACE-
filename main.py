@@ -786,10 +786,27 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
 
         def get_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
             # 優先從專案 fonts 目錄載入
-            for fname in (f"NotoSansCJK-{('Bold' if bold else 'Regular')}.ttc",
-                          f"NotoSansCJK-Regular.ttf",
-                          f"NotoSansTC-{('Bold' if bold else 'Regular')}.ttf",
-                          f"NotoSansTC-Regular.ttf"):
+            # 專案內 NotoSansTC-Regular.ttf 為優先字型
+            project_fonts = []
+            if bold:
+                project_fonts = [
+                    f"NotoSansCJK-Black.ttc",
+                    f"NotoSansCJK-Regular.ttc", 
+                    f"NotoSansCJK-Bold.ttf",
+                    f"NotoSansTC-Bold.ttf",
+                    f"NotoSansTC-Regular.ttf"
+                ]
+            else:
+                project_fonts = [
+                    f"NotoSansCJK-Regular.ttc",
+                    f"NotoSansCJK-Bold.ttc",  # fallback to bold if regular missing
+                    f"NotoSansCJK-Regular.ttf",
+                    f"NotoSansTC-Regular.ttf",
+                    f"NotoSansTC-Bold.ttf"
+                ]
+            
+            # 從專案 fonts 目錄載入
+            for fname in project_fonts:
                 fpath = os.path.join(_FONT_DIR, fname)
                 if os.path.exists(fpath):
                     return ImageFont.truetype(fpath, size)
