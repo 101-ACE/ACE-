@@ -829,6 +829,7 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         font_big     = get_font(48, bold=True)
         font_cta     = get_font(18, bold=True)
         font_rec     = get_font(13)
+        font_bar     = get_font(13)
 
         # 配色
         ORANGE_DARK  = '#BF360C'
@@ -838,15 +839,24 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         WHITE        = '#FFFFFF'
         DARK         = '#3E2723'
         GRAY         = '#6D4C41'
+        GRAY_LIGHT   = '#E5E7EB'  # progress ring background
 
         score = assessment.health_score
         risk  = assessment.risk_level
         if risk == "高":
-            risk_circle_color = (0xD3, 0x2F, 0x2F)
+            risk_text_color = (0xD3, 0x2F, 0x2F)
         elif risk == "中":
-            risk_circle_color = (0xF5, 0x7C, 0x00)
+            risk_text_color = (0xF5, 0x7C, 0x00)
         else:
-            risk_circle_color = (0x38, 0x8E, 0x3C)
+            risk_text_color = (0x38, 0x8E, 0x3C)
+
+        # Score color for ring (green=low risk/high score, yellow/orange=medium, red=high risk)
+        if score <= 50:
+            ring_color = (0xD3, 0x2F, 0x2F)  # 紅色
+        elif score <= 75:
+            ring_color = (0xF5, 0x7C, 0x00)  # 橘黃色
+        else:
+            ring_color = (0x0D, 0x94, 0x88)  # 綠色
 
         inspector_name = find_inspector_name(assessment.referral_code)
         inspector_phone = find_inspector_phone(assessment.referral_code)
@@ -876,34 +886,73 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         draw.text((30, y + 78), f"檢測人員：{inspector_name}（{inspector_phone}）", font=font_small, fill=DARK)
         y += 100
 
-        # ===== 健康警示分數 =====
-        draw.rectangle([(20, y), (W - 20, y + 140)], fill=ORANGE_BG, outline='#FFCC80', width=1)
-        draw.text((W // 2, y + 18), "健康警示分數", font=font_label, fill=GRAY, anchor='mm')
-        draw.text((W // 2, y + 62), str(score), font=font_big, fill=ORANGE_DARK, anchor='mm')
-        # 圓圈圖表
-        cx, cy, r = W // 2, y + 102, 26
-        draw.ellipse([(cx - r, cy - r), (cx + r, cy + r)], fill=risk_circle_color)
-        draw.text((W // 2, y + 118), f"潛在風險等級：{risk}", font=font_small, fill=DARK, anchor='mm')
+        # ===== 健康警示分數 (Progress Ring) =====
+        draw.rectangle([(20, y), (W - 20, y + 150)], fill=WHITE, outline='#FFCC80', width=1)
+        draw.text((W // 2, y + 20), "健康警示分數", font=font_label, fill=GRAY, anchor='mm')
+        
+        # Progress ring: draw background full ring in gray, then arc for score
+        ring_center_x = W // 2
+        ring_center_y = y + 70
+        ring_radius = 30
+        ring_width = 7
+        
+        # Background ring (full circle in gray)
+        bbox = [(ring_center_x - ring_radius, ring_center_y - ring_radius),
+                (ring_center_x + ring_radius, ring_center_y + ring_radius)]
+        draw.ellipse(bbox, outline=GRAY_LIGHT, width=ring_width)
+        
+        # Foreground arc (score percentage)
+        import math
+        start_angle = 90  # Start from top (12 o'clock position)
+        end_angle = start_angle - (score / 100.0) * 360
+        # PIL arc: start and end angles in degrees, 3 o'clock is 0
+        # We need to convert: 12 o'clock is -90, and arc goes counterclockwise
+        arc_start = -90  # 12 o'clock
+        arc_end = arc_start - (score / 100.0) * 360
+        draw.arc(bbox, start=arc_start, end=arc_end, fill=ring_color, width=ring_width)
+        
+        # Center score number
+        draw.text((ring_center_x, ring_center_y), str(score), font=font_big, fill=(0xBF, 0x36, 0x0C), anchor='mm')
+        
+        draw.text((W // 2, y + 118), f"潛在風險等級：{risk}", font=font_small, fill=risk_text_color, anchor='mm')
         draw.text((W // 2, y + 134), f"體質判定：{assessment.constitution}",
                   font=font_small, fill=GRAY, anchor='mm')
-        y += 152
+        y += 162
 
-        # ===== 健康風險指標 =====
-        indicators = ["血管彈性指數", "血液粘稠度預警", "肝臟代謝負擔"]
+        # ===== 健康風險指標 (Progress Bars) =====
+        indicators = [
+            ("血管彈性指數", 65),
+            ("血液粘稠度預警", 45),
+            ("肝臟代謝負擔", 55),
+        ]
 
-        draw.rectangle([(20, y), (W - 20, y + 100)], fill=WHITE, outline='#E0E0E0', width=1)
+        draw.rectangle([(20, y), (W - 20, y + 120)], fill=WHITE, outline='#E0E0E0', width=1)
         draw.text((30, y + 10), "⚠️ 健康風險關注指標", font=font_label, fill=ORANGE_MAIN)
-        for i, ind in enumerate(indicators):
-            draw.text((30, y + 34 + i * 24), f"●  {ind}", font=font_small, fill=DARK)
-        y += 114
-
-        # ===== 飲食與生活建議 =====
-        draw.rectangle([(20, y), (W - 20, y + 20 + len(recommendations[:5]) * 24 + 10)],
-                       fill=WHITE, outline='#E0E0E0', width=1)
-        draw.text((30, y + 8), "🍵 飲食與生活作息建議", font=font_label, fill=ORANGE_MAIN)
-        for i, rec in enumerate(recommendations[:5]):
-            draw.text((30, y + 34 + i * 24), f"• {rec}", font=font_rec, fill=DARK)
-        y += 44 + len(recommendations[:5]) * 24
+        
+        for i, (ind, pct) in enumerate(indicators):
+            bar_y = y + 38 + i * 28
+            label_x = 30
+            label_y = bar_y + 6
+            
+            # Indicator name
+            draw.text((label_x, label_y), ind, font=font_bar, fill=DARK, anchor='lm')
+            
+            # Progress bar background
+            bar_x = label_x + 110
+            bar_width = W - 20 - bar_x - 20
+            bar_height = 14
+            bar_bg = GRAY_LIGHT
+            bar_fg = ring_color if pct < 50 else ((0xF5, 0x7C, 0x00) if pct < 75 else ring_color)
+            
+            # Background bar
+            draw.rectangle([(bar_x, label_y - 7), (bar_x + bar_width, label_y + 7)],
+                           fill=bar_bg, outline=bar_bg)
+            # Foreground bar
+            fg_width = int(bar_width * pct / 100)
+            draw.rectangle([(bar_x, label_y - 7), (bar_x + fg_width, label_y + 7)],
+                           fill=bar_fg, outline=bar_fg)
+        
+        y += 135
 
         buf = BytesIO()
         img.save(buf, format='PNG', quality=95)
