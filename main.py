@@ -34,7 +34,8 @@ DATABASE_URL = "sqlite:///./tcm_assessments.db"
 
 # ===== 靜默 Email 設定（環境變數，具備 Graceful Fallback） =====
 SMTP_SERVER = os.getenv("SMTP_HOST", os.getenv("SMTP_SERVER", "smtp.gmail.com"))
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+# 優先使用 SSL 端口 465；若環境變數指定了其他端口則採用該值
+SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
 # 強制指定寄件端為總部信箱
 SMTP_USERNAME = "acesc01gp@gmail.com"
 # 優先讀 GMAIL_APP_PASSWORD，fallback 到 SMTP_PASSWORD
@@ -864,7 +865,7 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
     print(f"[EMAIL_LOG] 📧 準備發送郵件")
     print(f"[EMAIL_LOG]    寄件者: {SENDER_EMAIL}")
     print(f"[EMAIL_LOG]    收件者: {partner_email}")
-    print(f"[EMAIL_LOG]    SMTP: {SMTP_SERVER}:{SMTP_PORT}")
+    print(f"[EMAIL_LOG]    SMTP: {SMTP_SERVER}:{SMTP_PORT} (SSL)")
     print(f"[EMAIL_LOG]    主旨: {subject}")
     print(f"[EMAIL_LOG]    客戶: {assessment.name} ({assessment.phone})")
     print(f"[EMAIL_LOG]    體質: {assessment.constitution} 分數: {assessment.health_score}")
@@ -876,42 +877,72 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
     msg["To"] = partner_email
     msg.attach(MIMEText(html, "html", "utf-8"))
 
-    try:
-        print(f"[EMAIL_LOG] 🔌 SMTP 連線中... ({SMTP_SERVER}:{SMTP_PORT})")
-        # 使用超時設定避免無限等待（10 秒）
-        import socket
-        socket.setdefaulttimeout(10)
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
-            server.starttls()
-            server.login(SMTP_USERNAME, SMTP_PASSWORD)
-            server.sendmail(SENDER_EMAIL, [partner_email], msg.as_string())
-        print(f"[EMAIL_LOG] ✅ 郵件發送成功 | {SENDER_EMAIL} → {partner_email} | assessment_id={assessment.id}")
-        logger.info("Email sent for assessment %s to %s (subject: %s)", assessment.id, partner_email, subject)
-        return {"success": True, "method": "email", "to": partner_email}
-    except socket.timeout:
-        print(f"[EMAIL_ERROR] ❌ SMTP 連線超時（10秒）| 目標: {partner_email} | {SMTP_SERVER}:{SMTP_PORT}")
-        _email_tb = __import__('traceback').format_exc()
-        logger.exception("SMTP connection timeout for assessment %s", assessment.id)
-        print(f"[EMAIL_ERROR]    完整 traceback:\n{_email_tb}")
-        return {"success": False, "error": "SMTP connection timeout (10s)"}
-    except smtplib.SMTPAuthenticationError as e:
-        print(f"[EMAIL_ERROR] ❌ SMTP 認證失敗 | 寄件者: {SENDER_EMAIL} | 收件者: {partner_email} | 錯誤: {e}")
-        _email_tb = __import__('traceback').format_exc()
-        logger.exception("SMTP authentication failed for assessment %s: %s", assessment.id, e)
-        print(f"[EMAIL_ERROR]    完整 traceback:\n{_email_tb}")
-        return {"success": False, "error": f"SMTPAuthenticationError: {e}"}
-    except smtplib.SMTPConnectError as e:
-        print(f"[EMAIL_ERROR] ❌ SMTP 連線失敗 | 目標: {partner_email} | 錯誤: {e}")
-        _email_tb = __import__('traceback').format_exc()
-        logger.exception("SMTP connect failed for assessment %s: %s", assessment.id, e)
-        print(f"[EMAIL_ERROR]    完整 traceback:\n{_email_tb}")
-        return {"success": False, "error": f"SMTPConnectError: {e}"}
-    except Exception as e:
-        print(f"[EMAIL_ERROR] ❌ 郵件發送失敗 | 寄件者: {SENDER_EMAIL} | 收件者: {partner_email} | 錯誤: {e}")
-        _email_tb = __import__('traceback').format_exc()
-        logger.exception("Failed to send email for assessment %s: %s", assessment.id, e)
-        print(f"[EMAIL_ERROR]    完整 traceback:\n{_email_tb}")
-        return {"success": False, "error": str(e)}
+    # ===== SSL SMTP 連線（端口 465）+ Retry 退避機制 =====
+    max_retries = 3
+    retry_delays = [2, 5, 10]  # 秒
+    last_error = ""
+
+    for attempt in range(max_retries):
+        try:
+            print(f"[EMAIL_LOG] 🔌 SMTP SSL 連線中... ({SMTP_SERVER}:{SMTP_PORT}) [attempt {attempt + 1}/{max_retries}]")
+            import socket as _socket
+            _socket.setdefaulttimeout(10)
+            # 使用 SMTP_SSL（端口 465）
+            with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
+                server.login(SMTP_USERNAME, SMTP_PASSWORD)
+                server.sendmail(SENDER_EMAIL, [partner_email], msg.as_string())
+            print(f"[EMAIL_LOG] ✅ 郵件發送成功 | {SENDER_EMAIL} → {partner_email} | assessment_id={assessment.id}")
+            logger.info("Email sent for assessment %s to %s (subject: %s)", assessment.id, partner_email, subject)
+            return {"success": True, "method": "email", "to": partner_email}
+        except _socket.timeout:
+            last_error = f"SMTP connection timeout (10s) on attempt {attempt + 1}"
+            print(f"[EMAIL_ERROR] ❌ 連線超時 | {last_error} | 目標: {partner_email}")
+            if attempt < max_retries - 1:
+                delay = retry_delays[attempt]
+                print(f"[EMAIL_LOG] ⏳ {delay}s 後重試...")
+                import time as _time
+                _time.sleep(delay)
+                continue
+        except smtplib.SMTPAuthenticationError as e:
+            last_error = f"SMTPAuthenticationError: {e}"
+            print(f"[EMAIL_ERROR] ❌ SMTP 認證失敗 | 寄件者: {SENDER_EMAIL} | 錯誤: {e}")
+            logger.exception("SMTP authentication failed for assessment %s", assessment.id)
+            break  # 認證失敗不重試
+        except smtplib.SMTPConnectError as e:
+            last_error = f"SMTPConnectError: {e}"
+            print(f"[EMAIL_ERROR] ❌ SMTP 連線失敗 | 目標: {partner_email} | 錯誤: {e}")
+            if attempt < max_retries - 1:
+                delay = retry_delays[attempt]
+                print(f"[EMAIL_LOG] ⏳ {delay}s 後重試...")
+                import time as _time
+                _time.sleep(delay)
+                continue
+        except OSError as e:
+            last_error = f"OSError: {e}"
+            print(f"[EMAIL_ERROR] ❌ 網路連線失敗 | {e} | 目標: {SMTP_SERVER}:{SMTP_PORT}")
+            if attempt < max_retries - 1:
+                delay = retry_delays[attempt]
+                print(f"[EMAIL_LOG] ⏳ {delay}s 後重試...")
+                import time as _time
+                _time.sleep(delay)
+                continue
+        except Exception as e:
+            last_error = str(e)
+            print(f"[EMAIL_ERROR] ❌ 郵件發送失敗 | 寄件者: {SENDER_EMAIL} | 收件者: {partner_email} | 錯誤: {e}")
+            logger.exception("Failed to send email for assessment %s: %s", assessment.id, e)
+            if attempt < max_retries - 1:
+                delay = retry_delays[attempt]
+                print(f"[EMAIL_LOG] ⏳ {delay}s 後重試...")
+                import time as _time
+                _time.sleep(delay)
+                continue
+            break
+
+    # 所有重試都失敗
+    print(f"[EMAIL_ERROR] ❌ 郵件發送失敗（已嘗試 {max_retries} 次）| 最後錯誤: {last_error} | assessment_id={assessment.id}")
+    _email_tb = tb.format_exc()
+    logger.error("[EMAIL_ERROR] All retries exhausted for assessment %s: %s\n%s", assessment.id, last_error, _email_tb)
+    return {"success": False, "error": f"All retries exhausted: {last_error}"}
 
 # ===== Admin Email Fallback =====
 # ADMIN_EMAIL already defined above
