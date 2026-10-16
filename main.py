@@ -69,6 +69,113 @@ PARTNERS_REFRESHED_AT: float = 0.0
 REFRESH_INTERVAL_SECONDS = 300  # 5 分鐘快取
 
 # ═══════════════════════════════════════════════════════════════
+# [FUNNEL] 轉換漏斗追蹤（記憶體統計）
+# ═══════════════════════════════════════════════════════════════
+class FunnelMetrics:
+    """轉換漏斗日誌統計"""
+    def __init__(self):
+        self.visits: Dict[str, int] = {}        # date -> count
+        self.submissions: Dict[str, int] = {}   # date -> count
+        self.sheet_writes: Dict[str, int] = {}  # date -> count
+        self.email_sends: Dict[str, int] = {}   # date -> count
+        self.attribution: Dict[str, List[Dict]] = {}  # date -> [{code, name}]
+        self.drops: List[Dict] = []            # 漏斗流失記錄
+
+    def record_visit(self) -> str:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self.visits[today] = self.visits.get(today, 0) + 1
+        return today
+
+    def record_submission(self, referral_code: Optional[str], inspector_name: str) -> str:
+        today = datetime.now().strftime("%Y-%m-%d")
+        self.submissions[today] = self.submissions.get(today, 0) + 1
+        # 記錄歸因
+        if today not in self.attribution:
+            self.attribution[today] = []
+        self.attribution[today].append({
+            "code": referral_code or "預設散客",
+            "name": inspector_name,
+            "timestamp": datetime.now().isoformat()
+        })
+        return today
+
+    def record_sheet_write(self, success: bool):
+        today = datetime.now().strftime("%Y-%m-%d")
+        if success:
+            self.sheet_writes[today] = self.sheet_writes.get(today, 0) + 1
+        else:
+            # 記錄流失
+            self.drops.append({
+                "type": "sheet_write_failed",
+                "date": today,
+                "timestamp": datetime.now().isoformat()
+            })
+
+    def record_email_send(self, success: bool):
+        today = datetime.now().strftime("%Y-%m-%d")
+        if success:
+            self.email_sends[today] = self.email_sends.get(today, 0) + 1
+        else:
+            self.drops.append({
+                "type": "email_send_failed",
+                "date": today,
+                "timestamp": datetime.now().isoformat()
+            })
+
+    def get_daily_stats(self, days: int = 7) -> Dict:
+        today = datetime.now()
+        result = {
+            "generated_at": datetime.now().isoformat(),
+            "daily_stats": [],
+            "total_visits": sum(self.visits.values()),
+            "total_submissions": sum(self.submissions.values()),
+            "total_sheet_writes": sum(self.sheet_writes.values()),
+            "total_email_sends": sum(self.email_sends.values()),
+            "total_drops": len(self.drops),
+        }
+        for i in range(days):
+            date = (today - __import__('datetime').timedelta(days=i)).strftime("%Y-%m-%d")
+            result["daily_stats"].append({
+                "date": date,
+                "visits": self.visits.get(date, 0),
+                "submissions": self.submissions.get(date, 0),
+                "sheet_writes": self.sheet_writes.get(date, 0),
+                "email_sends": self.email_sends.get(date, 0),
+                "drop_events": len([d for d in self.drops if d["date"] == date]),
+            })
+        # 計算整體轉換率
+        if result["total_visits"] > 0:
+            result["visit_to_submission_rate"] = f"{result['total_submissions']/result['total_visits']*100:.1f}%"
+        else:
+            result["visit_to_submission_rate"] = "N/A"
+        if result["total_submissions"] > 0:
+            result["submission_to_sheet_rate"] = f"{result['total_sheet_writes']/result['total_submissions']*100:.1f}%"
+            result["submission_to_email_rate"] = f"{result['total_email_sends']/result['total_submissions']*100:.1f}%"
+        else:
+            result["submission_to_sheet_rate"] = "N/A"
+            result["submission_to_email_rate"] = "N/A"
+        return result
+
+    def get_attribution_report(self, days: int = 7) -> Dict:
+        """生成歸因報告"""
+        today = datetime.now()
+        result = {"generated_at": datetime.now().isoformat(), "daily_attribution": {}}
+        for i in range(days):
+            date = (today - __import__('datetime').timedelta(days=i)).strftime("%Y-%m-%d")
+            if date in self.attribution:
+                # 統計各檢測員數量
+                inspector_counts = {}
+                for item in self.attribution[date]:
+                    name = item["name"]
+                    if name not in inspector_counts:
+                        inspector_counts[name] = {"code": item["code"], "count": 0}
+                    inspector_counts[name]["count"] += 1
+                result["daily_attribution"][date] = list(inspector_counts.values())
+        return result
+
+funnel = FunnelMetrics()
+
+# ═══════════════════════════════════════════════════════════════
 # [CONFIG_ERROR] 環境變數健康檢查（啟動時執行）
 # ═══════════════════════════════════════════════════════════════
 _missing_env = []
@@ -864,6 +971,30 @@ def submit_questionnaire(
 ):
     """提交問卷並生成報告，返回完整 JSON 結構"""
     try:
+        # ═══════════════════════════════════════════════════════════
+        # [ATTRIBUTION] 歸因驗證與漏斗記錄
+        # ═══════════════════════════════════════════════════════════
+        today_str = funnel.record_visit()
+        inspector_name = find_inspector_name(data.referral_code)
+
+        print(f"\n[FUNNEL] 📥 新增訪問 | date={today_str} | referral_code={data.referral_code or 'None'} | inspector={inspector_name}")
+
+        # 歸因驗證
+        if data.referral_code:
+            normalized = normalize_partner_id(data.referral_code)
+            if not normalized:
+                print(f"[ATTRIBUTION_ERROR] ❌ 無效的推薦碼格式: {data.referral_code}")
+                logger.warning("[ATTRIBUTION] Invalid referral code format: %s", data.referral_code)
+            else:
+                partner = find_partner(normalized)
+                if partner:
+                    print(f"[ATTRIBUTION] ✅ 歸因成功 | code={data.referral_code} → name={partner.get('name', 'N/A')}")
+                else:
+                    print(f"[ATTRIBUTION_ERROR] ⚠️ 檢測員不在白名單 | code={data.referral_code}")
+                    logger.warning("[ATTRIBUTION] Inspector not in whitelist: %s", data.referral_code)
+        else:
+            print(f"[ATTRIBUTION] ℹ️ 散客流量（無推薦碼）")
+
         # 體質分析
         analysis = analyze_constitution(data.answers)
         
@@ -894,6 +1025,10 @@ def submit_questionnaire(
             db.add(record)
             db.commit()
             db.refresh(record)
+
+            # 記錄漏斗提交
+            funnel.record_submission(data.referral_code, inspector_name)
+            print(f"[FUNNEL] ✅ 問卷提交成功 | assessment_id={record.id} | 體質={analysis['constitution']}")
             
             # 準備推薦建議
             recommendations = get_recommendations(analysis["constitution"])
@@ -905,12 +1040,16 @@ def submit_questionnaire(
             try:
                 write_customer_record_to_sheet(record, symptoms, 0)
                 sheet_result = "success"
+                funnel.record_sheet_write(True)
+                print(f"[FUNNEL] ✅ Sheet 寫入成功 | assessment_id={record.id}")
             except Exception as _sheet_e:
                 _sheet_tb = __import__('traceback').format_exc()
                 logger.error("[SHEET] Synchronous write FAILED (non-fatal): %s\n%s", _sheet_e, _sheet_tb)
                 print(f"[SHEET_ERROR] ❌ 同步寫入客戶記錄失敗（非致命，繼續執行）")
                 print(f"[SHEET_ERROR]    錯誤: {_sheet_e}")
                 print(f"[SHEET_ERROR]    完整 traceback:\n{_sheet_tb}")
+                print(f"[FUNNEL_DROP] ❌ 漏斗流失: Sheet 寫入失敗 | assessment_id={record.id}")
+                funnel.record_sheet_write(False)
                 sheet_result = f"error: {_sheet_e}"
 
             # ═══════════════════════════════════════════════════════════
@@ -931,18 +1070,26 @@ def submit_questionnaire(
                     )
                     email_status = "sent" if _email_result.get("success") else "failed"
                     email_result_detail = _email_result.get("error", "")
+                    funnel.record_email_send(_email_result.get("success", False))
+                    if _email_result.get("success"):
+                        print(f"[FUNNEL] ✅ Email 發送成功 | {SENDER_EMAIL} → {inspector_email}")
+                    else:
+                        print(f"[FUNNEL_DROP] ⚠️ Email 發送失敗 | {inspector_email} | {_email_result.get('error', 'unknown')}")
                 except Exception as _email_e:
                     _email_tb = __import__('traceback').format_exc()
                     logger.error("[EMAIL] Synchronous send FAILED (non-fatal): %s\n%s", _email_e, _email_tb)
                     print(f"[EMAIL_ERROR] ❌ 同步發送郵件失敗（非致命，繼續執行）")
                     print(f"[EMAIL_ERROR]    錯誤: {_email_e}")
                     print(f"[EMAIL_ERROR]    完整 traceback:\n{_email_tb}")
+                    print(f"[FUNNEL_DROP] ❌ 漏斗流失: Email 發送異常 | assessment_id={record.id}")
+                    funnel.record_email_send(False)
                     email_status = "exception"
                     email_result_detail = str(_email_e)
             else:
                 print(f"[EMAIL_ERROR] ⚠️ SMTP 未配置（SMTP_PASSWORD 為空），跳過郵件發送 | assessment_id={record.id}")
                 logger.info("SMTP not configured; skip email for assessment %s", record.id)
                 email_status = "skipped (SMTP disabled)"
+                funnel.record_email_send(False)
             
             # 返回完整報告 JSON
             inspector_phone = find_inspector_phone(data.referral_code)
@@ -1027,6 +1174,78 @@ def confirm_booking(data: BookingSubmit):
         return {"success": True, "confirmed": True, "message": "預約已確認，報告已備份至拍檔 Email。"}
     finally:
         db.close()
+
+# ═══════════════════════════════════════════════════════════════
+# [DIAGNOSTIC] 診斷與漏斗統計端點
+# ═══════════════════════════════════════════════════════════════
+
+@app.get("/api/diagnostic")
+def get_diagnostic():
+    """系統診斷端點：返回環境變數狀態與資料庫統計"""
+    import sqlite3
+    db_stats = {}
+    try:
+        conn = sqlite3.connect(DATABASE_URL.replace("sqlite:///", ""))
+        cursor = conn.cursor()
+        # 總記錄數
+        cursor.execute("SELECT COUNT(*) FROM assessments")
+        db_stats["total_records"] = cursor.fetchone()[0]
+        # 今日記錄數
+        cursor.execute("SELECT COUNT(*) FROM assessments WHERE DATE(submitted_at) = DATE('now')")
+        db_stats["today_records"] = cursor.fetchone()[0]
+        # 有檢測員 vs 散客
+        cursor.execute("SELECT COUNT(*) FROM assessments WHERE referral_code IS NOT NULL AND referral_code != ''")
+        db_stats["with_referral"] = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM assessments WHERE referral_code IS NULL OR referral_code = ''")
+        db_stats["default_traffic"] = cursor.fetchone()[0]
+        # 已聯絡比例
+        cursor.execute("SELECT COUNT(*) FROM assessments WHERE contacted = 1")
+        db_stats["contacted"] = cursor.fetchone()[0]
+        # 按體質分組統計
+        cursor.execute("SELECT constitution, COUNT(*) as cnt FROM assessments GROUP BY constitution ORDER BY cnt DESC")
+        db_stats["by_constitution"] = [{"constitution": row[0], "count": row[1]} for row in cursor.fetchall()]
+        conn.close()
+    except Exception as e:
+        db_stats["error"] = str(e)
+
+    return {
+        "status": "ok",
+        "timestamp": datetime.now().isoformat(),
+        "database": db_stats,
+        "env_vars": {
+            "SMTP_ENABLED": SMTP_ENABLED,
+            "SENDER_EMAIL": SENDER_EMAIL,
+            "SMTP_SERVER": SMTP_SERVER,
+            "GOOGLE_CUSTOMER_SHEET_ID": GOOGLE_CUSTOMER_SHEET_ID,
+            "has_google_creds": bool(GOOGLE_CREDENTIALS_JSON or GOOGLE_SERVICE_ACCOUNT_JSON),
+            "has_email_password": bool(SMTP_PASSWORD),
+        },
+        "endpoints": {
+            "health": "/api/health",
+            "referral_validate": "/api/referral/validate?code=HK241545",
+            "funnel_metrics": "/api/funnel/metrics",
+            "attribution_report": "/api/diagnostic/attribution",
+            "submit": "/api/questionnaire/submit",
+        }
+    }
+
+@app.get("/api/funnel/metrics")
+def get_funnel_metrics(days: int = 7):
+    """轉換漏斗統計端點"""
+    return funnel.get_daily_stats(days)
+
+@app.get("/api/diagnostic/attribution")
+def get_attribution_report(days: int = 7):
+    """歸因報告端點"""
+    return funnel.get_attribution_report(days)
+
+@app.get("/api/diagnostic/flush")
+def flush_funnel_metrics():
+    """清空漏斗統計（用於測試）"""
+    global funnel
+    funnel = FunnelMetrics()
+    return {"success": True, "message": "漏斗統計已清空"}
+
 
 if __name__ == "__main__":
     import uvicorn
