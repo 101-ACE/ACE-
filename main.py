@@ -771,117 +771,123 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         from PIL import Image, ImageDraw, ImageFont
     except ImportError:
         logger.warning("[EMAIL] PIL not available, skipping image generation")
+        print("[EMAIL_LOG] ⚠️ PIL 未安裝，跳過圖片生成")
         return None
 
-    W, H = 600, 820
-    img = Image.new('RGB', (W, H), color='#FFF8F0')
-    draw = ImageDraw.Draw(img)
-
-    # 字型載入（fallback 到預設）
-    def get_font(size, bold=False):
-        for fpath in ['/usr/share/fonts/truetype/noto/NotoSansTC-Bold.ttf',
-                       '/usr/share/fonts/truetype/noto/NotoSansTC-Regular.ttf',
-                       '/usr/share/fonts/opentype/noto/NotoSansTC-Bold.otf',
-                       '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
-                       '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf']:
-            if os.path.exists(fpath):
-                return ImageFont.truetype(fpath, size)
-        try:
-            return ImageFont.truetype("NotoSansTC-Bold.ttf", size)
-        except Exception:
-            return ImageFont.load_default()
-
-    font_title   = get_font(26, bold=True)
-    font_label   = get_font(14)
-    font_value   = get_font(16, bold=True)
-    font_small   = get_font(12)
-    font_big     = get_font(48, bold=True)
-    font_cta     = get_font(18, bold=True)
-    font_rec     = get_font(13)
-
-    # 配色
-    ORANGE_DARK  = '#BF360C'
-    ORANGE_MAIN  = '#E65100'
-    ORANGE_LIGHT = '#FF8F00'
-    ORANGE_BG    = '#FFF3E0'
-    WHITE        = '#FFFFFF'
-    DARK         = '#3E2723'
-    GRAY         = '#6D4C41'
-    GREEN        = '#2E7D32'
-    RED          = '#C62828'
-    YELLOW       = '#F9A825'
-
-    score = assessment.health_score
-    risk  = assessment.risk_level
-    risk_color = RED if risk == "高" else (YELLOW if risk == "中" else GREEN)
-
-    # ===== 頂部橙色 Hero 區塊 =====
-    draw.rectangle([(0, 0), (W, 130)], fill=ORANGE_MAIN)
-    draw.text((W // 2, 28), "快速檢測新結果通知", font=font_title, fill=WHITE, anchor='mm')
-    draw.text((W // 2, 72), f"提交時間：{assessment.submitted_at.strftime('%Y-%m-%d %H:%M') if assessment.submitted_at else '-'}",
-              font=font_small, fill='#FFE0B2', anchor='mm')
-    draw.text((W // 2, 100), "請盡快透過 WhatsApp 與客戶聯繫跟進",
-              font=font_cta, fill=WHITE, anchor='mm')
-
-    y = 145
-
-    # ===== SOP 區塊（緊貼 Hero 下方） =====
-    draw.rectangle([(20, y), (W - 20, y + 58)], fill='#FFE0B2', outline=ORANGE_MAIN, width=2)
-    draw.text((30, y + 10), "📋 拍檔跟進 SOP", font=font_label, fill=ORANGE_DARK)
-    draw.text((30, y + 32), "請於 8 小時內聯繫客戶，關心及了解客戶，並安排前往門市/上門檢測。",
-              font=font_small, fill=DARK)
-    y += 72
-
-    # ===== 客戶資料卡片 =====
-    draw.rectangle([(20, y), (W - 20, y + 85)], fill=WHITE, outline='#E0E0E0', width=1)
-    draw.text((30, y + 10), "👤 客戶資料", font=font_label, fill=ORANGE_MAIN)
-    draw.text((30, y + 34), f"姓名：{assessment.name}", font=font_value, fill=DARK)
-    draw.text((30, y + 56), f"電話：{assessment.phone}", font=font_value, fill=DARK)
-    y += 98
-
-    # ===== 健康警示分數 =====
-    draw.rectangle([(20, y), (W - 20, y + 110)], fill=ORANGE_BG, outline='#FFCC80', width=1)
-    draw.text((W // 2, y + 16), "健康警示分", font=font_label, fill=GRAY, anchor='mm')
-    draw.text((W // 2, y + 52), str(score), font=font_big, fill=ORANGE_DARK, anchor='mm')
-    draw.rounded_rectangle([(W // 2 - 80, y + 76), (W // 2 + 80, y + 100)],
-                           radius=20, fill=risk_color)
-    draw.text((W // 2, y + 88), f"風險等級：{risk}", font=font_small, fill=WHITE, anchor='mm')
-    draw.text((W // 2, y + 106), f"體質判定：{assessment.constitution}",
-              font=font_small, fill=GRAY, anchor='mm')
-    y += 122
-
-    # ===== 健康風險指標 =====
-    indicators = []
     try:
-        indicators = json.loads(assessment.risk_indicators or "[]")
-    except Exception:
-        pass
-    indicators = indicators[:3] if indicators else ["系統尚未量化指標"]
+        W, H = 600, 820
+        img = Image.new('RGB', (W, H), color='#FFF8F0')
+        draw = ImageDraw.Draw(img)
 
-    draw.rectangle([(20, y), (W - 20, y + 60 + len(indicators) * 26)], fill=WHITE, outline='#E0E0E0', width=1)
-    draw.text((30, y + 8), "⚠️ 健康風險關注指標", font=font_label, fill=ORANGE_MAIN)
-    for i, ind in enumerate(indicators):
-        draw.text((30, y + 34 + i * 26), f"●  {ind}", font=font_small, fill=DARK)
-    y += 70 + len(indicators) * 26
+        # 字型載入（fallback 到預設）
+        def get_font(size, bold=False):
+            for fpath in ['/usr/share/fonts/truetype/noto/NotoSansTC-Bold.ttf',
+                           '/usr/share/fonts/truetype/noto/NotoSansTC-Regular.ttf',
+                           '/usr/share/fonts/opentype/noto/NotoSansTC-Bold.otf',
+                           '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+                           '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf']:
+                if os.path.exists(fpath):
+                    return ImageFont.truetype(fpath, size)
+            try:
+                return ImageFont.truetype("NotoSansTC-Bold.ttf", size)
+            except Exception:
+                return ImageFont.load_default()
 
-    # ===== 飲食與生活建議 =====
-    draw.rectangle([(20, y), (W - 20, y + 20 + len(recommendations) * 24 + 10)],
-                   fill=WHITE, outline='#E0E0E0', width=1)
-    draw.text((30, y + 8), "🍵 飲食與生活作息建議", font=font_label, fill=ORANGE_MAIN)
-    for i, rec in enumerate(recommendations[:5]):
-        draw.text((30, y + 34 + i * 24), f"• {rec}", font=font_rec, fill=DARK)
-    y += 44 + len(recommendations[:5]) * 24
+        font_title   = get_font(26, bold=True)
+        font_label   = get_font(14)
+        font_value   = get_font(16, bold=True)
+        font_small   = get_font(12)
+        font_big     = get_font(48, bold=True)
+        font_cta     = get_font(18, bold=True)
+        font_rec     = get_font(13)
 
-    # ===== Footer =====
-    draw.rectangle([(0, H - 40), (W, H)], fill=ORANGE_BG)
-    draw.text((W // 2, H - 24),
-              f"客戶：{assessment.name}　|　電話：{assessment.phone}　|　檢測編號：{assessment.referral_code or '-'}",
-              font=font_small, fill=GRAY, anchor='mm')
+        # 配色
+        ORANGE_DARK  = '#BF360C'
+        ORANGE_MAIN  = '#E65100'
+        ORANGE_LIGHT = '#FF8F00'
+        ORANGE_BG    = '#FFF3E0'
+        WHITE        = '#FFFFFF'
+        DARK         = '#3E2723'
+        GRAY         = '#6D4C41'
+        GREEN        = '#2E7D32'
+        RED          = '#C62828'
+        YELLOW       = '#F9A825'
 
-    buf = BytesIO()
-    img.save(buf, format='PNG', quality=95)
-    buf.seek(0)
-    return buf.getvalue()
+        score = assessment.health_score
+        risk  = assessment.risk_level
+        risk_color = RED if risk == "高" else (YELLOW if risk == "中" else GREEN)
+
+        # ===== 頂部橙色 Hero 區塊 =====
+        draw.rectangle([(0, 0), (W, 130)], fill=ORANGE_MAIN)
+        draw.text((W // 2, 28), "快速檢測新結果通知", font=font_title, fill=WHITE, anchor='mm')
+        draw.text((W // 2, 72), f"提交時間：{assessment.submitted_at.strftime('%Y-%m-%d %H:%M') if assessment.submitted_at else '-'}",
+                  font=font_small, fill='#FFE0B2', anchor='mm')
+        draw.text((W // 2, 100), "請盡快透過 WhatsApp 與客戶聯繫跟進",
+                  font=font_cta, fill=WHITE, anchor='mm')
+
+        y = 145
+
+        # ===== SOP 區塊（緊貼 Hero 下方） =====
+        draw.rectangle([(20, y), (W - 20, y + 58)], fill='#FFE0B2', outline=ORANGE_MAIN, width=2)
+        draw.text((30, y + 10), "📋 拍檔跟進 SOP", font=font_label, fill=ORANGE_DARK)
+        draw.text((30, y + 32), "請於 8 小時內聯繫客戶，關心及了解客戶，並安排前往門市/上門檢測。",
+                  font=font_small, fill=DARK)
+        y += 72
+
+        # ===== 客戶資料卡片 =====
+        draw.rectangle([(20, y), (W - 20, y + 85)], fill=WHITE, outline='#E0E0E0', width=1)
+        draw.text((30, y + 10), "👤 客戶資料", font=font_label, fill=ORANGE_MAIN)
+        draw.text((30, y + 34), f"姓名：{assessment.name}", font=font_value, fill=DARK)
+        draw.text((30, y + 56), f"電話：{assessment.phone}", font=font_value, fill=DARK)
+        y += 98
+
+        # ===== 健康警示分數 =====
+        draw.rectangle([(20, y), (W - 20, y + 110)], fill=ORANGE_BG, outline='#FFCC80', width=1)
+        draw.text((W // 2, y + 16), "健康警示分", font=font_label, fill=GRAY, anchor='mm')
+        draw.text((W // 2, y + 52), str(score), font=font_big, fill=ORANGE_DARK, anchor='mm')
+        draw.rounded_rectangle([(W // 2 - 80, y + 76), (W // 2 + 80, y + 100)],
+                               radius=20, fill=risk_color)
+        draw.text((W // 2, y + 88), f"風險等級：{risk}", font=font_small, fill=WHITE, anchor='mm')
+        draw.text((W // 2, y + 106), f"體質判定：{assessment.constitution}",
+                  font=font_small, fill=GRAY, anchor='mm')
+        y += 122
+
+        # ===== 健康風險指標 =====
+        indicators = []
+        try:
+            indicators = json.loads(assessment.risk_indicators or "[]")
+        except Exception:
+            pass
+        indicators = indicators[:3] if indicators else ["系統尚未量化指標"]
+
+        draw.rectangle([(20, y), (W - 20, y + 60 + len(indicators) * 26)], fill=WHITE, outline='#E0E0E0', width=1)
+        draw.text((30, y + 8), "⚠️ 健康風險關注指標", font=font_label, fill=ORANGE_MAIN)
+        for i, ind in enumerate(indicators):
+            draw.text((30, y + 34 + i * 26), f"●  {ind}", font=font_small, fill=DARK)
+        y += 70 + len(indicators) * 26
+
+        # ===== 飲食與生活建議 =====
+        draw.rectangle([(20, y), (W - 20, y + 20 + len(recommendations) * 24 + 10)],
+                       fill=WHITE, outline='#E0E0E0', width=1)
+        draw.text((30, y + 8), "🍵 飲食與生活作息建議", font=font_label, fill=ORANGE_MAIN)
+        for i, rec in enumerate(recommendations[:5]):
+            draw.text((30, y + 34 + i * 24), f"• {rec}", font=font_rec, fill=DARK)
+        y += 44 + len(recommendations[:5]) * 24
+
+        # ===== Footer =====
+        draw.rectangle([(0, H - 40), (W, H)], fill=ORANGE_BG)
+        draw.text((W // 2, H - 24),
+                  f"客戶：{assessment.name}　|　電話：{assessment.phone}　|　檢測編號：{assessment.referral_code or '-'}",
+                  font=font_small, fill=GRAY, anchor='mm')
+
+        buf = BytesIO()
+        img.save(buf, format='PNG', quality=95)
+        buf.seek(0)
+        return buf.getvalue()
+    except Exception as e:
+        logger.warning("[EMAIL] Image generation failed: %s", e)
+        print(f"[EMAIL_LOG] ⚠️ 圖片生成失敗: {e}")
+        return None
 
 
 def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
@@ -989,21 +995,20 @@ def _send_via_sendgrid_api(html_content: str, to_email: str, subject: str, from_
     """使用 SendGrid API (HTTP POST) 發送郵件（支援圖片附件）"""
     import json as _json
     try:
-        attachments = []
-        if image_bytes:
-            attachments.append({
-                "content": base64.b64encode(image_bytes).decode(),
-                "filename": "報告圖表.png",
-                "type": "image/png",
-                "disposition": "attachment"
-            })
         payload = {
             "personalizations": [{"to": [{"email": to_email}]}],
             "from": {"email": from_email, "name": "COSWAY 健康檢測"},
             "subject": subject,
-            "content": [{"type": "text/html", "value": html_content}],
-            "attachments": attachments
+            "content": [{"type": "text/html", "value": html_content}]
         }
+        # 只有當圖片確實存在且不為空時才加入附件
+        if image_bytes and len(image_bytes) > 0:
+            payload["attachments"] = [{
+                "content": base64.b64encode(image_bytes).decode(),
+                "filename": "報告圖表.png",
+                "type": "image/png",
+                "disposition": "attachment"
+            }]
         headers = {
             "Authorization": f"Bearer {EMAIL_API_KEY}",
             "Content-Type": "application/json"
@@ -1032,19 +1037,18 @@ def _send_via_resend_api(html_content: str, to_email: str, subject: str, from_em
     """使用 Resend API (HTTP POST) 發送郵件（支援圖片附件）"""
     import json as _json
     try:
-        attachments = []
-        if image_bytes:
-            attachments.append({
-                "filename": "報告圖表.png",
-                "content": base64.b64encode(image_bytes).decode()
-            })
         payload = {
             "from": f"COSWAY 健康檢測 <{from_email}>",
             "to": [to_email],
             "subject": subject,
-            "html": html_content,
-            "attachments": attachments
+            "html": html_content
         }
+        # 只有當圖片確實存在且不為空時才加入附件
+        if image_bytes and len(image_bytes) > 0:
+            payload["attachments"] = [{
+                "filename": "報告圖表.png",
+                "content": base64.b64encode(image_bytes).decode()
+            }]
         headers = {
             "Authorization": f"Bearer {EMAIL_API_KEY}",
             "Content-Type": "application/json"
