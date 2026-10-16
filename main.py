@@ -821,17 +821,22 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         WHITE        = '#FFFFFF'
         DARK         = '#3E2723'
         GRAY         = '#6D4C41'
-        GREEN        = '#2E7D32'
-        RED          = '#C62828'
-        YELLOW       = '#F9A825'
 
         score = assessment.health_score
         risk  = assessment.risk_level
-        risk_color = RED if risk == "高" else (YELLOW if risk == "中" else GREEN)
+        if risk == "高":
+            risk_circle_color = (0xD3, 0x2F, 0x2F)
+        elif risk == "中":
+            risk_circle_color = (0xF5, 0x7C, 0x00)
+        else:
+            risk_circle_color = (0x38, 0x8E, 0x3C)
+
+        inspector_name = find_inspector_name(assessment.referral_code)
+        inspector_phone = find_inspector_phone(assessment.referral_code)
 
         # ===== 頂部橙色 Hero 區塊 =====
         draw.rectangle([(0, 0), (W, 130)], fill=ORANGE_MAIN)
-        draw.text((W // 2, 28), "快速檢測新結果通知", font=font_title, fill=WHITE, anchor='mm')
+        draw.text((W // 2, 28), "快速中醫體質檢測", font=font_title, fill=WHITE, anchor='mm')
         draw.text((W // 2, 72), f"提交時間：{assessment.submitted_at.strftime('%Y-%m-%d %H:%M') if assessment.submitted_at else '-'}",
                   font=font_small, fill='#FFE0B2', anchor='mm')
         draw.text((W // 2, 100), "請盡快透過 WhatsApp 與客戶聯繫跟進",
@@ -851,46 +856,37 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         draw.text((30, y + 10), "👤 客戶資料", font=font_label, fill=ORANGE_MAIN)
         draw.text((30, y + 34), f"姓名：{assessment.name}", font=font_value, fill=DARK)
         draw.text((30, y + 56), f"電話：{assessment.phone}", font=font_value, fill=DARK)
-        y += 98
+        draw.text((30, y + 78), f"檢測人員：{inspector_name}（{inspector_phone}）", font=font_small, fill=DARK)
+        y += 100
 
         # ===== 健康警示分數 =====
-        draw.rectangle([(20, y), (W - 20, y + 110)], fill=ORANGE_BG, outline='#FFCC80', width=1)
-        draw.text((W // 2, y + 16), "健康警示分", font=font_label, fill=GRAY, anchor='mm')
-        draw.text((W // 2, y + 52), str(score), font=font_big, fill=ORANGE_DARK, anchor='mm')
-        draw.rounded_rectangle([(W // 2 - 80, y + 76), (W // 2 + 80, y + 100)],
-                               radius=20, fill=risk_color)
-        draw.text((W // 2, y + 88), f"風險等級：{risk}", font=font_small, fill=WHITE, anchor='mm')
-        draw.text((W // 2, y + 106), f"體質判定：{assessment.constitution}",
+        draw.rectangle([(20, y), (W - 20, y + 140)], fill=ORANGE_BG, outline='#FFCC80', width=1)
+        draw.text((W // 2, y + 18), "健康警示分數", font=font_label, fill=GRAY, anchor='mm')
+        draw.text((W // 2, y + 62), str(score), font=font_big, fill=ORANGE_DARK, anchor='mm')
+        # 圓圈圖表
+        cx, cy, r = W // 2, y + 102, 26
+        draw.ellipse([(cx - r, cy - r), (cx + r, cy + r)], fill=risk_circle_color)
+        draw.text((W // 2, y + 118), f"潛在風險等級：{risk}", font=font_small, fill=DARK, anchor='mm')
+        draw.text((W // 2, y + 134), f"體質判定：{assessment.constitution}",
                   font=font_small, fill=GRAY, anchor='mm')
-        y += 122
+        y += 152
 
         # ===== 健康風險指標 =====
-        indicators = []
-        try:
-            indicators = json.loads(assessment.risk_indicators or "[]")
-        except Exception:
-            pass
-        indicators = indicators[:3] if indicators else ["系統尚未量化指標"]
+        indicators = ["血管彈性指數", "血液粘稠度預警", "肝臟代謝負擔"]
 
-        draw.rectangle([(20, y), (W - 20, y + 60 + len(indicators) * 26)], fill=WHITE, outline='#E0E0E0', width=1)
-        draw.text((30, y + 8), "⚠️ 健康風險關注指標", font=font_label, fill=ORANGE_MAIN)
+        draw.rectangle([(20, y), (W - 20, y + 100)], fill=WHITE, outline='#E0E0E0', width=1)
+        draw.text((30, y + 10), "⚠️ 健康風險關注指標", font=font_label, fill=ORANGE_MAIN)
         for i, ind in enumerate(indicators):
-            draw.text((30, y + 34 + i * 26), f"●  {ind}", font=font_small, fill=DARK)
-        y += 70 + len(indicators) * 26
+            draw.text((30, y + 34 + i * 24), f"●  {ind}", font=font_small, fill=DARK)
+        y += 114
 
         # ===== 飲食與生活建議 =====
-        draw.rectangle([(20, y), (W - 20, y + 20 + len(recommendations) * 24 + 10)],
+        draw.rectangle([(20, y), (W - 20, y + 20 + len(recommendations[:5]) * 24 + 10)],
                        fill=WHITE, outline='#E0E0E0', width=1)
         draw.text((30, y + 8), "🍵 飲食與生活作息建議", font=font_label, fill=ORANGE_MAIN)
         for i, rec in enumerate(recommendations[:5]):
             draw.text((30, y + 34 + i * 24), f"• {rec}", font=font_rec, fill=DARK)
         y += 44 + len(recommendations[:5]) * 24
-
-        # ===== Footer =====
-        draw.rectangle([(0, H - 40), (W, H)], fill=ORANGE_BG)
-        draw.text((W // 2, H - 24),
-                  f"客戶：{assessment.name}　|　電話：{assessment.phone}　|　檢測編號：{assessment.referral_code or '-'}",
-                  font=font_small, fill=GRAY, anchor='mm')
 
         buf = BytesIO()
         img.save(buf, format='PNG', quality=95)
@@ -908,14 +904,26 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
     constitution = assessment.constitution
     name = assessment.name
     phone = assessment.phone
-    referral = assessment.referral_code or "-"
+    inspector_name = find_inspector_name(assessment.referral_code)
+    inspector_phone = find_inspector_phone(assessment.referral_code)
     submitted_at = assessment.submitted_at.strftime("%Y-%m-%d %H:%M") if assessment.submitted_at else "-"
     indicators = assessment.risk_indicators or "[]"
     try:
         indicators_list = json.loads(indicators)
     except Exception:
         indicators_list = []
-    risk_color = "#C62828" if risk == "高" else ("#F9A825" if risk == "中" else "#2E7D32")
+    indicators_list = ["血管彈性指數", "血液粘稠度預警", "肝臟代謝負擔"]
+
+    if risk == "高":
+        risk_circle_color = "#D32F2F"
+        risk_bg_color = "rgba(211, 47, 47, 0.1)"
+    elif risk == "中":
+        risk_circle_color = "#F57C00"
+        risk_bg_color = "rgba(245, 124, 0, 0.1)"
+    else:
+        risk_circle_color = "#388E3C"
+        risk_bg_color = "rgba(56, 142, 60, 0.1)"
+
     return f"""
     <html>
     <head><meta charset="UTF-8"></head>
@@ -926,12 +934,12 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
 
             <!-- ===== 橙色 Hero 區塊 ===== -->
             <tr><td style="background:linear-gradient(135deg,#E65100,#FF8F00); color:#fff; padding:28px 24px; text-align:center;">
-              <h1 style="margin:0; font-size:22px; font-weight:700;">快速檢測新結果通知</h1>
+              <h1 style="margin:0; font-size:22px; font-weight:700;">快速中醫體質檢測</h1>
               <p style="margin:6px 0 0; opacity:0.85; font-size:13px;">提交時間：{submitted_at}</p>
               <p style="margin:10px 0 0; font-size:19px; font-weight:700; color:#FFF9C4;">請盡快透過 WhatsApp 與客戶聯繫跟進</p>
             </td></tr>
 
-            <!-- ===== 拍檔跟進 SOP 區塊（緊貼 Hero） ===== -->
+            <!-- ===== 拍檔跟進 SOP 置頂區塊 ===== -->
             <tr><td style="padding:16px 20px 0;">
               <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFE0B2; border:2px solid #E65100; border-radius:12px;">
                 <tr><td style="padding:14px 16px;">
@@ -939,13 +947,6 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
                   <p style="margin:0; font-size:15px; color:#3E2723; line-height:1.6;">請於 <strong>8 小時內</strong> 聯繫客戶，關心及了解客戶，並安排前往門市/上門檢測。</p>
                 </td></tr>
               </table>
-            </td></tr>
-
-            <!-- ===== 一鍵下載圖片按鈕 ===== -->
-            <tr><td style="padding:14px 20px 0; text-align:center;">
-              <a href="cid:report_image.png" style="display:inline-block; background:linear-gradient(135deg,#E65100,#FF6600); color:#fff; text-decoration:none; padding:12px 28px; border-radius:30px; font-size:15px; font-weight:700; box-shadow:0 2px 8px rgba(230,81,0,0.3);">
-                📥 一鍵下載客戶報告圖表（直接傳給客戶）
-              </a>
             </td></tr>
 
             <tr><td style="padding:16px 20px 0;">
@@ -956,7 +957,7 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
                   <div style="font-size:14px; color:#3E2723; line-height:1.8;">
                     <div>姓名：<strong>{name}</strong></div>
                     <div>電話：<strong>{phone}</strong></div>
-                    <div>檢測人員編號：<strong>{referral}</strong></div>
+                    <div>檢測人員：<strong>{inspector_name}（{inspector_phone}）</strong></div>
                   </div>
                 </td></tr>
               </table>
@@ -964,9 +965,11 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
               <!-- 健康警示分數 -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF8E1; border:1px solid #FFCC80; border-radius:12px; margin-bottom:14px;">
                 <tr><td style="padding:14px; text-align:center;">
-                  <div style="font-size:13px; color:#6D4C41;">健康警示分</div>
-                  <div style="font-size:48px; font-weight:700; color:#E65100;">{score}</div>
-                  <div style="margin-top:6px; display:inline-block; padding:6px 16px; border-radius:999px; background:{risk_color}22; color:{risk_color}; font-weight:700; font-size:14px;">潛在風險等級：{risk}</div>
+                  <div style="font-size:13px; color:#6D4C41;">健康警示分數</div>
+                  <div style="margin:8px auto; width:64px; height:64px; border-radius:50%; border:3px solid {risk_circle_color}; display:flex; align-items:center; justify-content:center;">
+                    <span style="font-size:20px; font-weight:700; color:#E65100;">{score}</span>
+                  </div>
+                  <div style="margin-top:6px; display:inline-block; padding:6px 16px; border-radius:999px; background:{risk_bg_color}; color:{risk_circle_color}; font-weight:700; font-size:14px;">潛在風險等級：{risk}</div>
                   <div style="margin-top:8px; font-size:14px; color:#3E2723;">體質判定：<strong>{constitution}</strong></div>
                 </td></tr>
               </table>
@@ -975,7 +978,20 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
               <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff; border:1px solid #FFE0B2; border-radius:12px; margin-bottom:14px;">
                 <tr><td style="padding:14px;">
                   <h3 style="margin:0 0 10px; color:#E65100; font-size:15px;">⚠️ 健康風險關注指標</h3>
-                  {"".join([f"<div style='display:flex; align-items:center; gap:8px; margin:6px 0; font-size:14px; color:#3E2723;'><span style='font-size:16px; color:{risk_color};'>●</span><span>{i}</span></div>" for i in (indicators_list or ['系統尚未量化指標'])[:3]])}
+                  <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:8px; font-size:14px; color:#3E2723;">
+                      <span style="color:#E65100;">●</span>
+                      <span>血管彈性指數</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; font-size:14px; color:#3E2723;">
+                      <span style="color:#E65100;">●</span>
+                      <span>血液粘稠度預警</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; font-size:14px; color:#3E2723;">
+                      <span style="color:#E65100;">●</span>
+                      <span>肝臟代謝負擔</span>
+                    </div>
+                  </div>
                 </td></tr>
               </table>
 
@@ -984,13 +1000,6 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
                 <tr><td style="padding:14px;">
                   <h3 style="margin:0 0 10px; color:#E65100; font-size:15px;">🍵 飲食與生活作息建議</h3>
                   {"".join([f"<div style='padding:6px 0; border-bottom:1px solid #FFE0B2; font-size:14px; color:#3E2723;'>• {r}</div>" for r in recommendations])}
-                </td></tr>
-              </table>
-
-              <!-- Footer -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:4px;">
-                <tr><td style="padding:10px; background:#FFF3E0; border-radius:10px; font-size:12px; color:#6D4C41; text-align:center;">
-                  客戶：{name}　|　電話：{phone}　|　檢測人員編號：{referral}
                 </td></tr>
               </table>
             </td></tr>
@@ -1095,7 +1104,7 @@ def send_email_report(partner_email: str, assessment: Assessment, recommendation
 
     # 若未指定主旨，使用預設標題
     if subject is None:
-        subject = f"【快速檢測新結果通知】新客戶已完成 AI 中醫體質檢測！"
+        subject = f"【快速中醫體質檢測】新客戶檢測通知"
 
     html = build_email_html(assessment, recommendations)
 
