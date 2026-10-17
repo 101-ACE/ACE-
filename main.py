@@ -936,7 +936,15 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
             bar_width = W - 20 - bar_x - 20
             bar_height = 14
             bar_bg = GRAY_LIGHT
-            bar_fg = ring_color if pct < 50 else ((0xF5, 0x7C, 0x00) if pct < 75 else ring_color)
+            # 四色嚴重度進度條：綠(正常) → 黃(輕度) → 紅(中高) → 褐(極高)
+            if pct <= 25:
+                bar_fg = (0x10, 0xB9, 0x81)    # 🟢 綠：正常/低風險
+            elif pct <= 50:
+                bar_fg = (0xFB, 0xBF, 0x24)    # 🟡 黃：輕度風險
+            elif pct <= 75:
+                bar_fg = (0xEF, 0x44, 0x44)    # 🟠 紅：中度/高風險
+            else:
+                bar_fg = (0x78, 0x35, 0x0F)    # 🟤 深褐：極高風險/嚴重預警
             
             # Background bar
             draw.rectangle([(bar_x, label_y - 7), (bar_x + bar_width, label_y + 7)],
@@ -996,15 +1004,21 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
         risk_bg_color = "rgba(56, 142, 60, 0.1)"
         ring_color = "#388E3C"
 
+    # 四色嚴重度進度條：綠(正常) → 黃(輕度) → 紅(中高) → 褐(極高)
+    def _bar_color(pct: int) -> str:
+        if pct <= 25:
+            return "#10B981"    # 🟢 綠：正常/低風險
+        elif pct <= 50:
+            return "#FBBF24"    # 🟡 黃：輕度風險
+        elif pct <= 75:
+            return "#EF4444"    # 🟠 紅：中度/高風險
+        else:
+            return "#78350F"    # 🟤 深褐：極高風險/嚴重預警
+
     # 生成進度條 HTML
     bars_html = ""
     for ind_name, pct in bar_data:
-        if pct < 50:
-            bc = "#D32F2F"
-        elif pct < 75:
-            bc = "#F57C00"
-        else:
-            bc = "#388E3C"
+        bc = _bar_color(pct)
         bars_html += (
             '<table width="100%" cellpadding="0" cellspacing="0" style="margin:10px 0;">'
             '<tr>'
