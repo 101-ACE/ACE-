@@ -14,7 +14,8 @@ import json
 import requests
 import logging
 import base64
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from io import BytesIO
 from typing import Optional, Dict, Any, List
 from email.mime.text import MIMEText
@@ -27,7 +28,20 @@ from sqlalchemy import create_engine, Column, String, Integer, DateTime, Text, F
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 
-# ===== 日誌設定 =====
+# ===== 時區設定：香港時間 (UTC+8) =====
+HK_TZ = ZoneInfo("Asia/Hong_Kong")
+
+def now_hk() -> datetime:
+    """回傳当前香港時間（UTC+8）"""
+    return datetime.now(HK_TZ)
+
+def to_hk(dt: datetime) -> datetime:
+    """將任意 datetime 轉換為香港時間"""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=HK_TZ)
+    return dt.astimezone(HK_TZ)
+
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -102,12 +116,12 @@ class FunnelMetrics:
         self.drops: List[Dict] = []            # 漏斗流失記錄
 
     def record_visit(self) -> str:
-        today = datetime.now().strftime("%Y-%m-%d")
+        today = now_hk().strftime("%Y-%m-%d")
         self.visits[today] = self.visits.get(today, 0) + 1
         return today
 
     def record_submission(self, referral_code: Optional[str], inspector_name: str) -> str:
-        today = datetime.now().strftime("%Y-%m-%d")
+        today = now_hk().strftime("%Y-%m-%d")
         self.submissions[today] = self.submissions.get(today, 0) + 1
         # 記錄歸因
         if today not in self.attribution:
@@ -115,12 +129,12 @@ class FunnelMetrics:
         self.attribution[today].append({
             "code": referral_code or "預設散客",
             "name": inspector_name,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": now_hk().isoformat()
         })
         return today
 
     def record_sheet_write(self, success: bool):
-        today = datetime.now().strftime("%Y-%m-%d")
+        today = now_hk().strftime("%Y-%m-%d")
         if success:
             self.sheet_writes[today] = self.sheet_writes.get(today, 0) + 1
         else:
@@ -128,24 +142,24 @@ class FunnelMetrics:
             self.drops.append({
                 "type": "sheet_write_failed",
                 "date": today,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": now_hk().isoformat()
             })
 
     def record_email_send(self, success: bool):
-        today = datetime.now().strftime("%Y-%m-%d")
+        today = now_hk().strftime("%Y-%m-%d")
         if success:
             self.email_sends[today] = self.email_sends.get(today, 0) + 1
         else:
             self.drops.append({
                 "type": "email_send_failed",
                 "date": today,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": now_hk().isoformat()
             })
 
     def get_daily_stats(self, days: int = 7) -> Dict:
-        today = datetime.now()
+        today = now_hk()
         result = {
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": now_hk().isoformat(),
             "daily_stats": [],
             "total_visits": sum(self.visits.values()),
             "total_submissions": sum(self.submissions.values()),
@@ -178,8 +192,8 @@ class FunnelMetrics:
 
     def get_attribution_report(self, days: int = 7) -> Dict:
         """生成歸因報告"""
-        today = datetime.now()
-        result = {"generated_at": datetime.now().isoformat(), "daily_attribution": {}}
+        today = now_hk()
+        result = {"generated_at": now_hk().isoformat(), "daily_attribution": {}}
         for i in range(days):
             date = (today - __import__('datetime').timedelta(days=i)).strftime("%Y-%m-%d")
             if date in self.attribution:
@@ -264,7 +278,7 @@ class Assessment(Base):
     health_score = Column(Integer, nullable=False)
     risk_level = Column(String, nullable=False)
     risk_indicators = Column(Text, nullable=False)  # JSON string
-    submitted_at = Column(DateTime, default=datetime.utcnow)
+    submitted_at = Column(DateTime, default=now_hk)
     email_sent = Column(Integer, default=0)
     partner_email = Column(String, nullable=True)
     partner_name = Column(String, nullable=True)
@@ -914,10 +928,14 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         y += 162
 
         # ===== 健康風險指標 (Progress Bars) =====
+        # 風險值與健康分數成反比：score=85→低風險(~20%), score=60→中風險(~40%), score=30→高風險(~80%)
+        def _risk_pct(base: int, factor: float, offset: float) -> int:
+            return min(100, max(5, round((100 - base) * factor + offset)))
+
         indicators = [
-            ("血管彈性指數", 65),
-            ("血液粘稠度預警", 45),
-            ("肝臟代謝負擔", 55),
+            ("血管彈性指數", _risk_pct(score, 0.9, 5)),
+            ("血液粘稠度預警", _risk_pct(score, 0.8, 0)),
+            ("肝臟代謝負擔", _risk_pct(score, 1.0, 0)),
         ]
 
         draw.rectangle([(20, y), (W - 20, y + 120)], fill=WHITE, outline='#E0E0E0', width=1)
@@ -980,16 +998,16 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
         indicators_list = json.loads(indicators)
     except Exception:
         indicators_list = []
-    # 固定三個指標（有資料時取實際值，否則用預設值）
+    # 風險指標百分比：與健康分數成反比（分數越高→風險越低）
+    def _risk_pct(base: int, factor: float, offset: float) -> int:
+        return min(100, max(5, round((100 - base) * factor + offset)))
+
     FIXED_INDICATORS = [
-        ("血管彈性指數", 65),
-        ("血液粘稠度預警", 45),
-        ("肝臟代謝負擔", 55),
+        ("血管弹性指數", _risk_pct(score, 0.9, 5)),   # score=85→20%, 60→40%, 30→75%
+        ("血液粘稠度預警", _risk_pct(score, 0.8, 0)), # score=85→12%, 60→32%, 30→60%
+        ("肝臟代謝負擔", _risk_pct(score, 1.0, 0)),   # score=85→15%, 60→40%, 30→85%
     ]
-    if len(indicators_list) >= 3:
-        bar_data = [(indicators_list[0], 70), (indicators_list[1], 60), (indicators_list[2], 55)]
-    else:
-        bar_data = FIXED_INDICATORS
+    bar_data = FIXED_INDICATORS
 
     if risk == "高":
         risk_circle_color = "#D32F2F"
@@ -1389,7 +1407,7 @@ def health():
 
 @app.get("/health")
 def health_legacy():
-    return {"status": "ok", "time": datetime.utcnow().isoformat()}
+    return {"status": "ok", "time": now_hk().isoformat()}
 
 @app.get("/api/referral/validate")
 def validate_referral(code: str = None):
@@ -1636,8 +1654,9 @@ def get_diagnostic():
         # 總記錄數
         cursor.execute("SELECT COUNT(*) FROM assessments")
         db_stats["total_records"] = cursor.fetchone()[0]
-        # 今日記錄數
-        cursor.execute("SELECT COUNT(*) FROM assessments WHERE DATE(submitted_at) = DATE('now')")
+        # 今日記錄數（ submitted_at 已存為香港時間，改用參數比對避免時區問題）
+        hk_today = now_hk().strftime("%Y-%m-%d")
+        cursor.execute("SELECT COUNT(*) FROM assessments WHERE DATE(submitted_at) = ?", (hk_today,))
         db_stats["today_records"] = cursor.fetchone()[0]
         # 有檢測員 vs 散客
         cursor.execute("SELECT COUNT(*) FROM assessments WHERE referral_code IS NOT NULL AND referral_code != ''")
@@ -1656,7 +1675,7 @@ def get_diagnostic():
 
     return {
         "status": "ok",
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": now_hk().isoformat(),
         "database": db_stats,
         "env_vars": {
             "SMTP_ENABLED": SMTP_ENABLED,
