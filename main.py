@@ -972,28 +972,81 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
         indicators_list = json.loads(indicators)
     except Exception:
         indicators_list = []
-    indicators_list = ["血管彈性指數", "血液粘稠度預警", "肝臟代謝負擔"]
+    # 固定三個指標（有資料時取實際值，否則用預設值）
+    FIXED_INDICATORS = [
+        ("血管彈性指數", 65),
+        ("血液粘稠度預警", 45),
+        ("肝臟代謝負擔", 55),
+    ]
+    if len(indicators_list) >= 3:
+        bar_data = [(indicators_list[0], 70), (indicators_list[1], 60), (indicators_list[2], 55)]
+    else:
+        bar_data = FIXED_INDICATORS
 
     if risk == "高":
         risk_circle_color = "#D32F2F"
         risk_bg_color = "rgba(211, 47, 47, 0.1)"
+        ring_color = "#D32F2F"
     elif risk == "中":
         risk_circle_color = "#F57C00"
         risk_bg_color = "rgba(245, 124, 0, 0.1)"
+        ring_color = "#F57C00"
     else:
         risk_circle_color = "#388E3C"
         risk_bg_color = "rgba(56, 142, 60, 0.1)"
+        ring_color = "#388E3C"
+
+    # 生成進度條 HTML
+    bars_html = ""
+    for ind_name, pct in bar_data:
+        if pct < 50:
+            bc = "#D32F2F"
+        elif pct < 75:
+            bc = "#F57C00"
+        else:
+            bc = "#388E3C"
+        bars_html += (
+            '<table width="100%" cellpadding="0" cellspacing="0" style="margin:10px 0;">'
+            '<tr>'
+            '<td width="130" style="font-size:14px; color:#3E2723; font-weight:600; vertical-align:middle;">'
+            + ind_name + '</td>'
+            '<td style="vertical-align:middle;">'
+            '<table width="100%" cellpadding="0" cellspacing="0" style="background:#E5E7EB; border-radius:7px; overflow:hidden;">'
+            '<tr><td width="' + str(pct) + '%" height="14" style="background:' + bc + '; font-size:0; line-height:0;">&nbsp;</td>'
+            '<td width="' + str(100 - pct) + '%">&#xa0;</td>'
+            '</tr></table></td>'
+            '<td width="40" align="right" style="font-size:13px; color:#3E2723;">' + str(pct) + '%</td>'
+            '</tr></table>'
+        )
 
     return f"""
     <html>
-    <head><meta charset="UTF-8"></head>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style type="text/css">
+        @media screen and (max-width: 600px) {{
+          .email-container {{ width: 100% !important; max-width: 100% !important; }}
+          .card-block {{ width: 100% !important; box-sizing: border-box !important; }}
+          .card-padding {{ padding: 12px 14px !important; }}
+          .hero-padding {{ padding: 20px 14px !important; }}
+          .score-ring-wrap {{ width: 90px !important; height: 90px !important; }}
+          .score-ring-wrap svg {{ width: 90px !important; height: 90px !important; }}
+          .score-number {{ font-size: 20px !important; }}
+          .ind-label {{ width: 100px !important; font-size: 13px !important; }}
+        }}
+      </style>
+    </head>
     <body style="font-family: Arial, 'Noto Sans TC', sans-serif; background:#FFF8F0; margin:0; padding:0;">
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF8F0; padding:20px 0;">
         <tr><td align="center">
-          <table width="600" cellpadding="0" cellspacing="0" style="background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 2px 12px rgba(230,81,0,0.12);">
+          <table class="email-container" width="600" cellpadding="0" cellspacing="0"
+                 style="background:#fff; border-radius:14px; overflow:hidden;
+                        box-shadow:0 2px 12px rgba(230,81,0,0.12);
+                        width:600px; max-width:600px; margin:0 auto;">
 
             <!-- ===== 橙色 Hero 區塊 ===== -->
-            <tr><td style="background:linear-gradient(135deg,#E65100,#FF8F00); color:#fff; padding:28px 24px; text-align:center;">
+            <tr><td class="hero-padding" style="background:linear-gradient(135deg,#E65100,#FF8F00); color:#fff; padding:28px 24px; text-align:center;">
               <h1 style="margin:0; font-size:22px; font-weight:700;">快速中醫體質檢測</h1>
               <p style="margin:6px 0 0; opacity:0.85; font-size:13px;">提交時間：{submitted_at}</p>
               <p style="margin:10px 0 0; font-size:19px; font-weight:700; color:#FFF9C4;">請盡快透過 WhatsApp 與客戶聯繫跟進</p>
@@ -1001,8 +1054,9 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
 
             <!-- ===== 拍檔跟進 SOP 置頂區塊 ===== -->
             <tr><td style="padding:16px 20px 0;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFE0B2; border:2px solid #E65100; border-radius:12px;">
-                <tr><td style="padding:14px 16px;">
+              <table class="card-block" width="100%" cellpadding="0" cellspacing="0"
+                     style="background:#FFE0B2; border:2px solid #E65100; border-radius:12px; width:100% !important; box-sizing:border-box !important;">
+                <tr><td class="card-padding" style="padding:14px 16px;">
                   <p style="margin:0 0 4px; font-size:14px; font-weight:700; color:#BF360C;">📋 拍檔跟進 SOP</p>
                   <p style="margin:0; font-size:15px; color:#3E2723; line-height:1.6;">請於 <strong>8 小時內</strong> 聯繫客戶，關心及了解客戶，並安排前往門市/上門檢測。</p>
                 </td></tr>
@@ -1011,8 +1065,9 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
 
             <tr><td style="padding:16px 20px 0;">
               <!-- 客戶基本資料 -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF3E0; border:1px solid #FFCC80; border-radius:12px; margin-bottom:14px;">
-                <tr><td style="padding:14px;">
+              <table class="card-block" width="100%" cellpadding="0" cellspacing="0"
+                     style="background:#FFF3E0; border:1px solid #FFCC80; border-radius:12px; margin-bottom:14px; width:100% !important; box-sizing:border-box !important;">
+                <tr><td class="card-padding" style="padding:14px;">
                   <h3 style="margin:0 0 10px; color:#E65100; font-size:15px;">👤 客戶資料</h3>
                   <div style="font-size:14px; color:#3E2723; line-height:1.8;">
                     <div>姓名：<strong>{name}</strong></div>
@@ -1023,18 +1078,30 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
               </table>
 
               <!-- 健康警示分數 - Progress Ring 區塊 -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF8E1; border:1px solid #FFCC80; border-radius:12px; margin-bottom:14px;">
+              <table class="card-block" width="100%" cellpadding="0" cellspacing="0"
+                     style="background:#FFF8E1; border:1px solid #FFCC80; border-radius:12px; margin-bottom:14px; width:100% !important; box-sizing:border-box !important;">
                 <tr><td style="padding:20px; text-align:center;">
                   <div style="font-size:13px; color:#6D4C41;">健康警示分數</div>
-                  <div style="margin:12px auto; position:relative; width:100px; height:100px;">
-                    <!-- Background ring -->
-                    <svg width="100" height="100" viewBox="0 0 100 100">
-                      <circle cx="50" cy="50" r="45" stroke="#E5E7EB" stroke-width="7" fill="none"/>
-                      <!-- Progress ring -->
-                      <circle cx="50" cy="50" r="45" stroke="{ring_color}" stroke-width="7" fill="none"
-                              stroke-dasharray="{283}" stroke-dashoffset="{283 - (score / 100 * 283)}" stroke-linecap="round"/>
-                    </svg>
-                    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:24px; font-weight:700; color:#E65100;">{score}</div>
+                  <div style="margin:12px auto;">
+                    <table align="center" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                      <tr><td align="center" valign="middle"
+                            style="position:relative; width:100px; height:100px;">
+                        <!-- SVG ring centered via table cell -->
+                        <svg width="100" height="100" viewBox="0 0 100 100" style="display:block; margin:0 auto;">
+                          <circle cx="50" cy="50" r="45" stroke="#E5E7EB" stroke-width="7" fill="none"/>
+                          <circle cx="50" cy="50" r="45" stroke="{ring_color}" stroke-width="7" fill="none"
+                                  stroke-dasharray="283" stroke-dashoffset="{283 - int(score / 100 * 283)}"
+                                  stroke-linecap="round" transform="rotate(-90 50 50)"/>
+                        </svg>
+                        <!-- Score number centered with table cell (Gmail/iOS safe) -->
+                        <table align="center" cellpadding="0" cellspacing="0" style="margin-top:-100px;">
+                          <tr><td align="center" valign="middle"
+                                style="font-size:24px; font-weight:700; color:#E65100; padding-top:38px;">
+                            {score}
+                          </td></tr>
+                        </table>
+                      </td></tr>
+                    </table>
                   </div>
                   <div style="margin-top:6px; display:inline-block; padding:6px 16px; border-radius:999px; background:{risk_bg_color}; color:{risk_circle_color}; font-weight:700; font-size:14px;">潛在風險等級：{risk}</div>
                   <div style="margin-top:8px; font-size:14px; color:#3E2723;">體質判定：<strong>{constitution}</strong></div>
@@ -1042,24 +1109,18 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
               </table>
 
               <!-- 健康風險指標 - Progress Bars 區塊 -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff; border:1px solid #FFE0B2; border-radius:12px; margin-bottom:14px;">
-                <tr><td style="padding:14px;">
+              <table class="card-block" width="100%" cellpadding="0" cellspacing="0"
+                     style="background:#fff; border:1px solid #FFE0B2; border-radius:12px; margin-bottom:14px; width:100% !important; box-sizing:border-box !important;">
+                <tr><td class="card-padding" style="padding:14px;">
                   <h3 style="margin:0 0 12px; color:#E65100; font-size:15px;">⚠️ 健康風險關注指標</h3>
-                  {"".join([f"""
-                    <div style="display:flex; align-items:center; margin:10px 0;">
-                      <div style="width:120px; font-size:14px; color:#3E2723;">{name}</div>
-                      <div style="flex:1; height:14px; background:#E5E7EB; border-radius:7px; overflow:hidden;">
-                        <div style="height:100%; width:{value}%; background:{bar_color}; border-radius:7px;"></div>
-                      </div>
-                      <div style="width:40px; text-align:right; font-size:13px; color:#3E2723;">{value}%</div>
-                    </div>
-                  """.format(name=name, value=value, bar_color=bar_color) for name, value in indicators])}
+                  {bars_html}
                 </td></tr>
               </table>
 
               <!-- 飲食與生活作息建議 -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff; border:1px solid #FFE0B2; border-radius:12px; margin-bottom:14px;">
-                <tr><td style="padding:14px;">
+              <table class="card-block" width="100%" cellpadding="0" cellspacing="0"
+                     style="background:#fff; border:1px solid #FFE0B2; border-radius:12px; margin-bottom:14px; width:100% !important; box-sizing:border-box !important;">
+                <tr><td class="card-padding" style="padding:14px;">
                   <h3 style="margin:0 0 10px; color:#E65100; font-size:15px;">🍵 飲食與生活作息建議</h3>
                   {"".join([f"<div style='padding:6px 0; border-bottom:1px solid #FFE0B2; font-size:14px; color:#3E2723;'>• {r}</div>" for r in recommendations])}
                 </td></tr>
