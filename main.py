@@ -864,13 +864,17 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         else:
             risk_text_color = (0x38, 0x8E, 0x3C)
 
-        # Score color for ring (green=low risk/high score, yellow/orange=medium, red=high risk)
-        if score <= 50:
-            ring_color = (0xD3, 0x2F, 0x2F)  # 紅色
-        elif score <= 75:
-            ring_color = (0xF5, 0x7C, 0x00)  # 橘黃色
+        # Score color for ring (5-tier: black→red→brown→yellow→green)
+        if score <= 20:
+            ring_color = (0x11, 0x18, 0x27)    # ⚫ 黑：極低分/極高風險
+        elif score <= 40:
+            ring_color = (0xDC, 0x26, 0x26)    # 🔴 紅：低分/高風險
+        elif score <= 60:
+            ring_color = (0x78, 0x35, 0x0F)    # 🟤 褐：中低分/中高風險
+        elif score <= 80:
+            ring_color = (0xD9, 0x77, 0x06)    # 🟡 黃：中高分/關注
         else:
-            ring_color = (0x0D, 0x94, 0x88)  # 綠色
+            ring_color = (0x16, 0xA3, 0x4A)    # 🟢 綠：高分/良好
 
         inspector_name = find_inspector_name(assessment.referral_code)
         inspector_phone = find_inspector_phone(assessment.referral_code)
@@ -880,25 +884,16 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         draw.text((W // 2, 28), "快速中醫體質檢測", font=font_title, fill=WHITE, anchor='mm')
         draw.text((W // 2, 72), f"提交時間：{assessment.submitted_at.strftime('%Y-%m-%d %H:%M') if assessment.submitted_at else '-'}",
                   font=font_small, fill='#FFE0B2', anchor='mm')
-        draw.text((W // 2, 100), "請盡快透過 WhatsApp 與客戶聯繫跟進",
-                  font=font_cta, fill=WHITE, anchor='mm')
 
         y = 145
 
-        # ===== SOP 區塊（緊貼 Hero 下方） =====
-        draw.rectangle([(20, y), (W - 20, y + 58)], fill='#FFE0B2', outline=ORANGE_MAIN, width=2)
-        draw.text((30, y + 10), "📋 拍檔跟進 SOP", font=font_label, fill=ORANGE_DARK)
-        draw.text((30, y + 32), "請於 8 小時內聯繫客戶，關心及了解客戶，並安排前往門市/上門檢測。",
-                  font=font_small, fill=DARK)
-        y += 72
-
-        # ===== 客戶資料卡片 =====
-        draw.rectangle([(20, y), (W - 20, y + 85)], fill=WHITE, outline='#E0E0E0', width=1)
+        # ===== 客戶資料卡片（放大版） =====
+        draw.rectangle([(20, y), (W - 20, y + 100)], fill=WHITE, outline='#E0E0E0', width=1)
         draw.text((30, y + 10), "👤 客戶資料", font=font_label, fill=ORANGE_MAIN)
-        draw.text((30, y + 34), f"姓名：{assessment.name}", font=font_value, fill=DARK)
-        draw.text((30, y + 56), f"電話：{assessment.phone}", font=font_value, fill=DARK)
-        draw.text((30, y + 78), f"檢測人員：{inspector_name}（{inspector_phone}）", font=font_small, fill=DARK)
-        y += 100
+        draw.text((30, y + 36), f"姓名：{assessment.name}", font=font_value, fill=DARK)
+        draw.text((30, y + 60), f"電話：{assessment.phone}", font=font_value, fill=DARK)
+        draw.text((30, y + 84), f"檢測人員：{inspector_name}（{inspector_phone}）", font=get_font(16, bold=True), fill=DARK)
+        y += 115
 
         # ===== 健康警示分數 - Progress Ring 區塊 =====
         # Progress ring: draw background full ring in gray, then arc for score
@@ -919,8 +914,18 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         arc_end = arc_start - (score / 100.0) * 360
         draw.arc(bbox, start=arc_start, end=arc_end, fill=ring_color, width=ring_width)
         
-        # Center score number - using orange/dark red for high visibility
-        draw.text((ring_center_x, ring_center_y), str(score), font=font_big, fill=(0xBF, 0x36, 0x0C), anchor='mm')
+        # Center score number - 5-tier color matching ring
+        if score <= 20:
+            score_text_color = (0x11, 0x18, 0x27)    # ⚫ 黑
+        elif score <= 40:
+            score_text_color = (0xDC, 0x26, 0x26)    # 🔴 紅
+        elif score <= 60:
+            score_text_color = (0x78, 0x35, 0x0F)    # 🟤 褐
+        elif score <= 80:
+            score_text_color = (0xD9, 0x77, 0x06)    # 🟡 黃
+        else:
+            score_text_color = (0x16, 0xA3, 0x4A)    # 🟢 綠
+        draw.text((ring_center_x, ring_center_y), str(score), font=font_big, fill=score_text_color, anchor='mm')
         
         draw.text((W // 2, y + 118), f"潛在風險等級：{risk}", font=font_small, fill=risk_text_color, anchor='mm')
         draw.text((W // 2, y + 134), f"體質判定：{assessment.constitution}",
@@ -974,6 +979,14 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         
         y += 135
 
+        # ===== 飲食與生活作息建議 =====
+        rec_title_y = y + 8
+        draw.rectangle([(20, y), (W - 20, y + 60 + len(recommendations) * 20)], fill=WHITE, outline='#E0E0E0', width=1)
+        draw.text((30, rec_title_y), "🍵 飲食與生活作息建議", font=font_label, fill=ORANGE_MAIN)
+        for i, rec in enumerate(recommendations):
+            draw.text((30, rec_title_y + 26 + i * 20), f"• {rec}", font=font_rec, fill=DARK)
+        y += 80 + len(recommendations) * 20
+
         buf = BytesIO()
         img.save(buf, format='PNG', quality=95)
         buf.seek(0)
@@ -1009,18 +1022,27 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
     ]
     bar_data = FIXED_INDICATORS
 
-    if risk == "高":
-        risk_circle_color = "#D32F2F"
-        risk_bg_color = "rgba(211, 47, 47, 0.1)"
-        ring_color = "#D32F2F"
-    elif risk == "中":
-        risk_circle_color = "#F57C00"
-        risk_bg_color = "rgba(245, 124, 0, 0.1)"
-        ring_color = "#F57C00"
+    # 5-tier score color (black→red→brown→yellow→green)
+    if score <= 20:
+        ring_color = "#111827"
+        risk_circle_color = "#111827"
+        risk_bg_color = "rgba(17, 24, 39, 0.1)"
+    elif score <= 40:
+        ring_color = "#DC2626"
+        risk_circle_color = "#DC2626"
+        risk_bg_color = "rgba(220, 38, 38, 0.1)"
+    elif score <= 60:
+        ring_color = "#78350F"
+        risk_circle_color = "#78350F"
+        risk_bg_color = "rgba(120, 53, 15, 0.1)"
+    elif score <= 80:
+        ring_color = "#D97706"
+        risk_circle_color = "#D97706"
+        risk_bg_color = "rgba(217, 119, 6, 0.1)"
     else:
-        risk_circle_color = "#388E3C"
-        risk_bg_color = "rgba(56, 142, 60, 0.1)"
-        ring_color = "#388E3C"
+        ring_color = "#16A34A"
+        risk_circle_color = "#16A34A"
+        risk_bg_color = "rgba(22, 163, 74, 0.1)"
 
     # 四色嚴重度進度條：綠(正常) → 黃(輕度) → 紅(中高) → 褐(極高)
     def _bar_color(pct: int) -> str:
@@ -1081,18 +1103,6 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
             <tr><td class="hero-padding" style="background:linear-gradient(135deg,#E65100,#FF8F00); color:#fff; padding:28px 24px; text-align:center;">
               <h1 style="margin:0; font-size:22px; font-weight:700;">快速中醫體質檢測</h1>
               <p style="margin:6px 0 0; opacity:0.85; font-size:13px;">提交時間：{submitted_at}</p>
-              <p style="margin:10px 0 0; font-size:19px; font-weight:700; color:#FFF9C4;">請盡快透過 WhatsApp 與客戶聯繫跟進</p>
-            </td></tr>
-
-            <!-- ===== 拍檔跟進 SOP 置頂區塊 ===== -->
-            <tr><td style="padding:16px 20px 0;">
-              <table class="card-block" width="100%" cellpadding="0" cellspacing="0"
-                     style="background:#FFE0B2; border:2px solid #E65100; border-radius:12px; width:100% !important; box-sizing:border-box !important;">
-                <tr><td class="card-padding" style="padding:14px 16px;">
-                  <p style="margin:0 0 4px; font-size:14px; font-weight:700; color:#BF360C;">📋 拍檔跟進 SOP</p>
-                  <p style="margin:0; font-size:15px; color:#3E2723; line-height:1.6;">請於 <strong>8 小時內</strong> 聯繫客戶，關心及了解客戶，並安排前往門市/上門檢測。</p>
-                </td></tr>
-              </table>
             </td></tr>
 
             <tr><td style="padding:16px 20px 0;">
@@ -1128,7 +1138,7 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
                         <!-- Score number centered with table cell (Gmail/iOS safe) -->
                         <table align="center" cellpadding="0" cellspacing="0" style="margin-top:-100px;">
                           <tr><td align="center" valign="middle"
-                                style="font-size:24px; font-weight:700; color:#E65100; padding-top:38px;">
+                                style="font-size:24px; font-weight:700; color:{ring_color}; padding-top:38px;">
                             {score}
                           </td></tr>
                         </table>
