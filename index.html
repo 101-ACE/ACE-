@@ -906,15 +906,15 @@
                 <div class="space-y-3 mt-4 border-t pt-4">
                     <div>
                         <div class="flex justify-between text-sm text-slate-600 mb-1"><span>血管彈性指數</span></div>
-                        <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-1" class="h-full bg-orange-500 rounded-full transition-all duration-1000" style="width:0%"></div></div>
+                        <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-1" class="h-full rounded-full transition-all duration-1000" style="width:0%"></div></div>
                     </div>
                     <div>
-                        <div class="flex justify-between text-sm text-slate-600 mb-1"><span>血液粘稈度預警</span></div>
-                        <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-2" class="h-full bg-orange-400 rounded-full transition-all duration-1000" style="width:0%"></div></div>
+                        <div class="flex justify-between text-sm text-slate-600 mb-1"><span>血液粘稠度預警</span></div>
+                        <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-2" class="h-full rounded-full transition-all duration-1000" style="width:0%"></div></div>
                     </div>
                     <div>
                         <div class="flex justify-between text-sm text-slate-600 mb-1"><span>肝臟代謝負擔</span></div>
-                        <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-3" class="h-full bg-orange-500 rounded-full transition-all duration-1000" style="width:0%"></div></div>
+                        <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden"><div id="risk-3" class="h-full rounded-full transition-all duration-1000" style="width:0%"></div></div>
                     </div>
                 </div>
             </div>
@@ -1306,6 +1306,14 @@
             return { badge: "bg-emerald-50 text-emerald-600 border-emerald-200", meter: "bg-emerald-500" };
         }
 
+        // 四色進度條動態樣式：綠(≤25%) → 黃(≤50%) → 紅(≤75%) → 褐(>75%)
+        function getBarColorStyle(pct) {
+            if (pct <= 25) return { bg: "#10B981" };
+            if (pct <= 50) return { bg: "#FBBF24" };
+            if (pct <= 75) return { bg: "#EF4444" };
+            return { bg: "#78350F" };
+        }
+
         async function renderReport(data) {
             const report = data.report;
             const score = report.score;
@@ -1401,11 +1409,21 @@
                 }
             }
 
-            // Risk meters
+            // Risk meters - use indicator-specific defaults matching backend FIXED_INDICATORS
+            // + score-proportional adjustment for realism
             setTimeout(() => {
-                $("risk-1").style.width = `${Math.min(100, Math.max(20, 100 - score + 10))}%`;
-                $("risk-2").style.width = `${Math.min(100, Math.max(20, 100 - score + 5))}%`;
-                $("risk-3").style.width = `${Math.min(100, Math.max(20, 100 - score))}%`;
+                const pctMap = {
+                    "risk-1": Math.min(100, Math.max(5, Math.round(score * 0.8 + 5))),
+                    "risk-2": Math.min(100, Math.max(5, Math.round(score * 0.7 - 5))),
+                    "risk-3": Math.min(100, Math.max(5, Math.round(score * 0.9 + 0))),
+                };
+                Object.entries(pctMap).forEach(([id, pct]) => {
+                    const el = $(id);
+                    if (!el) return;
+                    const style = getBarColorStyle(pct);
+                    el.style.width = pct + "%";
+                    el.style.backgroundColor = style.bg;
+                });
             }, 300);
 
             // Recommendations
