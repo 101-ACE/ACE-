@@ -843,15 +843,16 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         img = Image.new('RGB', (W, H), color='#FFF8F0')
         draw = ImageDraw.Draw(img)
 
-        # 所有字級同步 ×2
-        font_title   = get_font(52, bold=True)
-        font_label   = get_font(28)
-        font_value   = get_font(32, bold=True)
-        font_small   = get_font(24)
-        font_big     = get_font(96, bold=True)
-        font_cta     = get_font(36, bold=True)
-        font_rec     = get_font(26)
-        font_bar     = get_font(26)
+        # 所有字級同步 ×2；環下標籤另加放大字級
+        font_title    = get_font(52, bold=True)
+        font_label    = get_font(28)
+        font_value    = get_font(32, bold=True)
+        font_small    = get_font(24)
+        font_big      = get_font(96, bold=True)
+        font_ring_lbl = get_font(30)  # 潛在風險等級／體質判定（放大部分）
+        font_cta      = get_font(36, bold=True)
+        font_rec      = get_font(26)
+        font_bar      = get_font(26)
 
         # 配色
         ORANGE_DARK  = '#BF360C'
@@ -887,24 +888,24 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         inspector_name = find_inspector_name(assessment.referral_code)
         inspector_phone = find_inspector_phone(assessment.referral_code)
 
-        # ===== 頂部橙色 Hero 區塊 =====
-        draw.rectangle([(0, 0), (W, 260)], fill=ORANGE_MAIN)
-        draw.text((W // 2, 56), "快速中醫體質檢測", font=font_title, fill=WHITE, anchor='mm')
-        draw.text((W // 2, 144),
+        # ===== 頂部橙色 Hero 區塊（收緊高度，剛包覆提交時間）=====
+        draw.rectangle([(0, 0), (W, 200)], fill=ORANGE_MAIN)
+        draw.text((W // 2, 42), "快速中醫體質檢測", font=font_title, fill=WHITE, anchor='mm')
+        draw.text((W // 2, 108),
                   f"提交時間：{assessment.submitted_at.strftime('%Y-%m-%d %H:%M') if assessment.submitted_at else '-'}",
                   font=font_small, fill='#FFE0B2', anchor='mm')
 
-        y = 290
+        y = 228
 
-        # ===== 客戶資料卡片（高度 ×1.5，確保檢測人員文字不溢出）=====
-        draw.rectangle([(40, y), (W - 40, y + 210)], fill=WHITE, outline='#E0E0E0', width=2)
+        # ===== 客戶資料卡片（高度擴大 +40px，確保檢測人員文字完整顯示）=====
+        draw.rectangle([(40, y), (W - 40, y + 250)], fill=WHITE, outline='#E0E0E0', width=2)
         draw.text((60, y + 20), "客戶資料", font=font_label, fill=ORANGE_MAIN)
         draw.text((60, y + 72), f"姓名：{assessment.name}", font=font_value, fill=DARK)
         draw.text((60, y + 124), f"電話：{assessment.phone}", font=font_value, fill=DARK)
-        draw.text((60, y + 176),
+        draw.text((60, y + 216),
                   f"檢測人員：{inspector_name}（{inspector_phone}）",
                   font=get_font(32, bold=True), fill=DARK)
-        y += 245
+        y += 290
 
         # ===== 健康警示分數 – Progress Ring 區塊 =====
         ring_center_x = W // 2
@@ -932,10 +933,10 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
             score_text_color = (0x16, 0xA3, 0x4A)
         draw.text((ring_center_x, ring_center_y), str(score), font=font_big, fill=score_text_color, anchor='mm')
 
-        draw.text((W // 2, y + 236), f"潛在風險等級：{risk}", font=font_small, fill=risk_text_color, anchor='mm')
-        draw.text((W // 2, y + 268), f"體質判定：{assessment.constitution}",
-                  font=font_small, fill=GRAY, anchor='mm')
-        y += 324
+        draw.text((W // 2, y + 236), f"潛在風險等級：{risk}", font=font_ring_lbl, fill=risk_text_color, anchor='mm')
+        draw.text((W // 2, y + 278), f"體質判定：{assessment.constitution}",
+                  font=font_ring_lbl, fill=GRAY, anchor='mm')
+        y += 334
 
         # ===== 健康風險指標 (Progress Bars) =====
         def _risk_pct(base: int, factor: float, offset: float) -> int:
