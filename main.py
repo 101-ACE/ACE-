@@ -943,13 +943,13 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
             return min(100, max(5, round((100 - base) * factor + offset)))
 
         indicators = [
-            ("微循環血管彈性評估", _risk_pct(score, 0.9, 5)),
-            ("血液流變與阻力預警", _risk_pct(score, 0.8, 0)),
-            ("肝膽解毒與代謝負荷評估", _risk_pct(score, 1.0, 0)),
+            ("血管彈性指數", _risk_pct(score, 0.9, 5)),
+            ("血液粘稠度", _risk_pct(score, 0.8, 0)),
+            ("肝臟代謝負擔", _risk_pct(score, 1.0, 0)),
         ]
 
         draw.rectangle([(40, y), (W - 40, y + 240)], fill=WHITE, outline='#E0E0E0', width=2)
-        draw.text((60, y + 20), "中醫經絡健康評估指數", font=font_label, fill=ORANGE_MAIN)
+        draw.text((60, y + 20), "健康風險關注指標", font=font_label, fill=ORANGE_MAIN)
 
         for i, (ind, pct) in enumerate(indicators):
             bar_y = y + 76 + i * 56
@@ -982,7 +982,7 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         rec_title_y = y + 16
         card_h = 120 + len(recommendations) * 40
         draw.rectangle([(40, y), (W - 40, y + card_h)], fill=WHITE, outline='#E0E0E0', width=2)
-        draw.text((60, rec_title_y), "個人化調理與養生作息建議", font=font_label, fill=ORANGE_MAIN)
+        draw.text((60, rec_title_y), "飲食與生活建議", font=font_label, fill=ORANGE_MAIN)
         for i, rec in enumerate(recommendations):
             draw.text((60, rec_title_y + 52 + i * 40), f"• {rec}", font=font_rec, fill=DARK)
         y += card_h + 32
