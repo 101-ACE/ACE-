@@ -92,6 +92,22 @@
             margin: 0 !important;
             padding: 0 !important;
         }
+        /* Score comparison: 2.5× normal, score digits & peer % at 3.5× bold */
+        .comparison-text {
+            font-size: 1.25rem !important;
+            line-height: 1.4 !important;
+            color: #475569 !important;
+        }
+        .comparison-score, .comparison-peer {
+            font-weight: 900 !important;
+            color: inherit !important;
+        }
+        .comparison-score { font-size: 1.75rem !important; }
+        .comparison-peer { font-size: 1.75rem !important; }
+        @media (max-width: 640px) {
+            .comparison-text { font-size: 1.1rem !important; }
+            .comparison-score, .comparison-peer { font-size: 1.5rem !important; }
+        }
         /* Mobile: tighter grid + more compact cards */
         @media (max-width: 640px) {
             .obs-card.has-image { padding: 0.25rem; }
@@ -907,7 +923,7 @@
                     </div>
                 </div>
                 <div id="risk-badge" class="mt-4 px-5 py-2 rounded-full font-bold text-sm border"></div>
-                <div id="score-comparison" class="mt-2 text-sm text-slate-600"></div>
+                <div id="score-comparison" class="mt-2 text-center leading-tight"></div>
                 <div class="mt-3 text-slate-600">
                     檢測體質：<strong id="constitution-text" class="text-lg text-slate-800">--</strong>
                 </div>
@@ -1386,12 +1402,12 @@
             const comparisonEl = $("score-comparison");
             if (comparisonEl) {
                 const _percent = Math.min(99, Math.max(1, Math.floor((100 - score) * 0.95)));
+                const scoreColor = score >= 80 ? 'text-emerald-600' : score >= 60 ? 'text-orange-600' : 'text-red-600';
                 if (score >= 80) {
-                    comparisonEl.textContent = `您的健康分數為 ${score} 分，超越約 ${100 - _percent}% 的同齡人群`;
+                    comparisonEl.innerHTML = `<span class="comparison-text ${scoreColor}">您的健康分數為 <span class="comparison-score ${scoreColor}">${score}</span> 分，超越約 <span class="comparison-peer ${scoreColor}">${100 - _percent}%</span> 的同齡人群</span>`;
                 } else {
-                    comparisonEl.textContent = `您的健康分數為 ${score} 分，低於約 ${_percent}% 的同齡人群`;
+                    comparisonEl.innerHTML = `<span class="comparison-text ${scoreColor}">您的健康分數為 <span class="comparison-score ${scoreColor}">${score}</span> 分，低於約 <span class="comparison-peer ${scoreColor}">${_percent}%</span> 的同齡人群</span>`;
                 }
-                comparisonEl.className = `mt-2 text-sm ${score >= 80 ? 'text-emerald-600' : score >= 60 ? 'text-orange-600' : 'text-red-600'}`;
             }
 
             // Risk indicators - separate into moderate and severe
