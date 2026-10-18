@@ -1366,11 +1366,15 @@
             `;
             constitutionEl = $("constitution-text"); // re-reference after innerHTML
 
-            // Comparison text
+            // Comparison text – aligned with backend: percent = min(99, max(1, int((100-score)*0.95)))
             const comparisonEl = $("score-comparison");
             if (comparisonEl) {
-                const percentile = Math.round(score * 0.92); // rough estimate
-                comparisonEl.textContent = `您的健康分數為 ${score} 分，高於約 ${percentile}% 的同齡人群`;
+                const _percent = Math.min(99, Math.max(1, Math.floor((100 - score) * 0.95)));
+                if (score >= 80) {
+                    comparisonEl.textContent = `您的健康分數為 ${score} 分，超越約 ${100 - _percent}% 的同齡人群`;
+                } else {
+                    comparisonEl.textContent = `您的健康分數為 ${score} 分，低於約 ${_percent}% 的同齡人群`;
+                }
                 comparisonEl.className = `mt-2 text-sm ${score >= 80 ? 'text-emerald-600' : score >= 60 ? 'text-orange-600' : 'text-red-600'}`;
             }
 
