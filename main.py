@@ -889,23 +889,23 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         inspector_phone = find_inspector_phone(assessment.referral_code)
 
         # ===== 頂部橙色 Hero 區塊（收緊高度，剛包覆提交時間）=====
-        draw.rectangle([(0, 0), (W, 200)], fill=ORANGE_MAIN)
-        draw.text((W // 2, 42), "快速中醫體質檢測", font=font_title, fill=WHITE, anchor='mm')
-        draw.text((W // 2, 108),
+        draw.rectangle([(0, 0), (W, 170)], fill=ORANGE_MAIN)
+        draw.text((W // 2, 38), "快速中醫體質檢測", font=font_title, fill=WHITE, anchor='mm')
+        draw.text((W // 2, 96),
                   f"提交時間：{assessment.submitted_at.strftime('%Y-%m-%d %H:%M') if assessment.submitted_at else '-'}",
                   font=font_small, fill='#FFE0B2', anchor='mm')
 
-        y = 228
+        y = 186
 
-        # ===== 客戶資料卡片（高度擴大 +40px，確保檢測人員文字完整顯示）=====
-        draw.rectangle([(40, y), (W - 40, y + 250)], fill=WHITE, outline='#E0E0E0', width=2)
-        draw.text((60, y + 20), "客戶資料", font=font_label, fill=ORANGE_MAIN)
-        draw.text((60, y + 72), f"姓名：{assessment.name}", font=font_value, fill=DARK)
-        draw.text((60, y + 124), f"電話：{assessment.phone}", font=font_value, fill=DARK)
-        draw.text((60, y + 216),
+        # ===== 客戶資料卡片（行距收緊，三行緊湊排列）=====
+        draw.rectangle([(40, y), (W - 40, y + 190)], fill=WHITE, outline='#E0E0E0', width=2)
+        draw.text((60, y + 16), "客戶資料", font=font_label, fill=ORANGE_MAIN)
+        draw.text((60, y + 56), f"姓名：{assessment.name}", font=font_value, fill=DARK)
+        draw.text((60, y + 96), f"電話：{assessment.phone}", font=font_value, fill=DARK)
+        draw.text((60, y + 140),
                   f"檢測人員：{inspector_name}（{inspector_phone}）",
                   font=get_font(32, bold=True), fill=DARK)
-        y += 290
+        y += 218
 
         # ===== 健康警示分數 – Progress Ring 區塊 =====
         ring_center_x = W // 2
