@@ -849,7 +849,8 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         font_value    = get_font(32, bold=True)
         font_small    = get_font(24)
         font_big      = get_font(96, bold=True)
-        font_ring_lbl = get_font(30)  # 潛在風險等級／體質判定（放大部分）
+        font_ring_lbl = get_font(30)  # 潛在風險等級（30px）
+        font_ring_lbl_b = get_font(38, bold=True)  # 體質判定（38px，放大 25%）
         font_cta      = get_font(36, bold=True)
         font_rec      = get_font(26)
         font_bar      = get_font(26)
@@ -873,17 +874,15 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         else:
             risk_text_color = (0x38, 0x8E, 0x3C)
 
-        # Score color for ring (5-tier)
-        if score <= 20:
-            ring_color = (0x11, 0x18, 0x27)
-        elif score <= 40:
-            ring_color = (0xDC, 0x26, 0x26)
+        # Score color for ring (4-tier, aligned with spec)
+        if score <= 40:
+            ring_color = (0xDC, 0x26, 0x26)      # 🔴 紅：0-40 極高風險
         elif score <= 60:
-            ring_color = (0x78, 0x35, 0x0F)
+            ring_color = (0x78, 0x35, 0x0F)      # 🟤 褐：41-60 中高風險
         elif score <= 80:
-            ring_color = (0xD9, 0x77, 0x06)
+            ring_color = (0xD9, 0x77, 0x06)      # 🟡 黃：61-80 關注
         else:
-            ring_color = (0x16, 0xA3, 0x4A)
+            ring_color = (0x16, 0xA3, 0x4A)      # 🟢 綠：81-100 良好
 
         inspector_name = find_inspector_name(assessment.referral_code)
         inspector_phone = find_inspector_phone(assessment.referral_code)
@@ -921,16 +920,14 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         arc_end = arc_start - (score / 100.0) * 360
         draw.arc(bbox, start=arc_start, end=arc_end, fill=ring_color, width=ring_width)
 
-        if score <= 20:
-            score_text_color = (0x11, 0x18, 0x27)
-        elif score <= 40:
-            score_text_color = (0xDC, 0x26, 0x26)
+        if score <= 40:
+            score_text_color = (0xDC, 0x26, 0x26)     # 🔴 紅：0-40
         elif score <= 60:
-            score_text_color = (0x78, 0x35, 0x0F)
+            score_text_color = (0x78, 0x35, 0x0F)     # 🟤 褐：41-60
         elif score <= 80:
-            score_text_color = (0xD9, 0x77, 0x06)
+            score_text_color = (0xD9, 0x77, 0x06)     # 🟡 黃：61-80
         else:
-            score_text_color = (0x16, 0xA3, 0x4A)
+            score_text_color = (0x16, 0xA3, 0x4A)     # 🟢 綠：81-100
         draw.text((ring_center_x, ring_center_y), str(score), font=font_big, fill=score_text_color, anchor='mm')
 
         draw.text((W // 2, y + 236), f"潛在風險等級：{risk}", font=font_ring_lbl, fill=risk_text_color, anchor='mm')
@@ -944,7 +941,7 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         draw.text((W // 2, y + 272), _comparison, font=font_small, fill=(0x4B, 0x55, 0x63), anchor='mm')
 
         draw.text((W // 2, y + 306), f"體質判定：{assessment.constitution}",
-                  font=font_ring_lbl, fill=GRAY, anchor='mm')
+                  font=font_ring_lbl_b, fill=GRAY, anchor='mm')
         y += 374
 
         # ===== 健康風險指標 (Progress Bars) =====
@@ -969,6 +966,8 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
 
             bar_x = label_x + 220
             bar_width = W - 40 - bar_x - 40
+            bar_height = 28
+            r = bar_height // 2  # 圓角半徑 = 14
             bar_bg = GRAY_LIGHT
             if pct <= 25:
                 bar_fg = (0x10, 0xB9, 0x81)
@@ -979,11 +978,17 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
             else:
                 bar_fg = (0x78, 0x35, 0x0F)
 
-            draw.rectangle([(bar_x, label_y - 14), (bar_x + bar_width, label_y + 14)],
-                           fill=bar_bg, outline=bar_bg)
-            fg_width = int(bar_width * pct / 100)
-            draw.rectangle([(bar_x, label_y - 14), (bar_x + fg_width, label_y + 14)],
-                           fill=bar_fg, outline=bar_fg)
+            # Background pill shape
+            draw.rectangle([(bar_x + r, label_y - r), (bar_x + bar_width - r, label_y + r)],
+                           fill=bar_bg)
+            draw.ellipse([(bar_x, label_y - r), (bar_x + 2 * r, label_y + r)], fill=bar_bg)
+            draw.ellipse([(bar_x + bar_width - 2 * r, label_y - r), (bar_x + bar_width, label_y + r)], fill=bar_bg)
+            # Foreground pill shape
+            fg_width = max(2 * r, int(bar_width * pct / 100))
+            draw.rectangle([(bar_x + r, label_y - r), (bar_x + fg_width - r, label_y + r)],
+                           fill=bar_fg)
+            draw.ellipse([(bar_x, label_y - r), (bar_x + 2 * r, label_y + r)], fill=bar_fg)
+            draw.ellipse([(bar_x + fg_width - 2 * r, label_y - r), (bar_x + fg_width, label_y + r)], fill=bar_fg)
 
         y += 270
 
@@ -1031,12 +1036,8 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
     ]
     bar_data = FIXED_INDICATORS
 
-    # 5-tier score color (black→red→brown→yellow→green)
-    if score <= 20:
-        ring_color = "#111827"
-        risk_circle_color = "#111827"
-        risk_bg_color = "rgba(17, 24, 39, 0.1)"
-    elif score <= 40:
+    # 4-tier score color (red→brown→yellow→green, aligned with PIL image)
+    if score <= 40:
         ring_color = "#DC2626"
         risk_circle_color = "#DC2626"
         risk_bg_color = "rgba(220, 38, 38, 0.1)"
