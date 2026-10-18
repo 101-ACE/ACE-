@@ -934,9 +934,18 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         draw.text((ring_center_x, ring_center_y), str(score), font=font_big, fill=score_text_color, anchor='mm')
 
         draw.text((W // 2, y + 236), f"潛在風險等級：{risk}", font=font_ring_lbl, fill=risk_text_color, anchor='mm')
-        draw.text((W // 2, y + 278), f"體質判定：{assessment.constitution}",
+
+        # 同齡人群比較文案
+        _percent = min(99, max(1, int((100 - score) * 0.95)))
+        if score >= 80:
+            _comparison = f"您的健康分數為 {score} 分，超越約 {100 - _percent}% 的同齡人群"
+        else:
+            _comparison = f"您的健康分數為 {score} 分，低於約 {_percent}% 的同齡人群"
+        draw.text((W // 2, y + 272), _comparison, font=font_small, fill=(0x4B, 0x55, 0x63), anchor='mm')
+
+        draw.text((W // 2, y + 306), f"體質判定：{assessment.constitution}",
                   font=font_ring_lbl, fill=GRAY, anchor='mm')
-        y += 334
+        y += 374
 
         # ===== 健康風險指標 (Progress Bars) =====
         def _risk_pct(base: int, factor: float, offset: float) -> int:
