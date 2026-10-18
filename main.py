@@ -597,12 +597,23 @@ def find_partner(referral_code: Optional[str]) -> Optional[Dict[str, str]]:
 DEFAULT_INSPECTOR_PHONE = os.getenv("DEFAULT_INSPECTOR_PHONE", "85252706980")
 DEFAULT_INSPECTOR_NAME = os.getenv("DEFAULT_INSPECTOR_NAME", "客服專員")
 
+def _strip_852(phone: str) -> str:
+    """去除 852/+852 國際區號，只保留本地 8 位數字"""
+    if not phone:
+        return phone
+    p = str(phone).strip()
+    if p.startswith('+852'):
+        return p[4:]
+    if p.startswith('852'):
+        return p[3:]
+    return p
+
 def find_inspector_phone(referral_code: Optional[str]) -> str:
-    """根據 referral_code 查詢對應檢測員電話，找不到則回傳預設值"""
+    """根據 referral_code 查詢對應檢測員電話，找不到則回傳預設值（已去除 852 區號）"""
     partner = find_partner(referral_code)
     if partner and partner.get("phone"):
-        return partner["phone"]
-    return DEFAULT_INSPECTOR_PHONE
+        return _strip_852(partner["phone"])
+    return _strip_852(DEFAULT_INSPECTOR_PHONE)
 
 def find_inspector_name(referral_code: Optional[str]) -> str:
     """根據 referral_code 查詢對應檢測員暱稱，找不到則回傳預設值"""
@@ -780,7 +791,7 @@ def update_contact_status_in_sheet(assessment_id: str) -> None:
 
 
 def generate_report_image(assessment: Assessment, recommendations: List[str]) -> Optional[bytes]:
-    """生成檢測報告圖片 (PNG)，用於郵件附件或下載"""
+    """生成檢測報告圖片 (PNG) – 2x 高解析度、無 Emoji 亂碼、客戶資料卡拉長"""
     try:
         from PIL import Image, ImageDraw, ImageFont
     except ImportError:
@@ -799,13 +810,11 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         ]
 
         def get_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
-            # 優先從專案 fonts 目錄載入
-            # 專案內 NotoSansTC-Regular.ttf 為優先字型
             project_fonts = []
             if bold:
                 project_fonts = [
                     f"NotoSansCJK-Black.ttc",
-                    f"NotoSansCJK-Regular.ttc", 
+                    f"NotoSansCJK-Regular.ttc",
                     f"NotoSansCJK-Bold.ttf",
                     f"NotoSansTC-Bold.ttf",
                     f"NotoSansTC-Regular.ttf"
@@ -813,37 +822,36 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
             else:
                 project_fonts = [
                     f"NotoSansCJK-Regular.ttc",
-                    f"NotoSansCJK-Bold.ttc",  # fallback to bold if regular missing
+                    f"NotoSansCJK-Bold.ttc",
                     f"NotoSansCJK-Regular.ttf",
                     f"NotoSansTC-Regular.ttf",
                     f"NotoSansTC-Bold.ttf"
                 ]
-            
-            # 從專案 fonts 目錄載入
+
             for fname in project_fonts:
                 fpath = os.path.join(_FONT_DIR, fname)
                 if os.path.exists(fpath):
                     return ImageFont.truetype(fpath, size)
-            # 其次嘗試系統字型
             for fpath in _SYSTEM_FONTS:
                 if os.path.exists(fpath):
                     return ImageFont.truetype(fpath, size)
-            # 最後 fallback 到預設字型（會無法顯示中文）
             logger.warning("[EMAIL] No Chinese font found, using default font")
             return ImageFont.load_default()
 
-        W, H = 600, 820
+        # ── 2x 高解析度畫布 (600×820 → 1200×1640) ──────────────────
+        W, H = 1200, 1640
         img = Image.new('RGB', (W, H), color='#FFF8F0')
         draw = ImageDraw.Draw(img)
 
-        font_title   = get_font(26, bold=True)
-        font_label   = get_font(14)
-        font_value   = get_font(16, bold=True)
-        font_small   = get_font(12)
-        font_big     = get_font(48, bold=True)
-        font_cta     = get_font(18, bold=True)
-        font_rec     = get_font(13)
-        font_bar     = get_font(13)
+        # 所有字級同步 ×2
+        font_title   = get_font(52, bold=True)
+        font_label   = get_font(28)
+        font_value   = get_font(32, bold=True)
+        font_small   = get_font(24)
+        font_big     = get_font(96, bold=True)
+        font_cta     = get_font(36, bold=True)
+        font_rec     = get_font(26)
+        font_bar     = get_font(26)
 
         # 配色
         ORANGE_DARK  = '#BF360C'
@@ -853,7 +861,7 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         WHITE        = '#FFFFFF'
         DARK         = '#3E2723'
         GRAY         = '#6D4C41'
-        GRAY_LIGHT   = '#E5E7EB'  # progress ring background
+        GRAY_LIGHT   = '#E5E7EB'
 
         score = assessment.health_score
         risk  = assessment.risk_level
@@ -864,128 +872,119 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         else:
             risk_text_color = (0x38, 0x8E, 0x3C)
 
-        # Score color for ring (5-tier: black→red→brown→yellow→green)
+        # Score color for ring (5-tier)
         if score <= 20:
-            ring_color = (0x11, 0x18, 0x27)    # ⚫ 黑：極低分/極高風險
+            ring_color = (0x11, 0x18, 0x27)
         elif score <= 40:
-            ring_color = (0xDC, 0x26, 0x26)    # 🔴 紅：低分/高風險
+            ring_color = (0xDC, 0x26, 0x26)
         elif score <= 60:
-            ring_color = (0x78, 0x35, 0x0F)    # 🟤 褐：中低分/中高風險
+            ring_color = (0x78, 0x35, 0x0F)
         elif score <= 80:
-            ring_color = (0xD9, 0x77, 0x06)    # 🟡 黃：中高分/關注
+            ring_color = (0xD9, 0x77, 0x06)
         else:
-            ring_color = (0x16, 0xA3, 0x4A)    # 🟢 綠：高分/良好
+            ring_color = (0x16, 0xA3, 0x4A)
 
         inspector_name = find_inspector_name(assessment.referral_code)
         inspector_phone = find_inspector_phone(assessment.referral_code)
 
         # ===== 頂部橙色 Hero 區塊 =====
-        draw.rectangle([(0, 0), (W, 130)], fill=ORANGE_MAIN)
-        draw.text((W // 2, 28), "快速中醫體質檢測", font=font_title, fill=WHITE, anchor='mm')
-        draw.text((W // 2, 72), f"提交時間：{assessment.submitted_at.strftime('%Y-%m-%d %H:%M') if assessment.submitted_at else '-'}",
+        draw.rectangle([(0, 0), (W, 260)], fill=ORANGE_MAIN)
+        draw.text((W // 2, 56), "快速中醫體質檢測", font=font_title, fill=WHITE, anchor='mm')
+        draw.text((W // 2, 144),
+                  f"提交時間：{assessment.submitted_at.strftime('%Y-%m-%d %H:%M') if assessment.submitted_at else '-'}",
                   font=font_small, fill='#FFE0B2', anchor='mm')
 
-        y = 145
+        y = 290
 
-        # ===== 客戶資料卡片（放大版） =====
-        draw.rectangle([(20, y), (W - 20, y + 100)], fill=WHITE, outline='#E0E0E0', width=1)
-        draw.text((30, y + 10), "👤 客戶資料", font=font_label, fill=ORANGE_MAIN)
-        draw.text((30, y + 36), f"姓名：{assessment.name}", font=font_value, fill=DARK)
-        draw.text((30, y + 60), f"電話：{assessment.phone}", font=font_value, fill=DARK)
-        draw.text((30, y + 84), f"檢測人員：{inspector_name}（{inspector_phone}）", font=get_font(16, bold=True), fill=DARK)
-        y += 115
+        # ===== 客戶資料卡片（高度 ×1.5，確保檢測人員文字不溢出）=====
+        draw.rectangle([(40, y), (W - 40, y + 210)], fill=WHITE, outline='#E0E0E0', width=2)
+        draw.text((60, y + 20), "客戶資料", font=font_label, fill=ORANGE_MAIN)
+        draw.text((60, y + 72), f"姓名：{assessment.name}", font=font_value, fill=DARK)
+        draw.text((60, y + 124), f"電話：{assessment.phone}", font=font_value, fill=DARK)
+        draw.text((60, y + 176),
+                  f"檢測人員：{inspector_name}（{inspector_phone}）",
+                  font=get_font(32, bold=True), fill=DARK)
+        y += 245
 
-        # ===== 健康警示分數 - Progress Ring 區塊 =====
-        # Progress ring: draw background full ring in gray, then arc for score
+        # ===== 健康警示分數 – Progress Ring 區塊 =====
         ring_center_x = W // 2
-        ring_center_y = y + 70
-        ring_radius = 30
-        ring_width = 7
-        
-        # Background ring (full circle in gray)
+        ring_center_y = y + 140
+        ring_radius = 81          # 原 40.5 ×2
+        ring_width = 14           # 原 7 ×2
+
         bbox = [(ring_center_x - ring_radius, ring_center_y - ring_radius),
                 (ring_center_x + ring_radius, ring_center_y + ring_radius)]
         draw.ellipse(bbox, outline=GRAY_LIGHT, width=ring_width)
-        
-        # Foreground arc (score percentage)
-        # PIL arc: start and end angles in degrees, 3 o'clock is 0
-        # We need to convert: 12 o'clock is -90, and arc goes counterclockwise
-        arc_start = -90  # 12 o'clock
+
+        arc_start = -90
         arc_end = arc_start - (score / 100.0) * 360
         draw.arc(bbox, start=arc_start, end=arc_end, fill=ring_color, width=ring_width)
-        
-        # Center score number - 5-tier color matching ring
+
         if score <= 20:
-            score_text_color = (0x11, 0x18, 0x27)    # ⚫ 黑
+            score_text_color = (0x11, 0x18, 0x27)
         elif score <= 40:
-            score_text_color = (0xDC, 0x26, 0x26)    # 🔴 紅
+            score_text_color = (0xDC, 0x26, 0x26)
         elif score <= 60:
-            score_text_color = (0x78, 0x35, 0x0F)    # 🟤 褐
+            score_text_color = (0x78, 0x35, 0x0F)
         elif score <= 80:
-            score_text_color = (0xD9, 0x77, 0x06)    # 🟡 黃
+            score_text_color = (0xD9, 0x77, 0x06)
         else:
-            score_text_color = (0x16, 0xA3, 0x4A)    # 🟢 綠
+            score_text_color = (0x16, 0xA3, 0x4A)
         draw.text((ring_center_x, ring_center_y), str(score), font=font_big, fill=score_text_color, anchor='mm')
-        
-        draw.text((W // 2, y + 118), f"潛在風險等級：{risk}", font=font_small, fill=risk_text_color, anchor='mm')
-        draw.text((W // 2, y + 134), f"體質判定：{assessment.constitution}",
+
+        draw.text((W // 2, y + 236), f"潛在風險等級：{risk}", font=font_small, fill=risk_text_color, anchor='mm')
+        draw.text((W // 2, y + 268), f"體質判定：{assessment.constitution}",
                   font=font_small, fill=GRAY, anchor='mm')
-        y += 162
+        y += 324
 
         # ===== 健康風險指標 (Progress Bars) =====
-        # 風險值與健康分數成反比：score=85→低風險(~20%), score=60→中風險(~40%), score=30→高風險(~80%)
         def _risk_pct(base: int, factor: float, offset: float) -> int:
             return min(100, max(5, round((100 - base) * factor + offset)))
 
         indicators = [
-            ("血管彈性指數", _risk_pct(score, 0.9, 5)),
-            ("血液粘稠度預警", _risk_pct(score, 0.8, 0)),
-            ("肝臟代謝負擔", _risk_pct(score, 1.0, 0)),
+            ("微循環血管彈性評估", _risk_pct(score, 0.9, 5)),
+            ("血液流變與阻力預警", _risk_pct(score, 0.8, 0)),
+            ("肝膽解毒與代謝負荷評估", _risk_pct(score, 1.0, 0)),
         ]
 
-        draw.rectangle([(20, y), (W - 20, y + 120)], fill=WHITE, outline='#E0E0E0', width=1)
-        draw.text((30, y + 10), "⚠️ 健康風險關注指標", font=font_label, fill=ORANGE_MAIN)
-        
+        draw.rectangle([(40, y), (W - 40, y + 240)], fill=WHITE, outline='#E0E0E0', width=2)
+        draw.text((60, y + 20), "中醫經絡健康評估指數", font=font_label, fill=ORANGE_MAIN)
+
         for i, (ind, pct) in enumerate(indicators):
-            bar_y = y + 38 + i * 28
-            label_x = 30
-            label_y = bar_y + 6
-            
-            # Indicator name
+            bar_y = y + 76 + i * 56
+            label_x = 60
+            label_y = bar_y + 12
+
             draw.text((label_x, label_y), ind, font=font_bar, fill=DARK, anchor='lm')
-            
-            # Progress bar background
-            bar_x = label_x + 110
-            bar_width = W - 20 - bar_x - 20
-            bar_height = 14
+
+            bar_x = label_x + 220
+            bar_width = W - 40 - bar_x - 40
             bar_bg = GRAY_LIGHT
-            # 四色嚴重度進度條：綠(正常) → 黃(輕度) → 紅(中高) → 褐(極高)
             if pct <= 25:
-                bar_fg = (0x10, 0xB9, 0x81)    # 🟢 綠：正常/低風險
+                bar_fg = (0x10, 0xB9, 0x81)
             elif pct <= 50:
-                bar_fg = (0xFB, 0xBF, 0x24)    # 🟡 黃：輕度風險
+                bar_fg = (0xFB, 0xBF, 0x24)
             elif pct <= 75:
-                bar_fg = (0xEF, 0x44, 0x44)    # 🟠 紅：中度/高風險
+                bar_fg = (0xEF, 0x44, 0x44)
             else:
-                bar_fg = (0x78, 0x35, 0x0F)    # 🟤 深褐：極高風險/嚴重預警
-            
-            # Background bar
-            draw.rectangle([(bar_x, label_y - 7), (bar_x + bar_width, label_y + 7)],
+                bar_fg = (0x78, 0x35, 0x0F)
+
+            draw.rectangle([(bar_x, label_y - 14), (bar_x + bar_width, label_y + 14)],
                            fill=bar_bg, outline=bar_bg)
-            # Foreground bar
             fg_width = int(bar_width * pct / 100)
-            draw.rectangle([(bar_x, label_y - 7), (bar_x + fg_width, label_y + 7)],
+            draw.rectangle([(bar_x, label_y - 14), (bar_x + fg_width, label_y + 14)],
                            fill=bar_fg, outline=bar_fg)
-        
-        y += 135
+
+        y += 270
 
         # ===== 飲食與生活作息建議 =====
-        rec_title_y = y + 8
-        draw.rectangle([(20, y), (W - 20, y + 60 + len(recommendations) * 20)], fill=WHITE, outline='#E0E0E0', width=1)
-        draw.text((30, rec_title_y), "🍵 飲食與生活作息建議", font=font_label, fill=ORANGE_MAIN)
+        rec_title_y = y + 16
+        card_h = 120 + len(recommendations) * 40
+        draw.rectangle([(40, y), (W - 40, y + card_h)], fill=WHITE, outline='#E0E0E0', width=2)
+        draw.text((60, rec_title_y), "個人化調理與養生作息建議", font=font_label, fill=ORANGE_MAIN)
         for i, rec in enumerate(recommendations):
-            draw.text((30, rec_title_y + 26 + i * 20), f"• {rec}", font=font_rec, fill=DARK)
-        y += 80 + len(recommendations) * 20
+            draw.text((60, rec_title_y + 52 + i * 40), f"• {rec}", font=font_rec, fill=DARK)
+        y += card_h + 32
 
         buf = BytesIO()
         img.save(buf, format='PNG', quality=95)
