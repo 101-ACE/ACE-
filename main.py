@@ -853,6 +853,8 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         font_ring_lbl_b = get_font(38, bold=True)  # 體質判定（38px，放大 25%）
         font_cta      = get_font(36, bold=True)
         font_rec      = get_font(26)
+        font_comparison = get_font(36)  # 同齡對比主文案（2.5× ≈ 36px）
+        font_comparison_num = get_font(50, bold=True)  # 分數/百分比數字（3.5× ≈ 50px）
         font_bar      = get_font(26)
 
         # 配色
@@ -932,13 +934,26 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
 
         draw.text((W // 2, y + 236), f"潛在風險等級：{risk}", font=font_ring_lbl, fill=risk_text_color, anchor='mm')
 
-        # 同齡人群比較文案
+        # 同齡人群比較文案（放大：主文案36px，分數/百分比50px加粗）
         _percent = min(99, max(1, int((100 - score) * 0.95)))
         if score >= 80:
-            _comparison = f"您的健康分數為 {score} 分，超越約 {100 - _percent}% 的同齡人群"
+            _before = f"您的健康分數為 "
+            _mid = str(score)
+            _after = f" 分，超越約 {(100 - _percent)}% 的同齡人群"
         else:
-            _comparison = f"您的健康分數為 {score} 分，低於約 {_percent}% 的同齡人群"
-        draw.text((W // 2, y + 272), _comparison, font=font_small, fill=(0x4B, 0x55, 0x63), anchor='mm')
+            _before = f"您的健康分數為 "
+            _mid = str(score)
+            _after = f" 分，低於約 {_percent}% 的同齡人群"
+        # Measure total width and split into 3 segments
+        text_before = _before + _mid
+        text_after = _after
+        w_before = font_comparison_num.getlength(_before) + font_comparison_num.getlength(_mid)
+        w_after = font_comparison.getlength(_after)
+        total_w = w_before + w_after
+        x_start = W // 2 - total_w // 2
+        draw.text((x_start, y + 272), _before, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
+        draw.text((x_start + w_before, y + 272), _mid, font=font_comparison_num, fill=score_text_color, anchor='lm')
+        draw.text((x_start + w_before + font_comparison_num.getlength(_mid), y + 272), _after, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
 
         draw.text((W // 2, y + 306), f"體質判定：{assessment.constitution}",
                   font=font_ring_lbl_b, fill=GRAY, anchor='mm')
