@@ -88,7 +88,7 @@
         /* Subtitle: ultra-tight line-height globally (both mobile & desktop) */
         .obs-subtitle {
             font-size: 10px !important;
-            line-height: 1.05 !important;
+            line-height: 0.85 !important;
             margin: 0 !important;
             padding: 0 !important;
         }
@@ -1266,9 +1266,9 @@
                         index++;
                     } else {
                         clearInterval(interval);
-                        setTimeout(resolve, 600);
+                        setTimeout(resolve, 400);
                     }
-                }, 1000);
+                }, 800);
             });
         }
 
