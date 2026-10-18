@@ -85,16 +85,20 @@
             margin-bottom: 0.125rem;
             background: #f8fafc;
         }
+        /* Subtitle: tight line-height globally (both mobile & desktop) */
+        .obs-subtitle {
+            font-size: 10px !important;
+            line-height: 1.1 !important;
+        }
         /* Mobile: tighter grid + more compact cards */
         @media (max-width: 640px) {
             .obs-card.has-image { padding: 0.25rem; }
             .obs-card.has-image .obs-thumb { margin-bottom: 0.1rem; border-radius: 0.375rem; }
-            .obs-subtitle { font-size: 10px !important; line-height: 1.2 !important; }
         }
         /* Desktop: ensure 4-column layout renders cleanly */
         @media (min-width: 641px) {
             .obs-card.has-image { padding: 0.5rem; }
-            .obs-card.has-image .obs-thumb { margin-bottom: 0.25rem; }
+            .obs-card.has-image .obs-thumb { margin-bottom: 0.125rem; }
         }
     </style>
 </head>
