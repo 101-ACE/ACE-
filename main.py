@@ -954,9 +954,9 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         draw.text((x_start + w1,          y + 272), _seg2, font=font_comparison_num, fill=score_text_color, anchor='lm')
         draw.text((x_start + w1 + w2,     y + 272), _seg3, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
 
-        draw.text((W // 2, y + 314), f"體質判定：{assessment.constitution}",
+        draw.text((W // 2, y + 340), f"體質判定：{assessment.constitution}",
                   font=font_ring_lbl_b, fill=GRAY, anchor='mm')
-        y += 382
+        y += 400
 
         # ===== 健康風險指標 (Progress Bars) =====
         def _risk_pct(base: int, factor: float, offset: float) -> int:
