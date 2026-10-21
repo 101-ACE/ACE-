@@ -88,12 +88,43 @@
         /* Subtitle: ultra-tight line-height globally (both mobile & desktop) */
         .obs-subtitle {
             font-size: 10px !important;
-            line-height: 1.05 !important;
+            line-height: 1.0 !important;
             margin-top: 0px !important;
-            margin-bottom: 2px !important;
+            margin-bottom: 0px !important;
+            padding: 0 !important;
+            color: #555555 !important;
             display: block !important;
             word-break: break-word;
-            padding: 0 !important;
+        }
+        /* EXTREME override: kill Tailwind leading-tight on subtitles + compress card gaps */
+        div.obs-card.has-image span.obs-subtitle,
+        div.obs-card.has-image .obs-subtitle,
+        label.obs-card.has-image span.obs-subtitle,
+        .grid[data-subcat] span.obs-subtitle {
+            line-height: 1.0 !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            color: #555555 !important;
+            display: block !important;
+            word-break: break-word !important;
+            min-height: 0 !important;
+            height: auto !important;
+        }
+        /* Title: remove leading-tight interference, tighter bottom */
+        div.obs-card.has-image span:not(.obs-subtitle) {
+            line-height: 1.1 !important;
+            margin-bottom: 0px !important;
+            padding-bottom: 0 !important;
+        }
+        /* Card padding compressed */
+        div.obs-card.has-image {
+            padding: 2px !important;
+        }
+        /* Grid gap compressed */
+        div.grid[data-subcat] {
+            gap: 2px !important;
         }
         /* Score comparison: 2.5× normal, score digits & peer % at 3.5× bold */
         .comparison-text {
@@ -172,7 +203,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌色:淡紅舌" class="sr-only">
                                         <img src="images/tongue/fanhong.png" alt="淡紅舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">淡紅舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭呈健康的淡紅色</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">淡紅舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭呈健康的淡紅色</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -180,7 +211,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌色:淡白舌" class="sr-only">
                                         <img src="images/tongue/danbai.png" alt="淡白舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">淡白舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭顏色很淺</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">偏白色</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">淡白舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭顏色很淺</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">偏白色</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -188,7 +219,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌色:紅舌" class="sr-only">
                                         <img src="images/tongue/hong.png" alt="紅舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">紅舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭整體明顯發紅</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">紅舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭整體明顯發紅</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -196,7 +227,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌色:絳舌" class="sr-only">
                                         <img src="images/tongue/jiang.png" alt="絳舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">絳舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭呈現深紅色</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">絳舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭呈現深紅色</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -204,7 +235,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌色:紫舌" class="sr-only">
                                         <img src="images/tongue/zi.png" alt="紫舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">紫舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭顏色偏暗偏紫</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">紫舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭顏色偏暗偏紫</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -212,7 +243,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌色:青舌" class="sr-only">
                                         <img src="images/tongue_color/cyan_tongue.png" alt="青舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">青舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭偏青</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">慘白無血色</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">青舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭偏青</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">慘白無血色</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -225,7 +256,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌形:胖大舌" class="sr-only">
                                         <img src="images/tongue_shape/胖大舌.png" alt="胖大舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">胖大舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭很大很厚</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">塞滿嘴巴</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">胖大舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭很大很厚</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">塞滿嘴巴</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -233,7 +264,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌形:瘦薄舌" class="sr-only">
                                         <img src="images/tongue_shape/瘦薄舌.png" alt="瘦薄舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">瘦薄舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭乾扁狹長</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">偏薄</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">瘦薄舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭乾扁狹長</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">偏薄</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -241,7 +272,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌形:老舌" class="sr-only">
                                         <img src="images/tongue_shape/老舌.png" alt="老舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">老舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭表面粗糙</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">紋理很深</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">老舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭表面粗糙</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">紋理很深</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -249,7 +280,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌形:嫩舌" class="sr-only">
                                         <img src="images/tongue_shape/嫩舌.png" alt="嫩舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">嫩舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭看起來水水嫩嫩的</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">嫩舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭看起來水水嫩嫩的</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -257,7 +288,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌形:點刺舌" class="sr-only">
                                         <img src="images/tongue_shape/點刺舌.png" alt="點刺舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">點刺舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭表面有凸起的小紅點</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">點刺舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭表面有凸起的小紅點</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -265,7 +296,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌形:齒痕舌" class="sr-only">
                                         <img src="images/tongue_shape/齒痕舌.png" alt="齒痕舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">齒痕舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌邊有印牙痕</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌邊齒痕</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">齒痕舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌邊有印牙痕</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">舌邊齒痕</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -273,7 +304,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌形:裂紋舌" class="sr-only">
                                         <img src="images/tongue_shape/裂紋舌.png" alt="裂紋舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">裂紋舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭表面有裂開的縫隙</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">裂紋舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭表面有裂開的縫隙</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -287,7 +318,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌態:適中" class="sr-only">
                                         <img src="images/tongue/shizhong.png" alt="適中舌態示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">適中</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">伸舌自如</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">靈活</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">適中</span><br><span class="text-[10px] text-slate-400 obs-subtitle">伸舌自如</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">靈活</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -295,7 +326,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌態:強硬" class="sr-only">
                                         <img src="images/tongue/qiangying.png" alt="強硬舌態示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">強硬</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭僵硬</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">伸出來很吃力</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">強硬</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭僵硬</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">伸出來很吃力</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -303,7 +334,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌態:痿軟" class="sr-only">
                                         <img src="images/tongue/weiruan.png" alt="痿軟舌態示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">痿軟</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭軟趴趴</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">沒力氣伸長</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">痿軟</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭軟趴趴</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">沒力氣伸長</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -311,7 +342,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌態:歪斜" class="sr-only">
                                         <img src="images/tongue/waixie.png" alt="歪斜舌態示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">歪斜</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭伸出來會自動偏向一邊</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">歪斜</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭伸出來會自動偏向一邊</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -325,7 +356,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌苔色:無苔" class="sr-only">
                                         <img src="images/tongue/wutai.png" alt="無苔示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">無苔</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌頭表面乾乾淨淨沒有舌苔</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">無苔</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭表面乾乾淨淨沒有舌苔</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -333,7 +364,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌苔色:淡黃苔" class="sr-only">
                                         <img src="images/tongue/danhuang_tai.png" alt="淡黃苔示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">淡黃苔</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌苔稍微帶有淺黃色</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">淡黃苔</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌苔稍微帶有淺黃色</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -341,7 +372,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌苔色:深黃苔" class="sr-only">
                                         <img src="images/tongue/shenhuang_tai.png" alt="深黃苔示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">深黃苔</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌苔很厚且顏色偏深黃</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">深黃苔</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌苔很厚且顏色偏深黃</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -349,7 +380,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌苔色:灰潤苔" class="sr-only">
                                         <img src="images/tongue/hui_run_tai.png" alt="灰潤苔示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">灰潤苔</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌苔偏灰色但看起來濕濕的</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">灰潤苔</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌苔偏灰色但看起來濕濕的</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -357,7 +388,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌苔色:灰燥苔" class="sr-only">
                                         <img src="images/tongue/hui_zao_tai.png" alt="灰燥苔示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">灰燥苔</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌苔偏灰色且乾乾粗粗的</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">灰燥苔</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌苔偏灰色且乾乾粗粗的</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -365,7 +396,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌苔色:黑潤苔" class="sr-only">
                                         <img src="images/tongue/hei_run_tai.png" alt="黑潤苔示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">黑潤苔</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌苔發黑但表面有水光</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">黑潤苔</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌苔發黑但表面有水光</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -373,7 +404,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌苔色:黑燥苔" class="sr-only">
                                         <img src="images/tongue/hei_zao_tai.png" alt="黑燥苔示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">黑燥苔</span><br><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">舌苔發黑且乾乾粗粗的</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">黑燥苔</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌苔發黑且乾乾粗粗的</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -390,7 +421,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="面色:面色紅潤" class="sr-only">
                                         <img src="public/images/features/face/normal.png" alt="正常面色示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">正常</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">氣色紅潤有光澤</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">正常</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">氣色紅潤有光澤</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -398,7 +429,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="面色:油光" class="sr-only">
                                         <img src="public/images/features/face/oily.png" alt="油光面色示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">油光</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">臉部易出油</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">洗完沒多久又油</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">油光</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">臉部易出油</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">洗完沒多久又油</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -406,7 +437,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="面色:面色萎黃" class="sr-only">
                                         <img src="public/images/features/face/sallow.png" alt="青黃面色示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">青黃</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">皮膚暗黃</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">看起來沒精神</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">青黃</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">皮膚暗黃</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">看起來沒精神</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -414,7 +445,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="面色:面色淡白" class="sr-only">
                                         <img src="public/images/features/face/pale.png" alt="蒼白面色示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">蒼白</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">臉色發白</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">完全沒有血色</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">蒼白</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">臉色發白</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">完全沒有血色</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -422,7 +453,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="面色:浮腫" class="sr-only">
                                         <img src="public/images/features/face/puffy.png" alt="浮腫面色示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">浮腫</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">臉部腫泡</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">早起特別明顯</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">浮腫</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">臉部腫泡</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">早起特別明顯</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -430,7 +461,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="面色:面色黧黑" class="sr-only">
                                         <img src="public/images/features/face/dark_spots.png" alt="晦暗色斑示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">晦暗色斑</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">膚色不均勻</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">有明顯斑點</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">晦暗色斑</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">膚色不均勻</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">有明顯斑點</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -438,7 +469,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="面色:潮紅爆痘" class="sr-only">
                                         <img src="public/images/features/face/flushed_acne.png" alt="潮紅爆痘示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">潮紅爆痘</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">臉發熱發紅</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">經常冒痘痘</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">潮紅爆痘</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">臉發熱發紅</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">經常冒痘痘</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -446,7 +477,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="面色:潮紅顴紅" class="sr-only">
                                         <img src="public/images/features/face/flushed_red.png" alt="潮紅顴紅示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">潮紅顴紅</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">面部泛紅</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">兩頰發紅</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">潮紅顴紅</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">面部泛紅</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">兩頰發紅</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -461,7 +492,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="眼睛:雙眼明亮有神" class="sr-only">
                                         <img src="public/images/eyes/eye_bright.png" alt="雙眼明亮有神示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">雙眼明亮有神</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">眼神有光</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">視覺清晰</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">雙眼明亮有神</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">眼神有光</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">視覺清晰</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -469,7 +500,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="眼睛:眼神疲倦無神" class="sr-only">
                                         <img src="public/images/eyes/eye_tired.png" alt="眼神疲倦無神示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">眼神疲倦無神</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">眼睛酸澀</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">看起來很累</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">眼神疲倦無神</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">眼睛酸澀</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">看起來很累</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -477,7 +508,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="眼睛:目赤血絲多" class="sr-only">
                                         <img src="public/images/eyes/eye_bloodshot.png" alt="目赤血絲多示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">目赤血絲多</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">眼白很多紅血絲</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">眼睛發紅</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">目赤血絲多</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">眼白很多紅血絲</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">眼睛發紅</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -485,7 +516,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="眼睛:眼睛乾澀充血" class="sr-only">
                                         <img src="public/images/eyes/eye_dry_red.png" alt="眼睛乾澀充血示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">眼睛乾澀/充血</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">經常乾癢</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">看螢幕易累</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">眼睛乾澀/充血</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">經常乾癢</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">看螢幕易累</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -493,7 +524,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="眼睛:黑眼圈深暗" class="sr-only">
                                         <img src="public/images/eyes/eye_dark_circles.png" alt="黑眼圈深暗示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">黑眼圈深暗</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">眼圈黑沉</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">像沒睡醒</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">黑眼圈深暗</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">眼圈黑沉</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">像沒睡醒</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -501,7 +532,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="眼睛:眼瞼淡白" class="sr-only">
                                         <img src="public/images/eyes/eye_pale.png" alt="眼瞼淡白示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">眼瞼淡白</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">翻開下眼皮顏色很淺</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">偏白</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">眼瞼淡白</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">翻開下眼皮顏色很淺</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">偏白</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -509,7 +540,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="眼睛:眼袋浮腫下垂" class="sr-only">
                                         <img src="public/images/eyes/eye_bags.png" alt="眼袋浮腫下垂示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">眼袋浮腫/下垂</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">眼袋特別大</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">泡泡的</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">眼袋浮腫/下垂</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">眼袋特別大</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">泡泡的</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -526,7 +557,7 @@
                                         <input type="checkbox" value="唇色:淡紅紅潤" class="sr-only">
                                         <img src="public/images/lips/lip_red.png" alt="淡紅紅潤唇色示意圖" class="obs-thumb" loading="lazy" decoding="async">
                                         <span class="text-xs font-medium text-slate-700 text-center leading-tight">淡紅紅潤</span>
-                                        <span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">嘴唇紅潤健康</span>
+                                        <span class="text-[10px] text-slate-400 text-center obs-subtitle">嘴唇紅潤健康</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -534,7 +565,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="唇色:淡白無血" class="sr-only">
                                         <img src="public/images/lips/lip_pale.png" alt="淡白無血唇色示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">淡白無血</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">嘴唇慘白</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">沒有血色</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">淡白無血</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">嘴唇慘白</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">沒有血色</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -543,7 +574,7 @@
                                         <input type="checkbox" value="唇色:青紫暗紫" class="sr-only">
                                         <img src="public/images/lips/lip_cyan.png" alt="青紫暗紫唇色示意圖" class="obs-thumb" loading="lazy" decoding="async">
                                         <span class="text-xs font-medium text-slate-700 text-center leading-tight">青紫/暗紫</span>
-                                        <span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">嘴唇顏色偏紫發暗</span>
+                                        <span class="text-[10px] text-slate-400 text-center obs-subtitle">嘴唇顏色偏紫發暗</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -551,7 +582,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="唇色:萎黃無華" class="sr-only">
                                         <img src="public/images/lips/lip_yellow.png" alt="萎黃無華唇色示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">萎黃無華</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">嘴唇發黃</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">乾枯無光澤</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">萎黃無華</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">嘴唇發黃</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">乾枯無光澤</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -559,7 +590,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="唇色:乾裂口角炎" class="sr-only">
                                         <img src="public/images/lips/lip_ulcer.png" alt="乾裂口角炎唇色示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">乾裂/口角炎</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">嘴唇常脫皮</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">嘴角容易發炎</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">乾裂/口角炎</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">嘴唇常脫皮</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">嘴角容易發炎</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -577,7 +608,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="聲音:低微無力" class="sr-only">
                                         <img src="public/images/voice/voice_weak.png" alt="低微無力聲音觀察示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">低微無力</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">說話聲音很小</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">沒氣力</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">低微無力</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">說話聲音很小</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">沒氣力</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -585,7 +616,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="聲音:語速快急" class="sr-only">
                                         <img src="public/images/voice/voice_fast.png" alt="語速快急聲音觀察示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">語速快急</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">說話講很快</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">像在趕時間</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">語速快急</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">說話講很快</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">像在趕時間</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -594,7 +625,7 @@
                                         <input type="checkbox" value="聲音:頻繁嘆氣" class="sr-only">
                                         <img src="public/images/voice/voice_sigh.png" alt="頻繁嘆氣聲音觀察示意圖" class="obs-thumb" loading="lazy" decoding="async">
                                         <span class="text-xs font-medium text-slate-700 text-center leading-tight">頻繁嘆氣</span>
-                                        <span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">經常長長嘆氣</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">嘆完才舒服</span>
+                                        <span class="text-[10px] text-slate-400 text-center obs-subtitle">經常長長嘆氣</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">嘆完才舒服</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -602,7 +633,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="聲音:痰音粗重" class="sr-only">
                                         <img src="public/images/voice/voice_phlegm.png" alt="痰音粗重聲音觀察示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">痰音粗重</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">喉嚨總覺得有痰</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">聲音沙啞</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">痰音粗重</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">喉嚨總覺得有痰</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">聲音沙啞</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -621,7 +652,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="體型:勻稱適中" class="sr-only">
                                         <img src="public/images/body/body_normal.png" alt="勻稱適中身形示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">勻稱適中</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">身形標準</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">體重適中</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">勻稱適中</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">身形標準</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">體重適中</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -629,7 +660,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="體型:體型瘦削" class="sr-only">
                                         <img src="public/images/body/body_thin.png" alt="體型瘦削身形示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">體型瘦削</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">身形偏瘦</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">沒什麼肌肉</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">體型瘦削</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">身形偏瘦</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">沒什麼肌肉</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -637,7 +668,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="體型:腹部肥胖" class="sr-only">
                                         <img src="public/images/body/body_fat.png" alt="腹部肥胖身形示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">腹部肥胖</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">肚子肉多</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">小腹突出</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">腹部肥胖</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">肚子肉多</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">小腹突出</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -645,7 +676,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="體型:姿態委靡" class="sr-only">
                                         <img src="public/images/body/body_slouched.png" alt="姿態委靡身形示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">姿態委靡</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">無精打采</span><br/><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">經常駝背彎腰</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">姿態委靡</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">無精打采</span><br/><span class="text-[10px] text-slate-400 text-center obs-subtitle">經常駝背彎腰</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -662,7 +693,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="指甲:月牙適中" class="sr-only">
                                         <img src="public/images/nails/nail_normal.png" alt="月牙適中指甲示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">月牙適中</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">指甲底部白色月牙正常</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">月牙適中</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">指甲底部白色月牙正常</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -670,7 +701,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="指甲:月牙過大" class="sr-only">
                                         <img src="public/images/nails/nail_large_lunula.png" alt="月牙過大指甲示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">月牙過大</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">指甲月牙佔了快一半</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">月牙過大</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">指甲月牙佔了快一半</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -678,7 +709,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="指甲:無月牙" class="sr-only">
                                         <img src="public/images/nails/nail_no_lunula.png" alt="無月牙指甲示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">無月牙</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">十隻手指幾乎看不到月牙</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">無月牙</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">十隻手指幾乎看不到月牙</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -686,7 +717,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="指甲:甲色蒼白" class="sr-only">
                                         <img src="public/images/nails/nail_pale.png" alt="甲色蒼白指甲示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">甲色蒼白</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">指甲按下去完全沒血色</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">甲色蒼白</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">指甲按下去完全沒血色</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -694,7 +725,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="指甲:甲色暗紫" class="sr-only">
                                         <img src="public/images/nails/nail_purple.png" alt="甲色暗紫指甲示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">甲色暗紫</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">指甲顏色偏暗偏紫</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">甲色暗紫</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">指甲顏色偏暗偏紫</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -702,7 +733,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="指甲:豎紋明顯" class="sr-only">
                                         <img src="public/images/nails/nail_vertical_lines.png" alt="豎紋明顯指甲示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">豎紋明顯</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">指甲表面有一條條直紋</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">豎紋明顯</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">指甲表面有一條條直紋</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -710,7 +741,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="指甲:橫紋博士線" class="sr-only">
                                         <img src="public/images/nails/nail_beau_lines.png" alt="橫紋博士線指甲示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">橫紋博士線</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">指甲表面有凹陷的橫紋</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">橫紋博士線</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">指甲表面有凹陷的橫紋</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -718,7 +749,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="指甲:甲面白點" class="sr-only">
                                         <img src="public/images/nails/nail_white_spots.png" alt="甲面白點指甲示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">甲面白點</span><span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">指甲上有小白點</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center leading-tight">甲面白點</span><span class="text-[10px] text-slate-400 text-center obs-subtitle">指甲上有小白點</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -736,7 +767,7 @@
                                         <input type="checkbox" value="症狀:睡眠差" class="sr-only">
                                         <img src="images/symptoms/睡眠差.png" alt="睡眠差" class="obs-thumb" loading="lazy" decoding="async">
                                         <span class="text-xs font-medium text-slate-700 text-center leading-tight">睡眠差</span>
-                                        <span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">睡醒仍疲倦</span>
+                                        <span class="text-[10px] text-slate-400 text-center obs-subtitle">睡醒仍疲倦</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -745,7 +776,7 @@
                                         <input type="checkbox" value="症狀:手腳冰冷" class="sr-only">
                                         <img src="images/symptoms/手腳冰冷.png" alt="手腳冰冷" class="obs-thumb" loading="lazy" decoding="async">
                                         <span class="text-xs font-medium text-slate-700 text-center leading-tight">怕冷</span>
-                                        <span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">手腳冰冷</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">特別怕風</span>
+                                        <span class="text-[10px] text-slate-400 text-center obs-subtitle">手腳冰冷</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">特別怕風</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -754,7 +785,7 @@
                                         <input type="checkbox" value="症狀:口乾" class="sr-only">
                                         <img src="images/symptoms/口乾.png" alt="口乾" class="obs-thumb" loading="lazy" decoding="async">
                                         <span class="text-xs font-medium text-slate-700 text-center leading-tight">口乾</span>
-                                        <span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">經常口渴想喝水</span>
+                                        <span class="text-[10px] text-slate-400 text-center obs-subtitle">經常口渴想喝水</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -763,7 +794,7 @@
                                         <input type="checkbox" value="症狀:易倦" class="sr-only">
                                         <img src="images/symptoms/容易疲勞.png" alt="容易疲勞" class="obs-thumb" loading="lazy" decoding="async">
                                         <span class="text-xs font-medium text-slate-700 text-center leading-tight">易累</span>
-                                        <span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">沒精打采</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">稍微動就喘</span>
+                                        <span class="text-[10px] text-slate-400 text-center obs-subtitle">沒精打采</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">稍微動就喘</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -772,7 +803,7 @@
                                         <input type="checkbox" value="症狀:消化不良" class="sr-only">
                                         <img src="images/symptoms/消化不良.png" alt="消化不良" class="obs-thumb" loading="lazy" decoding="async">
                                         <span class="text-xs font-medium text-slate-700 text-center leading-tight">面油</span>
-                                        <span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">皮膚易冒油</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">起痘</span>
+                                        <span class="text-[10px] text-slate-400 text-center obs-subtitle">皮膚易冒油</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">起痘</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -781,7 +812,7 @@
                                         <input type="checkbox" value="症狀:容易水腫" class="sr-only">
                                         <img src="images/symptoms/容易水腫.png" alt="水腫" class="obs-thumb" loading="lazy" decoding="async">
                                         <span class="text-xs font-medium text-slate-700 text-center leading-tight">水腫</span>
-                                        <span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">肢體浮腫</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">晨起面腫</span>
+                                        <span class="text-[10px] text-slate-400 text-center obs-subtitle">肢體浮腫</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">晨起面腫</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -790,7 +821,7 @@
                                         <input type="checkbox" value="症狀:皮膚敏感" class="sr-only">
                                         <img src="images/symptoms/皮膚敏感.png" alt="皮膚敏感" class="obs-thumb" loading="lazy" decoding="async">
                                         <span class="text-xs font-medium text-slate-700 text-center leading-tight">易過敏</span>
-                                        <span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">對花粉</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">塵蟎過敏</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">常打噴嚏</span>
+                                        <span class="text-[10px] text-slate-400 text-center obs-subtitle">對花粉</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">塵蟎過敏</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">常打噴嚏</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -799,7 +830,7 @@
                                         <input type="checkbox" value="症狀:容易生氣" class="sr-only">
                                         <img src="images/symptoms/容易生氣.png" alt="容易生氣" class="obs-thumb" loading="lazy" decoding="async">
                                         <span class="text-xs font-medium text-slate-700 text-center leading-tight">易怒</span>
-                                        <span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">情緒急躁<br/>容易發脾氣</span>
+                                        <span class="text-[10px] text-slate-400 text-center obs-subtitle">情緒急躁<br/>容易發脾氣</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -808,7 +839,7 @@
                                         <input type="checkbox" value="症狀:頭暈" class="sr-only">
                                         <img src="images/symptoms/頭暈.png" alt="頭暈" class="obs-thumb" loading="lazy" decoding="async">
                                         <span class="text-xs font-medium text-slate-700 text-center leading-tight">頭暈</span>
-                                        <span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">頭暈目眩</span><br/><span class="text-[10px] text-slate-400 obs-subtitle text-center leading-tight">站起來發黑</span>
+                                        <span class="text-[10px] text-slate-400 text-center obs-subtitle">頭暈目眩</span><br/><span class="text-[10px] text-slate-400 obs-subtitle">站起來發黑</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -817,7 +848,7 @@
                                         <input type="checkbox" value="症狀:夜尿頻繁" class="sr-only">
                                         <img src="images/symptoms/夜尿頻繁.png" alt="夜尿頻繁" class="obs-thumb" loading="lazy" decoding="async">
                                         <span class="text-xs font-medium text-slate-700 text-center leading-tight">夜尿頻繁</span>
-                                        <span class="text-[10px] text-slate-400 text-center leading-tight obs-subtitle">夜間起床超過2次</span>
+                                        <span class="text-[10px] text-slate-400 text-center obs-subtitle">夜間起床超過2次</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
