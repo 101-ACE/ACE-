@@ -336,6 +336,64 @@ class HealthReportResponse(BaseModel):
     risk_level: str
     risk_indicators: List[str]
     recommendations: List[str]
+    risk_indicator_pcts: Optional[List[Dict[str, Any]]] = None  # [{"name":"血管彈性指數","pct":36},...]
+
+# ═══════════════════════════════════════════════════════════════
+# [SINGLE SOURCE OF TRUTH] 體質全名 / 建議 / 門市項目
+# ═══════════════════════════════════════════════════════════════
+CONSTITUTION_FULL_NAMES: Dict[str, str] = {
+    "氣虛": "氣虛質",
+    "陽虛": "陽虛水泛型",
+    "陰虛": "陰虛火旺型",
+    "痰濕": "痰濕積聚型",
+    "濕熱": "濕熱發炎型",
+    "血瘀": "血瘀障礙型",
+    "氣鬱": "氣鬱高壓型",
+    "特稟": "特稟過敏質",
+    "平和": "平和質",
+}
+
+def get_constitution_full(constitution: str) -> str:
+    return CONSTITUTION_FULL_NAMES.get(constitution, constitution)
+
+RECOMMENDATIONS: Dict[str, List[str]] = {
+    "氣虛": ["多吃黃芪、山藥、蓮子", "避免過度勞累與熬夜", "適度進行太極、散步等和緩運動"],
+    "陽虛": ["多食溫補食材如生薑、桂圓", "注意保暖，尤其下肢", "減少冰涼食物與生冷飲料"],
+    "陰虛": ["多食用滋陰潤燥食物如銀耳、梨", "避免辛辣刺激與油炸食物", "規律作息，避免熬夜傷陰"],
+    "痰濕": ["飲食清淡，少油少鹽", "增加膳食纖維攝取", "保持規律運動提升代謝"],
+    "濕熱": ["多喝溫開水，促進新陳代謝", "避免辛辣油膩與酒精", "早點入睡，減輕肝臟負擔"],
+    "血瘀": ["適量飲用玫瑰花、山楂茶", "保持規律運動促進血液循環", "避免久坐，定時活動筋骨"],
+    "氣鬱": ["保持心情開朗，練習深呼吸與冥想", "多參與戶外活動", "避免長期壓力累積"],
+    "特稟": ["遠離已知過敏原", "保持環境通風與清潔", "飲食均衡，增強體質"],
+    "平和": ["維持均衡飲食與規律作息", "適度運動，保持心情愉快", "定期檢查，預防為先"],
+}
+
+STORE_ITEMS: Dict[str, str] = {
+    "氣虛": "黃芪枸杞茶 + 氣血双補精華",
+    "陽虛": "紅棗桂圓茶 + 溫陽調理套組",
+    "陰虛": "銀耳百合茶 + 滋陰潤燥配方",
+    "痰濕": "決明子茶 + 祛濕輕身套組",
+    "濕熱": "菊花決明子茶 + 清肝解毒配方",
+    "血瘀": "玫瑰花山楂茶 + 活血化瘀套組",
+    "氣鬱": "玫瑰茉莉茶 + 疏肝解鬱配方",
+    "特稟": "蘆薈清潤茶 + 抗敏調理套組",
+    "平和": "日常保健茶 + 均衡營養配方",
+}
+
+# 健康風險關注指標：三項固定名稱 + 計算公式（與圖片/網頁完全一致）
+RISK_INDICATOR_CONFIG: List[tuple] = [
+    ("血管彈性指數", 0.9, 5.0),
+    ("血液粘稠度",  0.8, 0.0),
+    ("肝臟代謝負擔",1.0, 0.0),
+]
+
+def calc_risk_indicator_pct(base_score: int, factor: float, offset: float) -> int:
+    """與 generate_report_image / build_email_html 完全一致的風險指標百分比"""
+    return min(100, max(5, round((100 - base_score) * factor + offset)))
+
+def get_risk_indicator_pcts(score: int) -> List[Dict[str, Any]]:
+    return [{"name": name, "pct": calc_risk_indicator_pct(score, f, o)}
+            for name, f, o in RISK_INDICATOR_CONFIG]
 
 # ===== 九大體質邏輯 =====
 CONSTITUTION_RULES = {
@@ -954,31 +1012,21 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         draw.text((x_start + w1,          y + 282), _seg2, font=font_comparison_num, fill=score_text_color, anchor='lm')
         draw.text((x_start + w1 + w2,     y + 282), _seg3, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
 
-        # 體質全名映射（禁止簡寫）
-        _CONSTITUTION_FULL = {
-            "平和": "平和質", "氣虛": "氣虛型", "陽虛": "陽虛水泛型",
-            "陰虛": "陰虛型", "痰濕": "痰濕積聚型", "濕熱": "濕熱發炎型",
-            "特稟": "特稟質", "氣鬱": "氣鬱型", "血瘀": "血瘀型",
-        }
-        _const_full = _CONSTITUTION_FULL.get(assessment.constitution, assessment.constitution)
+        # 體質全名（共用模組級常數，禁止簡寫）
+        _const_full = get_constitution_full(assessment.constitution)
         draw.text((W // 2, y + 358), f"體質判定：{_const_full}",
                   font=font_ring_lbl_b, fill=GRAY, anchor='mm')
         y += 420
 
-        # ===== 健康風險指標 (Progress Bars) =====
-        def _risk_pct(base: int, factor: float, offset: float) -> int:
-            return min(100, max(5, round((100 - base) * factor + offset)))
-
-        indicators = [
-            ("血管彈性指數", _risk_pct(score, 0.9, 5)),
-            ("血液粘稠度", _risk_pct(score, 0.8, 0)),
-            ("肝臟代謝負擔", _risk_pct(score, 1.0, 0)),
-        ]
+        # ===== 健康風險指標 (Progress Bars) — 共用 calc_risk_indicator_pct =====
+        indicators = get_risk_indicator_pcts(score)
 
         draw.rectangle([(40, y), (W - 40, y + 240)], fill=WHITE, outline='#E0E0E0', width=2)
         draw.text((60, y + 20), "健康風險關注指標", font=font_label, fill=ORANGE_MAIN)
 
-        for i, (ind, pct) in enumerate(indicators):
+        for i, ind_obj in enumerate(indicators):
+            ind = ind_obj["name"]
+            pct = ind_obj["pct"]
             bar_y = y + 76 + i * 56
             label_x = 60
             label_y = bar_y + 12
@@ -1018,12 +1066,13 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
 
         y += 270
 
-        # ===== 飲食與生活作息建議 =====
+        # 飲食與生活建議（共用 RECOMMENDATIONS 常量）
         rec_title_y = y + 16
-        card_h = 120 + len(recommendations) * 40
+        recs = RECOMMENDATIONS.get(assessment.constitution, [])
+        card_h = 120 + len(recs) * 40
         draw.rectangle([(40, y), (W - 40, y + card_h)], fill=WHITE, outline='#E0E0E0', width=2)
         draw.text((60, rec_title_y), "飲食與生活建議", font=font_label, fill=ORANGE_MAIN)
-        for i, rec in enumerate(recommendations):
+        for i, rec in enumerate(recs):
             draw.text((60, rec_title_y + 52 + i * 40), f"• {rec}", font=font_rec, fill=DARK)
         y += card_h + 32
 
@@ -1051,16 +1100,10 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
         indicators_list = json.loads(indicators)
     except Exception:
         indicators_list = []
-    # 風險指標百分比：與健康分數成反比（分數越高→風險越低）
-    def _risk_pct(base: int, factor: float, offset: float) -> int:
-        return min(100, max(5, round((100 - base) * factor + offset)))
-
-    FIXED_INDICATORS = [
-        ("血管弹性指數", _risk_pct(score, 0.9, 5)),   # score=85→20%, 60→40%, 30→75%
-        ("血液粘稠度預警", _risk_pct(score, 0.8, 0)), # score=85→12%, 60→32%, 30→60%
-        ("肝臟代謝負擔", _risk_pct(score, 1.0, 0)),   # score=85→15%, 60→40%, 30→85%
-    ]
-    bar_data = FIXED_INDICATORS
+    # 風險指標百分比（共用 calc_risk_indicator_pct，與圖片完全一致）
+    bar_data = get_risk_indicator_pcts(score)
+    # 使用 RISK_INDICATOR_CONFIG 的標準名稱確保三端一致
+    FIXED_INDICATORS = [(cfg[0], item["pct"]) for cfg, item in zip(RISK_INDICATOR_CONFIG, bar_data)]
 
     # 4-tier score color (red→brown→yellow→green, aligned with PIL image)
     if score <= 40:
@@ -1093,7 +1136,9 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
 
     # 生成進度條 HTML
     bars_html = ""
-    for ind_name, pct in bar_data:
+    for item in bar_data:
+        ind_name = item["name"]
+        pct = item["pct"]
         bc = _bar_color(pct)
         bars_html += (
             '<table width="100%" cellpadding="0" cellspacing="0" style="margin:10px 0;">'
@@ -1182,7 +1227,7 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
                     </table>
                   </div>
                   <div style="margin-top:6px; display:inline-block; padding:6px 16px; border-radius:999px; background:{risk_bg_color}; color:{risk_circle_color}; font-weight:700; font-size:14px;">潛在風險等級：{risk}</div>
-                  <div style="margin-top:8px; font-size:14px; color:#3E2723;">體質判定：<strong>{constitution}</strong></div>
+                  <div style="margin-top:8px; font-size:14px; color:#3E2723;">體質判定：<strong>{get_constitution_full(constitution)}</strong></div>
                 </td></tr>
               </table>
 
@@ -1201,6 +1246,18 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
                 <tr><td class="card-padding" style="padding:14px;">
                   <h3 style="margin:0 0 10px; color:#E65100; font-size:15px;">🍵 飲食與生活作息建議</h3>
                   {"".join([f"<div style='padding:6px 0; border-bottom:1px solid #FFE0B2; font-size:14px; color:#3E2723;'>• {r}</div>" for r in recommendations])}
+                </td></tr>
+              </table>
+
+              <!-- COSWAY 推薦門市檢測項目 -->
+              <table class="card-block" width="100%" cellpadding="0" cellspacing="0"
+                     style="background:#fff; border:1px solid #FFE0B2; border-radius:12px; margin-bottom:14px; width:100% !important; box-sizing:border-box !important;">
+                <tr><td class="card-padding" style="padding:14px;">
+                  <h3 style="margin:0 0 10px; color:#E65100; font-size:15px;">🏥 COSWAY 推薦門市檢測項目</h3>
+                  <div style="font-size:14px; color:#3E2723; line-height:1.8;">
+                    根據您的 <strong>{get_constitution_full(constitution)}</strong> 體質，建議前往門市進行：<br/>
+                    <strong style="color:#E65100;">{STORE_ITEMS.get(constitution, STORE_ITEMS.get('平和', '微電流磁共檢測'))}</strong>
+                  </div>
                 </td></tr>
               </table>
             </td></tr>
@@ -1611,12 +1668,13 @@ def submit_questionnaire(
                 "inspector_phone": inspector_phone,
                 "inspector_name": inspector_name,
                 "report": {
-                    "constitution": analysis["constitution"],
+                    "constitution": get_constitution_full(analysis["constitution"]),
                     "score": analysis["score"],
                     "risk_level": analysis["risk_level"],
                     "potential_risks": potential_risks,
                     "severe_risks": severe_risks,
                     "risk_indicators": risk_indicators,
+                    "risk_indicator_pcts": get_risk_indicator_pcts(analysis["score"]),
                 },
                 "email_sent": EMAIL_ENABLED,
                 "email_target": email_target,
@@ -1636,6 +1694,7 @@ def submit_questionnaire(
                 "potential_risks": ["系統錯誤，請重試"],
                 "severe_risks": [],
                 "risk_indicators": [],
+                "risk_indicator_pcts": get_risk_indicator_pcts(50),
             },
         }
 
@@ -1649,11 +1708,12 @@ def get_report(assessment_id: str):
         return HealthReportResponse(
             assessment_id=record.id,
             name=record.name,
-            constitution=record.constitution,
+            constitution=get_constitution_full(record.constitution),
             health_score=record.health_score,
             risk_level=record.risk_level,
             risk_indicators=json.loads(record.risk_indicators) if record.risk_indicators else [],
-            recommendations=get_recommendations(record.constitution),
+            recommendations=RECOMMENDATIONS.get(record.constitution, []),
+            risk_indicator_pcts=get_risk_indicator_pcts(record.health_score),
         )
     finally:
         db.close()

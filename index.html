@@ -1481,13 +1481,12 @@
             badge.className = `mt-4 px-5 py-2 rounded-full font-bold text-sm border ${colors.badge}`;
             badge.textContent = risk === "高" ? "⚠️ 嚴重健康風險" : risk === "中" ? "⚡ 潛在健康風險" : "✓ 健康狀態良好";
 
-            // Constitution display with full name
+            // Constitution display with full name (backend now returns full name directly)
             let constitutionEl = $("constitution-text");
             constitutionEl.textContent = fullName;
             constitutionEl.parentElement.innerHTML = `
                 <span class="text-slate-600">檢測體質：</span>
                 <strong id="constitution-text" class="text-lg text-slate-800">${fullName}</strong>
-                <span class="text-xs text-slate-400 ml-2">(${report.constitution})</span>
             `;
             constitutionEl = $("constitution-text"); // re-reference after innerHTML
 
@@ -1507,8 +1506,6 @@
             const indicators = report.risk_indicators || [];
             const moderateRisk = indicators.filter((_, i) => i < Math.ceil(indicators.length * 0.6));
             const severeRisk = indicators.filter((_, i) => i >= Math.ceil(indicators.length * 0.6));
-
-            // Moderate risk section
             const moderateContainer = $("moderate-risk-list");
             if (moderateContainer) {
                 if (moderateRisk.length > 0) {
@@ -1538,17 +1535,17 @@
                 }
             }
 
-            // Risk meters - 健康分數與風險指標成反比：高分=低風險(綠短條)，低分=高風險(紅/褐長條)
-            // score=85→~15-20%(綠), score=60→~32-41%(黃), score=30→~56-70%(紅)
+            // Risk meters - 從後端取得統一計算的百分比，與圖片完全一致
+            const indicatorPcts = report.risk_indicator_pcts || [];
             setTimeout(() => {
                 const pctMap = {
-                    "risk-1": Math.min(100, Math.max(5, Math.round((100 - score) * 0.9 + 5))),
-                    "risk-2": Math.min(100, Math.max(5, Math.round((100 - score) * 0.8))),
-                    "risk-3": Math.min(100, Math.max(5, Math.round((100 - score) * 1.0))),
+                    "risk-1": indicatorPcts[0] ? indicatorPcts[0].pct : null,
+                    "risk-2": indicatorPcts[1] ? indicatorPcts[1].pct : null,
+                    "risk-3": indicatorPcts[2] ? indicatorPcts[2].pct : null,
                 };
                 Object.entries(pctMap).forEach(([id, pct]) => {
                     const el = $(id);
-                    if (!el) return;
+                    if (!el || pct === null) return;
                     const style = getBarColorStyle(pct);
                     el.style.width = pct + "%";
                     el.style.backgroundColor = style.bg;
