@@ -1015,7 +1015,7 @@
                         <div class="text-sm text-slate-500 mt-1">健康分數</div>
                     </div>
                 </div>
-                <div id="risk-badge" class="mt-4 px-5 py-2 rounded-full font-bold text-sm border"></div>
+                <div id="risk-badge" class="mt-4 px-5 py-2 rounded-full font-bold text-xl border"></div>
                 <div id="score-comparison" class="mt-2 text-center"></div>
                 <div class="mt-3 text-slate-600">
                     檢測體質：<strong id="constitution-text" class="text-lg text-slate-800">--</strong>
@@ -1375,9 +1375,9 @@
                         index++;
                     } else {
                         clearInterval(interval);
-                        setTimeout(resolve, 400);
+                        setTimeout(resolve, 200);
                     }
-                }, 800);
+                }, 400);
             });
         }
 

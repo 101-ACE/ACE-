@@ -849,12 +849,12 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         font_value    = get_font(32, bold=True)
         font_small    = get_font(24)
         font_big      = get_font(96, bold=True)
-        font_ring_lbl = get_font(30)  # 潛在風險等級（30px）
+        font_ring_lbl = get_font(45, bold=True)  # 潛在風險等級（45px bold，放大50%）
         font_ring_lbl_b = get_font(38, bold=True)  # 體質判定（38px，放大 25%）
         font_cta      = get_font(36, bold=True)
         font_rec      = get_font(26)
-        font_comparison = get_font(36)  # 同齡對比主文案（2.5× ≈ 36px）
-        font_comparison_num = get_font(50, bold=True)  # 分數/百分比數字（3.5× ≈ 50px）
+        font_comparison = get_font(46)  # 同齡對比主文案（46px，放大30%）
+        font_comparison_num = get_font(65, bold=True)  # 分數/百分比數字（65px bold，放大30%）
         font_bar      = get_font(26)
 
         # 配色
