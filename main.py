@@ -932,7 +932,7 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
             score_text_color = (0x16, 0xA3, 0x4A)     # 🟢 綠：81-100
         draw.text((ring_center_x, ring_center_y), str(score), font=font_big, fill=score_text_color, anchor='mm')
 
-        draw.text((W // 2, y + 236), f"潛在風險等級：{risk}", font=font_ring_lbl, fill=risk_text_color, anchor='mm')
+        draw.text((W // 2, y + 220), f"潛在風險等級：{risk}", font=font_ring_lbl, fill=risk_text_color, anchor='mm')
 
         # 同齡人群比較文案（連貫單行：三段拼接，消除空白，分數數字加粗）
         _percent = min(99, max(1, int((100 - score) * 0.95)))
@@ -946,17 +946,24 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
             _seg3 = f" 分，低於約 {_percent}% 的同齡人群"
         # 全用 font_comparison 測量（確保字距一致），分三段繪製
         w1 = font_comparison.getlength(_seg1)
-        w2 = font_comparison_num.getlength(_seg2)  # 50px bold 數字
+        w2 = font_comparison_num.getlength(_seg2)
         w3 = font_comparison.getlength(_seg3)
         total_w = w1 + w2 + w3
         x_start = W // 2 - total_w // 2
-        draw.text((x_start,               y + 272), _seg1, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
-        draw.text((x_start + w1,          y + 272), _seg2, font=font_comparison_num, fill=score_text_color, anchor='lm')
-        draw.text((x_start + w1 + w2,     y + 272), _seg3, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
+        draw.text((x_start,               y + 282), _seg1, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
+        draw.text((x_start + w1,          y + 282), _seg2, font=font_comparison_num, fill=score_text_color, anchor='lm')
+        draw.text((x_start + w1 + w2,     y + 282), _seg3, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
 
-        draw.text((W // 2, y + 340), f"體質判定：{assessment.constitution}",
+        # 體質全名映射（禁止簡寫）
+        _CONSTITUTION_FULL = {
+            "平和": "平和質", "氣虛": "氣虛型", "陽虛": "陽虛水泛型",
+            "陰虛": "陰虛型", "痰濕": "痰濕積聚型", "濕熱": "濕熱發炎型",
+            "特稟": "特稟質", "氣鬱": "氣鬱型", "血瘀": "血瘀型",
+        }
+        _const_full = _CONSTITUTION_FULL.get(assessment.constitution, assessment.constitution)
+        draw.text((W // 2, y + 358), f"體質判定：{_const_full}",
                   font=font_ring_lbl_b, fill=GRAY, anchor='mm')
-        y += 400
+        y += 420
 
         # ===== 健康風險指標 (Progress Bars) =====
         def _risk_pct(base: int, factor: float, offset: float) -> int:
@@ -1003,6 +1010,11 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
                            fill=bar_fg)
             draw.ellipse([(bar_x, label_y - r), (bar_x + 2 * r, label_y + r)], fill=bar_fg)
             draw.ellipse([(bar_x + fg_width - 2 * r, label_y - r), (bar_x + fg_width, label_y + r)], fill=bar_fg)
+            # Percentage label on the right side of the bar
+            pct_text = f"{pct}%"
+            pct_font = get_font(22)
+            pct_w = pct_font.getlength(pct_text)
+            draw.text((bar_x + fg_width + 10 + pct_w / 2, label_y), pct_text, font=pct_font, fill=DARK, anchor='lm')
 
         y += 270
 
