@@ -141,26 +141,30 @@
         html body .obs-card .check-icon {
             margin-top: 0 !important;
         }
-        /* ===== GLOBAL TITLE FONT SIZE BOOST (all observation cards) ===== */
-        html body label.obs-card span:not(.obs-subtitle),
+        /* ===== OBS-TITLE: Global card title boost (all tabs: 面診/舌象/形態/症狀) ===== */
+        html body label.obs-card span.obs-title,
+        html body .obs-card .obs-title,
+        html body label.obs-card span:not(.obs-subtitle):not(.check-icon),
         html body .obs-card.has-image > span:first-child,
         html body div.obs-card span.text-xs.font-medium,
         html body .obs-card .text-xs.font-medium {
             font-size: 15px !important;
             font-weight: 700 !important;
+            color: #111111 !important;
             line-height: 1.2 !important;
             margin-bottom: 2px !important;
             padding-bottom: 0 !important;
-            color: #111111 !important;
+            display: block !important;
         }
-        /* ===== GLOBAL SUBTITLE ULTRA DENSE (covers ALL tabs: 面診/舌象/形態/症狀) ===== */
+        /* ===== OBS-SUBTITLE: Global card subtitle ultra-dense ===== */
         html body .obs-card .obs-subtitle,
         html body label.obs-card .obs-subtitle,
         html body span.obs-subtitle,
         html body .obs-card span.text-\[10px\].text-slate-400,
         html body .symptoms-panel .obs-subtitle,
         html body .tongue-panel .obs-subtitle,
-        html body .morphology-panel .obs-subtitle {
+        html body .morphology-panel .obs-subtitle,
+        html body .face-panel .obs-subtitle {
             line-height: 1.05 !important;
             margin-top: 0px !important;
             margin-bottom: 2px !important;
@@ -170,7 +174,7 @@
             padding: 0 !important;
             word-break: break-word !important;
         }
-        /* ===== TIGHT BR ACROSS ALL TABS ===== */
+        /* ===== TIGHT BR: Compress line break spacing globally ===== */
         html body br.tight-br,
         html body .obs-subtitle br {
             margin-top: -2px !important;
@@ -262,7 +266,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌色:淡白舌" class="sr-only">
                                         <img src="images/tongue/danbai.png" alt="淡白舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">淡白舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭顏色很淺</span><br class="tight-br"/>偏白色</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center">淡白舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭顏色很淺<br class="tight-br"/>偏白色</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -294,7 +298,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌色:青舌" class="sr-only">
                                         <img src="images/tongue_color/cyan_tongue.png" alt="青舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">青舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭偏青</span><br class="tight-br"/>慘白無血色</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center">青舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭偏青<br class="tight-br"/>慘白無血色</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -307,7 +311,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌形:胖大舌" class="sr-only">
                                         <img src="images/tongue_shape/胖大舌.png" alt="胖大舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">胖大舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭很大很厚</span><br class="tight-br"/>塞滿嘴巴</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center">胖大舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭很大很厚<br class="tight-br"/>塞滿嘴巴</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -315,7 +319,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌形:瘦薄舌" class="sr-only">
                                         <img src="images/tongue_shape/瘦薄舌.png" alt="瘦薄舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">瘦薄舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭乾扁狹長</span><br class="tight-br"/>偏薄</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center">瘦薄舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭乾扁狹長<br class="tight-br"/>偏薄</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -323,7 +327,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌形:老舌" class="sr-only">
                                         <img src="images/tongue_shape/老舌.png" alt="老舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">老舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭表面粗糙</span><br class="tight-br"/>紋理很深</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center">老舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭表面粗糙<br class="tight-br"/>紋理很深</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -347,7 +351,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌形:齒痕舌" class="sr-only">
                                         <img src="images/tongue_shape/齒痕舌.png" alt="齒痕舌示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">齒痕舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌邊有印牙痕</span><br class="tight-br"/>舌邊齒痕</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center">齒痕舌</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌邊有印牙痕<br class="tight-br"/>舌邊齒痕</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -369,7 +373,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌態:適中" class="sr-only">
                                         <img src="images/tongue/shizhong.png" alt="適中舌態示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">適中</span><br><span class="text-[10px] text-slate-400 obs-subtitle">伸舌自如</span><br class="tight-br"/>靈活</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center">適中</span><br><span class="text-[10px] text-slate-400 obs-subtitle">伸舌自如<br class="tight-br"/>靈活</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -377,7 +381,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌態:強硬" class="sr-only">
                                         <img src="images/tongue/qiangying.png" alt="強硬舌態示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">強硬</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭僵硬</span><br class="tight-br"/>伸出來很吃力</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center">強硬</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭僵硬<br class="tight-br"/>伸出來很吃力</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
@@ -385,7 +389,7 @@
                                     <label class="obs-card has-image relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 border-slate-100 bg-white cursor-pointer transition hover:border-primary/30 hover:bg-primary/5">
                                         <input type="checkbox" value="舌態:痿軟" class="sr-only">
                                         <img src="images/tongue/weiruan.png" alt="痿軟舌態示意圖" class="obs-thumb" loading="lazy" decoding="async">
-                                        <span class="text-xs font-medium text-slate-700 text-center">痿軟</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭軟趴趴</span><br class="tight-br"/>沒力氣伸長</span>
+                                        <span class="text-xs font-medium text-slate-700 text-center">痿軟</span><br><span class="text-[10px] text-slate-400 obs-subtitle">舌頭軟趴趴<br class="tight-br"/>沒力氣伸長</span>
                                         <div class="check-icon absolute top-1 right-1 w-4 h-4 text-primary">
                                             <i data-lucide="check" class="w-3 h-3"></i>
                                         </div>
