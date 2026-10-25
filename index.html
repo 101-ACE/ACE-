@@ -1529,28 +1529,42 @@
             }
         }
 
-        // ===== 掃描動畫（最小 8 秒展示時間）=====
+        // ===== 掃描動畫（漸進式進度條：8 秒內到 80%，API 完成後衝到 100%）=====
         function runScanAnimation() {
             return new Promise((resolve) => {
                 showStage("scanning");
                 const scanText = $("scan-text");
                 const scanBarFill = $("scan-bar-fill");
-                let index = 0;
-                const MIN_DURATION = 8000; // 最小展示時間 8 秒
-                const interval = setInterval(() => {
-                    if (index < SCAN_MESSAGES.length) {
-                        scanText.textContent = SCAN_MESSAGES[index];
-                        scanBarFill.style.width = `${((index + 1) / SCAN_MESSAGES.length) * 100}%`;
-                        index++;
-                    } else {
-                        clearInterval(interval);
-                        // 已播完所有訊息，但需確保總時間至少 8 秒
-                        const elapsed = Date.now() - startTime;
-                        const remaining = Math.max(0, MIN_DURATION - elapsed + 200);
-                        setTimeout(resolve, remaining);
-                    }
-                }, 400);
                 const startTime = Date.now();
+                const MIN_DURATION = 8000; // 8 秒
+                const TARGET_PERCENT = 80; // 目標進度 80%
+
+                // 進度條更新計時器
+                const progressInterval = setInterval(() => {
+                    const elapsed = Date.now() - startTime;
+                    // 線性插值：0% → 80%
+                    const progress = Math.min((elapsed / MIN_DURATION) * TARGET_PERCENT, TARGET_PERCENT);
+                    scanBarFill.style.width = `${progress}%`;
+
+                    // 訊息輪播（每 400ms 切換）
+                    const msgIndex = Math.min(Math.floor(elapsed / 400), SCAN_MESSAGES.length - 1);
+                    scanText.textContent = SCAN_MESSAGES[msgIndex];
+
+                    // 8 秒後停止更新，保持 80%
+                    if (elapsed >= MIN_DURATION) {
+                        clearInterval(progressInterval);
+                        scanBarFill.style.width = `${TARGET_PERCENT}%`;
+                    }
+                }, 50); // 每 50ms 更新一次
+
+                // 當外部觸發 finalizeAnimation 時，迅速衝到 100%
+                window.__finalizeAnimation = () => {
+                    clearInterval(progressInterval);
+                    // 使用 CSS transition 平滑過渡到 100%
+                    scanBarFill.style.transition = 'width 0.3s ease-out';
+                    scanBarFill.style.width = '100%';
+                    setTimeout(resolve, 350); // 等待過渡完成
+                };
             });
         }
 
@@ -1577,7 +1591,7 @@
             spinner.classList.remove("hidden");
 
             try {
-                // ① 立即啟動 Loading 動畫（~2s，不阻塞後續）
+                // ① 立即啟動 Loading 動畫（漸進式進度條）
                 const scanPromise = runScanAnimation();
 
                 // ② 同時在背景發起 API 請求
@@ -1587,10 +1601,14 @@
                     body: JSON.stringify(payload),
                 }).then(resp => resp.json().then(data => {
                     if (!resp.ok) throw new Error(data.detail || "提交失敗");
+                    // API 完成：觸發進度條衝到 100%
+                    if (typeof window.__finalizeAnimation === 'function') {
+                        window.__finalizeAnimation();
+                    }
                     return data;
                 }));
 
-                // ③ 等待兩者皆完成：動畫結束 && API 回傳
+                // ③ 等待兩者皆完成：動畫結束（8 秒後）&& API 回傳
                 const data = await Promise.all([scanPromise, apiPromise]).then(([_, result]) => result);
 
                 renderReport(data);
