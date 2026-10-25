@@ -422,6 +422,12 @@ SYMPTOM_CONSTITUTION_MAP = {
 }
 
 # 完整觀察值→體質映射（支援所有前端checkbox value格式，僅使用9大標準體質）
+# 「並無以上症狀」前綴清單：後端收到 none:前綴 時，排除該類別所有症狀
+NONE_CATEGORY_PREFIXES = [
+    "面色", "眼睛", "唇色", "聲音", "體型",
+    "指甲", "症狀", "舌色", "舌形", "舌態", "舌苔色",
+]
+
 OBSERVATION_CONSTITUTION_MAP = {
     # ===== 症狀觀察 =====
     "睡眠差": {"氣鬱": 3, "陰虛": 2, "血瘀": 1},
@@ -531,12 +537,28 @@ OBSERVATION_CONSTITUTION_MAP = {
 def analyze_constitution(answers: Dict[str, Any]) -> Dict[str, Any]:
     scores: Dict[str, int] = {k: 0 for k in CONSTITUTION_RULES}
     symptoms = answers.get("symptoms", [])
-    for symptom in symptoms:
+
+    # 找出被標記為「並無以上症狀」的類別前綴
+    excluded_prefixes: set[str] = set()
+    for s in symptoms:
+        if s.startswith("none:"):
+            prefix = s[5:]  # 去掉 "none:" 前綴
+            if prefix in NONE_CATEGORY_PREFIXES:
+                excluded_prefixes.add(prefix)
+
+    # 過濾掉被排除類別的症狀
+    active_symptoms = [
+        s for s in symptoms
+        if not s.startswith("none:")
+        and not any(s.startswith(p + ":") for p in excluded_prefixes)
+    ]
+
+    for symptom in active_symptoms:
         # 直接使用原始值（如 "症狀:睡眠差"），映射表用完整key
         weights = OBSERVATION_CONSTITUTION_MAP.get(symptom, {})
         for constitution, weight in weights.items():
             scores[constitution] += weight
-    if not symptoms:
+    if not active_symptoms:
         return {"constitution": "平和", "score": 90, "risk_level": "低", "risk_indicators": []}
     dominant = max(scores, key=scores.get)
     if scores[dominant] == 0:
