@@ -1833,27 +1833,22 @@
                 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 768);
 
                 whatsappBtn.onclick = async () => {
-                    const deeplink = `whatsapp://send?phone=${inspectorPhone}&text=${encodedText}`;
-                    // 根據平台選擇 fallback URL：流動端 → wa.me；桌面端 → web.whatsapp.com
-                    const fallbackUrl = isMobile
-                        ? `https://wa.me/${inspectorPhone}?text=${encodedText}`
-                        : `https://web.whatsapp.com/send?phone=${inspectorPhone}&text=${encodedText}`;
+                    // 標準 URL 安全編碼（確保換行與中文不被截斷）
+                    const encodedText = encodeURIComponent(messageText);
 
                     if (isMobile) {
-                        // 流動端：直接使用 location.href 觸發系統原生選擇器（避免重複彈窗）
+                        // 流動端：location.href 觸發系統原生選擇器（避免重複彈窗）
+                        const deeplink = `whatsapp://send?phone=${inspectorPhone}&text=${encodedText}`;
                         window.location.href = deeplink;
-                        // 系統未處理時，setTimeout 後備至 wa.me
+                        // 系統未處理時，1500ms 後備至 wa.me
                         setTimeout(() => {
-                            window.open(fallbackUrl, '_self');
+                            window.open(`https://wa.me/${inspectorPhone}?text=${encodedText}`, '_self');
                         }, 1500);
                     } else {
-                        // 桌面端：優先 deep link，800ms 後備至 web.whatsapp.com
-                        let opened = false;
-                        const probe = setTimeout(() => {
-                            if (!opened) window.open(fallbackUrl, '_blank');
-                        }, 800);
-                        try { window.open(deeplink, '_blank'); opened = true; } catch (_) {}
-                        clearTimeout(probe);
+                        // 桌面端：嚴禁使用 whatsapp:// 協議，直接使用 api.whatsapp.com
+                        // 此 URL 可 100% 觸發系統喚起 WhatsApp Desktop App 並填入四行文字
+                        const desktopUrl = `https://api.whatsapp.com/send?phone=${inspectorPhone}&text=${encodedText}`;
+                        window.open(desktopUrl, '_blank');
                     }
 
                     // 觸發聯絡追蹤
