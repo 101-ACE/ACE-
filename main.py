@@ -798,7 +798,7 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
             assessment.phone or "-",
             assessment.gender or "-",
             assessment.age_group or "-",
-            assessment.constitution or "-",
+            get_constitution_full(assessment.constitution) or "-",
             obs_summary,
             str(assessment.health_score) if assessment.health_score else "-",
             contacted_status,
@@ -807,7 +807,7 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
         logger.info("[SHEET] Row data: %s", row_data)
         ws.append_row(row_data)
         logger.info("[SHEET] ✅ Customer record written successfully for assessment %s (contacted=%s)", assessment.id, contacted_status)
-        print(f"[SHEET_LOG] ✅ 寫入客戶記錄成功 | assessment_id={assessment.id} | 體質={assessment.constitution} | 檢測員={inspector_display}")
+        print(f"[SHEET_LOG] ✅ 寫入客戶記錄成功 | assessment_id={assessment.id} | 體質={get_constitution_full(assessment.constitution)} | 檢測員={inspector_display}")
     except Exception as e:
         _sheet_tb = __import__('traceback').format_exc()
         logger.error("[SHEET] ❌ Failed to write customer record: %s\n%s", e, _sheet_tb)
