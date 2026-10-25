@@ -1829,7 +1829,7 @@
                 // 標準 URL 安全編碼（桌面 + 流動共用）
                 const encodedText = encodeURIComponent(messageText);
 
-                // 環境偵測：流動端 → deep link；桌面端 → web.whatsapp.com
+                // 環境偵測：流動端 → deep link；桌面端 → api.whatsapp.com
                 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 768);
 
                 whatsappBtn.onclick = async () => {
