@@ -1529,13 +1529,14 @@
             }
         }
 
-        // ===== 掃描動畫 =====
+        // ===== 掃描動畫（最小 8 秒展示時間）=====
         function runScanAnimation() {
             return new Promise((resolve) => {
                 showStage("scanning");
                 const scanText = $("scan-text");
                 const scanBarFill = $("scan-bar-fill");
                 let index = 0;
+                const MIN_DURATION = 8000; // 最小展示時間 8 秒
                 const interval = setInterval(() => {
                     if (index < SCAN_MESSAGES.length) {
                         scanText.textContent = SCAN_MESSAGES[index];
@@ -1543,9 +1544,13 @@
                         index++;
                     } else {
                         clearInterval(interval);
-                        setTimeout(resolve, 200);
+                        // 已播完所有訊息，但需確保總時間至少 8 秒
+                        const elapsed = Date.now() - startTime;
+                        const remaining = Math.max(0, MIN_DURATION - elapsed + 200);
+                        setTimeout(resolve, remaining);
                     }
                 }, 400);
+                const startTime = Date.now();
             });
         }
 
