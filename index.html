@@ -1804,16 +1804,32 @@
                 const constitution = report.constitution; // 後端已回傳全名
                 const message = `HI ${inspectorName}，\n我剛完成了 AI 中醫體質檢測${constitution}\n想了解更多健康風險\n希望預約你進行免費詳細健康風險檢測。`;
                 const waWebUrl = `https://wa.me/${inspectorPhone}?text=${encodeURIComponent(message)}`;
-                // 智慧偵測：先嘗試 whatsapp:// deep link，逾時回退 wa.me
+
+                // 環境偵測：流動端 → deep link；桌面端 → 直接 wa.me
+                const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 768);
+
                 whatsappBtn.onclick = async () => {
-                    const deeplink = `whatsapp://send?phone=${inspectorPhone}&text=${encodeURIComponent(message)}`;
-                    let opened = false;
-                    const probe = setTimeout(() => {
-                        if (!opened) window.open(waWebUrl, '_blank');
-                    }, 800);
-                    try { window.open(deeplink, '_blank'); opened = true; } catch (_) {}
-                    clearTimeout(probe);
-                    if (opened) {
+                    if (isMobile) {
+                        // 流動端：優先嘗試 whatsapp:// deep link，800ms 逾時回退 wa.me
+                        const deeplink = `whatsapp://send?phone=${inspectorPhone}&text=${encodeURIComponent(message)}`;
+                        let opened = false;
+                        const probe = setTimeout(() => {
+                            if (!opened) window.open(waWebUrl, '_blank');
+                        }, 800);
+                        try { window.open(deeplink, '_blank'); opened = true; } catch (_) {}
+                        clearTimeout(probe);
+                        if (opened) {
+                            try {
+                                await fetch(`${API_BASE}/contact/update`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ assessment_id: window.__assessmentId, confirmed: true }),
+                                });
+                            } catch (_) {}
+                        }
+                    } else {
+                        // 桌面端：直接開啟 wa.me 網頁版，同步追蹤
+                        window.open(waWebUrl, '_blank');
                         try {
                             await fetch(`${API_BASE}/contact/update`, {
                                 method: 'POST',
