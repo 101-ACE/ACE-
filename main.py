@@ -767,11 +767,11 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
         ws = sh.worksheet("客戶記錄")
         logger.info("[SHEET] Connected to worksheet '客戶記錄'")
 
-        # 確保表頭存在（11 欄）
+        # 確保表頭存在（12 欄：新增「檢測員暱稱」欄位，置於檢測員編號右側）
         headers = ws.row_values(1)
-        expected_headers = ["日期及時間", "檢測員", "姓名", "聯絡電話", "性別", "年齡", "體質", "觀察項", "分數", "有否聯絡檢測員", "備註"]
+        expected_headers = ["日期及時間", "檢測員編號", "檢測員暱稱", "姓名", "聯絡電話", "性別", "年齡", "體質", "觀察項", "分數", "有否聯絡檢測員", "備註"]
         if not headers or headers[0] != expected_headers[0]:
-            ws.update("A1:K1", [expected_headers])
+            ws.update("A1:L1", [expected_headers])
             logger.info("[SHEET] Written headers: %s", expected_headers)
 
         # 格式化觀察項摘要（完整，不限前10項）
@@ -782,11 +782,17 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
         notes = "AI網頁檢測"
 
         # 檢測員顯示：有 referral_code 顯示代碼，否則顯示預設
-        inspector_display = (assessment.referral_code or "預設").strip()
+        inspector_code = (assessment.referral_code or "").strip() or "預設"
+        # 取暱稱：database 優先，否則查 Sheet
+        inspector_display = (assessment.partner_name or "").strip()
+        if not inspector_display:
+            inspector_display = find_inspector_name(assessment.referral_code)
+        inspector_display = inspector_display or "預設"
 
-        # 11 欄資料（一維列表，供 append_row 使用）
+        # 12 欄資料（一維列表，供 append_row 使用）
         row_data = [
             assessment.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if assessment.submitted_at else "-",
+            inspector_code,
             inspector_display,
             assessment.name or "-",
             assessment.phone or "-",
