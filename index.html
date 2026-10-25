@@ -1800,8 +1800,9 @@
             if (whatsappBtn && report && report.constitution) {
                 const inspectorPhone = ((data.inspector_phone || '85252706980').toString().replace(/\D/g, '')).padStart(11, '0');
                 const inspectorName = (data.inspector_name || '客服專員').trim() || '客服專員';
-                // 四行嚴格格式
-                const message = `HI ${inspectorName}，\n我剛完成了 AI 中醫體質檢測\n想了解更多健康風險\n希望預約你進行免費詳細健康風險檢測。`;
+                // 四行嚴格格式：{檢測員暱稱}、{體質} 為動態變數
+                const constitution = report.constitution; // 後端已回傳全名
+                const message = `HI ${inspectorName}，\n我剛完成了 AI 中醫體質檢測${constitution}\n想了解更多健康風險\n希望預約你進行免費詳細健康風險檢測。`;
                 const waWebUrl = `https://wa.me/${inspectorPhone}?text=${encodeURIComponent(message)}`;
                 // 智慧偵測：先嘗試 whatsapp:// deep link，逾時回退 wa.me
                 whatsappBtn.onclick = async () => {
