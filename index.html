@@ -1815,29 +1815,19 @@
                 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 768);
 
                 whatsappBtn.onclick = async () => {
-                    if (isMobile) {
-                        // 流動端：優先 whatsapp://deep link，800ms 逾時回退 wa.me
-                        const deeplink = `whatsapp://send?phone=${inspectorPhone}&text=${encodedText}`;
-                        const fallbackUrl = `https://wa.me/${inspectorPhone}?text=${encodedText}`;
-                        let opened = false;
-                        const probe = setTimeout(() => {
-                            if (!opened) window.open(fallbackUrl, '_blank');
-                        }, 800);
-                        try { window.open(deeplink, '_blank'); opened = true; } catch (_) {}
-                        clearTimeout(probe);
-                        if (opened) {
-                            try {
-                                await fetch(`${API_BASE}/contact/update`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ assessment_id: window.__assessmentId, confirmed: true }),
-                                });
-                            } catch (_) {}
-                        }
-                    } else {
-                        // 桌面端：直接開啟 WhatsApp Web（徹底避免 App 報錯彈窗）
-                        const webUrl = `https://web.whatsapp.com/send?phone=${inspectorPhone}&text=${encodedText}`;
-                        window.open(webUrl, '_blank');
+                    const deeplink = `whatsapp://send?phone=${inspectorPhone}&text=${encodedText}`;
+                    // 根據平台選擇 fallback URL：流動端 → wa.me；桌面端 → web.whatsapp.com
+                    const fallbackUrl = isMobile
+                        ? `https://wa.me/${inspectorPhone}?text=${encodedText}`
+                        : `https://web.whatsapp.com/send?phone=${inspectorPhone}&text=${encodedText}`;
+
+                    let opened = false;
+                    const probe = setTimeout(() => {
+                        if (!opened) window.open(fallbackUrl, '_blank');
+                    }, 800);
+                    try { window.open(deeplink, '_blank'); opened = true; } catch (_) {}
+                    clearTimeout(probe);
+                    if (opened) {
                         try {
                             await fetch(`${API_BASE}/contact/update`, {
                                 method: 'POST',
