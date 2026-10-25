@@ -1833,9 +1833,6 @@
                 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 768);
 
                 whatsappBtn.onclick = async () => {
-                    // 標準 URL 安全編碼（確保換行與中文不被截斷）
-                    const encodedText = encodeURIComponent(messageText);
-
                     if (isMobile) {
                         // 流動端：location.href 觸發系統原生選擇器（避免重複彈窗）
                         const deeplink = `whatsapp://send?phone=${inspectorPhone}&text=${encodedText}`;
