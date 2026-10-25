@@ -1549,7 +1549,7 @@
             });
         }
 
-        // ===== 提交表單 =====
+        // ===== 提交表單（非同步並行：動畫 + API 同時啟動）=====
         async function submitQuestionnaire(e) {
             e.preventDefault();
             if (!validateForm()) return;
@@ -1572,14 +1572,22 @@
             spinner.classList.remove("hidden");
 
             try {
-                await runScanAnimation();
-                const resp = await fetch(`${API_BASE}/questionnaire/submit`, {
+                // ① 立即啟動 Loading 動畫（~2s，不阻塞後續）
+                const scanPromise = runScanAnimation();
+
+                // ② 同時在背景發起 API 請求
+                const apiPromise = fetch(`${API_BASE}/questionnaire/submit`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload),
-                });
-                const data = await resp.json();
-                if (!resp.ok) throw new Error(data.detail || "提交失敗");
+                }).then(resp => resp.json().then(data => {
+                    if (!resp.ok) throw new Error(data.detail || "提交失敗");
+                    return data;
+                }));
+
+                // ③ 等待兩者皆完成：動畫結束 && API 回傳
+                const data = await Promise.all([scanPromise, apiPromise]).then(([_, result]) => result);
+
                 renderReport(data);
                 window.__assessmentId = data.assessment_id;
                 showStage("stage2");
