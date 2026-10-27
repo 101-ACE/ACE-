@@ -1829,7 +1829,7 @@
                 // 標準 URL 安全編碼（桌面 + 流動共用）
                 const encodedText = encodeURIComponent(messageText);
 
-                // 環境偵測：流動端 → deep link；桌面端 → api.whatsapp.com
+                // 環境偵測：流動端 → deep link；桌面端 → web.whatsapp.com
                 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 768);
 
                 whatsappBtn.onclick = async () => {
@@ -1842,10 +1842,10 @@
                             window.open(`https://wa.me/${inspectorPhone}?text=${encodedText}`, '_self');
                         }, 1500);
                     } else {
-                        // 桌面端：嚴禁使用 whatsapp:// 協議，直接使用 api.whatsapp.com
-                        // 此 URL 可 100% 觸發系統喚起 WhatsApp Desktop App 並填入四行文字
-                        const desktopUrl = `https://api.whatsapp.com/send?phone=${inspectorPhone}&text=${encodedText}`;
-                        window.open(desktopUrl, '_blank');
+                        // 桌面端：嚴禁使用 whatsapp:// 協議與 api.whatsapp.com
+                        // 直接使用 WhatsApp Web 網址，確保瀏覽器內 100% 順暢開啟
+                        const webUrl = `https://web.whatsapp.com/send?phone=${inspectorPhone}&text=${encodedText}`;
+                        window.open(webUrl, '_blank');
                     }
 
                     // 觸發聯絡追蹤
