@@ -1329,7 +1329,7 @@
             "正在分析您的九種體質...",
             "計算經絡氣血狀態...",
             "評估健康風險指標...",
-            "生成個人化調理建識...",
+            "生成個人化調理建議...",
         ];
 
         // ===== 工具函式 =====
@@ -1556,7 +1556,7 @@
                 const scanText = $("scan-text");
                 const scanBarFill = $("scan-bar-fill");
                 const startTime = Date.now();
-                const MIN_DURATION = 8000; // 8 秒
+                const MIN_DURATION = 5000; // 5 秒總長度
                 const TARGET_PERCENT = 80; // 目標進度 80%
 
                 // 進度條更新計時器
@@ -1566,8 +1566,8 @@
                     const progress = Math.min((elapsed / MIN_DURATION) * TARGET_PERCENT, TARGET_PERCENT);
                     scanBarFill.style.width = `${progress}%`;
 
-                    // 訊息輪播（每 400ms 切換）
-                    const msgIndex = Math.min(Math.floor(elapsed / 400), SCAN_MESSAGES.length - 1);
+                    // 訊息輪播（每 1.5 秒切換）
+                    const msgIndex = Math.min(Math.floor(elapsed / 1500), SCAN_MESSAGES.length - 1);
                     scanText.textContent = SCAN_MESSAGES[msgIndex];
 
                     // 8 秒後停止更新，保持 80%

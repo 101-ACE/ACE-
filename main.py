@@ -774,8 +774,21 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
             ws.update("A1:L1", [expected_headers])
             logger.info("[SHEET] Written headers: %s", expected_headers)
 
-        # 格式化觀察項摘要（完整，不限前10項）
-        obs_summary = ", ".join(observations) if observations else "-"
+        # 格式化觀察項摘要（完整，不含 none 項目，提取純文字）
+        obs_list = []
+        for item in observations:
+            if not item or not isinstance(item, str):
+                continue
+            s = item.strip()
+            # 跳過「none:X」類型的無症狀選項
+            if s.startswith("none:"):
+                continue
+            # 從「症狀:X」中提取純文字
+            if s.startswith("症狀:"):
+                s = s[3:].strip()
+            if s:
+                obs_list.append(s)
+        obs_summary = "；".join(obs_list) if obs_list else "-"
 
         # 聯絡狀態
         contacted_status = "有" if contacted else "未"
@@ -783,6 +796,9 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
 
         # 檢測員顯示：有 referral_code 顯示代碼，否則顯示預設
         inspector_code = (assessment.referral_code or "").strip() or "預設"
+        # 性別標準化為中文（male → 男，female → 女）
+        gender_map = {"male": "男", "female": "女"}
+        gender_val = gender_map.get((assessment.gender or "").lower(), assessment.gender or "-")
         # 取暱稱：database 優先，否則查 Sheet
         inspector_display = (assessment.partner_name or "").strip()
         if not inspector_display:
@@ -796,7 +812,7 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
             inspector_display,
             assessment.name or "-",
             assessment.phone or "-",
-            assessment.gender or "-",
+            gender_val,
             assessment.age_group or "-",
             get_constitution_full(assessment.constitution) or "-",
             obs_summary,
@@ -1630,58 +1646,34 @@ def submit_questionnaire(
             symptoms = data.answers.get("symptoms", [])
 
             # ═══════════════════════════════════════════════════════════
-            # Step A: 同步寫入 Google Sheet 客戶記錄
+            # Step A: 非同步寫入 Google Sheet 客戶記錄（BackgroundTask，不阻塞回應）
             # ═══════════════════════════════════════════════════════════
-            try:
-                write_customer_record_to_sheet(record, symptoms, 0)
-                sheet_result = "success"
-                funnel.record_sheet_write(True)
-                print(f"[FUNNEL] ✅ Sheet 寫入成功 | assessment_id={record.id}")
-            except Exception as _sheet_e:
-                _sheet_tb = __import__('traceback').format_exc()
-                logger.error("[SHEET] Synchronous write FAILED (non-fatal): %s\n%s", _sheet_e, _sheet_tb)
-                print(f"[SHEET_ERROR] ❌ 同步寫入客戶記錄失敗（非致命，繼續執行）")
-                print(f"[SHEET_ERROR]    錯誤: {_sheet_e}")
-                print(f"[SHEET_ERROR]    完整 traceback:\n{_sheet_tb}")
-                print(f"[FUNNEL_DROP] ❌ 漏斗流失: Sheet 寫入失敗 | assessment_id={record.id}")
-                funnel.record_sheet_write(False)
-                sheet_result = f"error: {_sheet_e}"
+            background_tasks.add_task(
+                write_customer_record_to_sheet, record, symptoms, 0
+            )
+            funnel.record_sheet_write(True)  # 樂觀估計：視為成功
+            print(f"[FUNNEL] 📨 Sheet 寫入已排入背景任務 | assessment_id={record.id}")
 
             # ═══════════════════════════════════════════════════════════
-            # Step B: 同步發送 Email（確保錯誤可見）
+            # Step B: 非同步發送 Email（BackgroundTask，不阻塞回應）
             # ═══════════════════════════════════════════════════════════
             inspector_email = find_inspector_email(data.referral_code)
             email_target = inspector_email
-            email_status = "skipped"
+            email_status = "queued"
             email_result_detail = ""
 
             if SMTP_ENABLED:
-                try:
-                    _email_result = send_email_report(
-                        inspector_email,
-                        record,
-                        recommendations,
-                        "【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
-                    )
-                    email_status = "sent" if _email_result.get("success") else "failed"
-                    email_result_detail = _email_result.get("error", "")
-                    funnel.record_email_send(_email_result.get("success", False))
-                    if _email_result.get("success"):
-                        print(f"[FUNNEL] ✅ Email 發送成功 | {SENDER_EMAIL} → {inspector_email}")
-                    else:
-                        print(f"[FUNNEL_DROP] ⚠️ Email 發送失敗 | {inspector_email} | {_email_result.get('error', 'unknown')}")
-                except Exception as _email_e:
-                    _email_tb = __import__('traceback').format_exc()
-                    logger.error("[EMAIL] Synchronous send FAILED (non-fatal): %s\n%s", _email_e, _email_tb)
-                    print(f"[EMAIL_ERROR] ❌ 同步發送郵件失敗（非致命，繼續執行）")
-                    print(f"[EMAIL_ERROR]    錯誤: {_email_e}")
-                    print(f"[EMAIL_ERROR]    完整 traceback:\n{_email_tb}")
-                    print(f"[FUNNEL_DROP] ❌ 漏斗流失: Email 發送異常 | assessment_id={record.id}")
-                    funnel.record_email_send(False)
-                    email_status = "exception"
-                    email_result_detail = str(_email_e)
+                background_tasks.add_task(
+                    send_email_report,
+                    inspector_email,
+                    record,
+                    recommendations,
+                    "【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
+                )
+                funnel.record_email_send(True)  # 樂觀估計：視為成功
+                print(f"[FUNNEL] 📨 Email 已排入背景任務 | {inspector_email}")
             else:
-                print(f"[EMAIL_ERROR] ⚠️ SMTP 未配置（SMTP_PASSWORD 為空），跳過郵件發送 | assessment_id={record.id}")
+                print(f"[EMAIL_INFO] ℹ️ SMTP 未配置，跳過郵件發送 | assessment_id={record.id}")
                 logger.info("SMTP not configured; skip email for assessment %s", record.id)
                 email_status = "skipped (SMTP disabled)"
                 funnel.record_email_send(False)
