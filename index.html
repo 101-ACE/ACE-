@@ -1831,6 +1831,17 @@
                 const isDesktop = !isMobile;
 
                 whatsappBtn.onclick = async () => {
+                    // Step 1: 先觸發聯絡追蹤（確保在導向 WhatsApp 前完成）
+                    if (window.__assessmentId) {
+                        try {
+                            await fetch(`${API_BASE}/contact/update`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ assessment_id: window.__assessmentId, confirmed: true }),
+                            });
+                        } catch (_) {}
+                    }
+
                     if (isMobile) {
                         // 流動端：直接用 https://wa.me/ 統一連結
                         // 不依賴 whatsapp:// URI Scheme（iOS 會彈出確認視窗，Android 可能中轉）
@@ -1859,15 +1870,6 @@
                             }
                         }, 500);
                     }
-
-                    // 觸發聯絡追蹤
-                    try {
-                        await fetch(`${API_BASE}/contact/update`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ assessment_id: window.__assessmentId, confirmed: true }),
-                        });
-                    } catch (_) {}
                 };
             }
 
