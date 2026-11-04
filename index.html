@@ -1842,7 +1842,7 @@
                 
                 // 三行嚴格格式：{檢測員暱稱}、{結果} 為動態變數
                 const result = report.constitution; // 後端已回傳全名
-                const messageText = `HI ｛inspectorName｝，\n我的快速中醫檢測結果是｛result｝\n我想預約領取免費禮包及檢測。`;
+                const messageText = `HI ｛${inspectorName}｝，\n我的快速中醫檢測結果是｛${result}｝\n我想預約領取免費禮包及檢測。`;
                 // 標準 URL 安全編碼（桌面 + 流動共用）
                 const encodedText = encodeURIComponent(messageText);
 
