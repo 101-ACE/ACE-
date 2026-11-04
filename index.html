@@ -230,9 +230,34 @@
             border-color: #cbd5e1;
             background: #f8fafc;
         }
+        /* Lightbox */
+        .lightbox-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.85);
+            display: none; align-items: center; justify-content: center;
+            cursor: zoom-out;
+            animation: lbFadeIn 0.2s ease;
+        }
+        .lightbox-overlay.active { display: flex; }
+        .lightbox-overlay img {
+            max-width: 92vw; max-height: 90vh;
+            border-radius: 12px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            animation: lbZoomIn 0.25s cubic-bezier(.36,.07,.19,.97);
+        }
+        .lightbox-close {
+            position: absolute; top: 16px; right: 20px;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(255,255,255,0.15); border: none;
+            color: white; font-size: 24px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s;
+        }
+        .lightbox-close:hover { background: rgba(255,255,255,0.3); }
+        @keyframes lbFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes lbZoomIn { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
-<body class="bg-surface text-slate-800 font-sans antialiased">
 
     <!-- Stage 1: Questionnaire -->
     <div id="stage1" class="stage active">
@@ -1186,7 +1211,7 @@
             <!-- CTA: 預約領取養生禮品包及檢測 -->
             <div class="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-6 text-center text-white shadow-lg">
                 <h3 class="text-xl font-bold mb-2">預約領取養生禮品包及檢測</h3>
-                <img src="images/養生禮品包免費領取.png" alt="養生禮品包免費領取" class="w-full rounded-xl shadow-sm mb-4" loading="lazy" decoding="async" onerror="this.style.display='none'">
+                <img src="images/養生禮品包.jpg" alt="養生禮品包免費領取" class="w-full rounded-xl shadow-sm mb-4 cursor-zoom-in transition-transform hover:scale-[1.02]" loading="lazy" decoding="async" data-lightbox>
                 <button id="whatsapp-cta"
                     class="w-full py-4 px-6 bg-white text-primary-dark rounded-xl font-bold shadow hover:shadow-xl transition transform active:scale-[0.98] flex items-center justify-center gap-2">
                     <svg class="w-6 h-6" viewBox="0 0 24 24" fill="#25D366">
@@ -1194,11 +1219,6 @@
                     </svg>
                     預約領取免費禮包及檢測
                 </button>
-                <div class="flex items-center justify-center gap-3 text-xs text-white/70 flex-wrap mt-3">
-                    <span id="cta-agent-id">檢測員：未填寫</span>
-                    <span>|</span>
-                    <span id="cta-expiry">有效期至 2026-12-31</span>
-                </div>
             </div>
 
             <!-- O2O Coupon Card -->
@@ -1210,17 +1230,12 @@
                     </p>
                 </div>
                 <div class="mb-3">
-                    <img id="coupon-card-img" src="images/微電流磁共檢測.png" alt="微電流磁共檢測" class="w-full rounded-xl shadow-sm" loading="lazy" decoding="async">
+                    <img id="coupon-card-img" src="images/微電流磁共檢測.png" alt="微電流磁共檢測" class="w-full rounded-xl shadow-sm cursor-zoom-in transition-transform hover:scale-[1.02]" loading="lazy" decoding="async" data-lightbox>
                 </div>
                 <button id="download-coupon" class="w-full py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition flex items-center justify-center gap-2">
                     <i data-lucide="download" class="w-4 h-4"></i>
                     下載查看
                 </button>
-                <div class="flex items-center justify-center gap-3 text-xs text-slate-400 flex-wrap">
-                    <span id="coupon-agent-id">檢測員：未填寫</span>
-                    <span>|</span>
-                    <span id="coupon-expiry">有效期至 2026-12-31</span>
-                </div>
             </div>
         </div>
 
@@ -1834,21 +1849,16 @@
                 const inspectorPhone = cleanPhone.startsWith('852') ? cleanPhone : (cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone);
                 const inspectorName = (data.inspector_name || '客服專員').trim() || '客服專員';
                 
-                // 更新 CTA 區塊的檢測員與有效期資訊
-                const agentIdEl = $('cta-agent-id');
-                const expiryEl = $('cta-expiry');
-                if (agentIdEl) agentIdEl.textContent = `檢測員：${inspectorName}`;
-                if (expiryEl) expiryEl.textContent = '有效期至 2026-12-31';
-                
                 // 三行嚴格格式：{檢測員暱稱}、{結果} 為動態變數
                 const result = report.constitution; // 後端已回傳全名
-                const messageText = `HI ｛${inspectorName}｝，\n我的快速中醫檢測結果是｛${result}｝\n我想預約領取免費禮包及檢測。`;
+                const messageText = `HI ${inspectorName}，\n我的快速中醫檢測結果是 ${result}\n我想預約領取免費禮包及檢測。`;
                 // 標準 URL 安全編碼（桌面 + 流動共用）
                 const encodedText = encodeURIComponent(messageText);
 
                 // 環境偵測：流動端 → wa.me（iOS/Android 統一，一鍵直達）
-                // 桌面端 → web.whatsapp.com（瀏覽器內直接開啟對話）
+                // 桌面端 → 優先嘗試 WhatsApp Desktop App，失敗則降級至 WhatsApp Web
                 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 768);
+                const isDesktop = !isMobile;
 
                 whatsappBtn.onclick = async () => {
                     if (isMobile) {
@@ -1857,9 +1867,27 @@
                         // wa.me 由 WhatsApp 伺服器統一處理，自動跳轉至 App 或 Web，一鍵完成
                         window.open(`https://wa.me/${inspectorPhone}?text=${encodedText}`, '_self');
                     } else {
-                        // 桌面端：直接開啟 WhatsApp Web 對話頁
+                        // 桌面端：智慧偵測 - 優先嘗試本地 WhatsApp Desktop App
+                        const appUrl = `whatsapp://send?phone=${inspectorPhone}&text=${encodedText}`;
                         const webUrl = `https://web.whatsapp.com/send?phone=${inspectorPhone}&text=${encodedText}`;
-                        window.open(webUrl, '_blank');
+
+                        // 使用 iframe 技巧偵測 WhatsApp Desktop 是否已安裝
+                        const startTime = Date.now();
+                        const iframe = document.createElement('iframe');
+                        iframe.style.display = 'none';
+                        iframe.src = appUrl;
+                        document.body.appendChild(iframe);
+
+                        setTimeout(() => {
+                            document.body.removeChild(iframe);
+                            // 若偵測時間過短（<200ms）代表 App 未安裝，降級至 Web
+                            if (Date.now() - startTime < 200) {
+                                window.open(webUrl, '_blank');
+                            } else {
+                                // App 已安裝，使用 App URL
+                                window.location.href = appUrl;
+                            }
+                        }, 500);
                     }
 
                     // 觸發聯絡追蹤
@@ -1930,7 +1958,36 @@
             initObservationCards();
             autoFillReferralCode();
             lucide.createIcons();
+            initLightbox();
         });
+    </script>
+
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox-overlay" onclick="closeLightbox(event)">
+        <button class="lightbox-close" onclick="closeLightbox(event)">✕</button>
+        <img id="lightbox-img" src="" alt="放大圖片">
+    </div>
+
+    <script>
+        function initLightbox() {
+            const overlay = $('lightbox');
+            const img = $('lightbox-img');
+            document.querySelectorAll('[data-lightbox]').forEach(el => {
+                el.addEventListener('click', e => {
+                    e.stopPropagation();
+                    img.src = el.src;
+                    overlay.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                });
+            });
+        }
+        function closeLightbox(e) {
+            if (e.target === $('lightbox') || e.target.classList.contains('lightbox-close')) {
+                $('lightbox').classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(e); });
     </script>
 </body>
 </html>
