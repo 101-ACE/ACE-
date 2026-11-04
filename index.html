@@ -1633,6 +1633,7 @@
 
                 renderReport(data);
                 window.__assessmentId = data.assessment_id;
+                window.__userPhone = data.user_phone || ($("user-phone") ? $("user-phone").value.trim() : '');
                 showStage("stage2");
             } catch (err) {
                 alert("提交失敗：" + err.message);
@@ -1831,16 +1832,30 @@
                 const isDesktop = !isMobile;
 
                 whatsappBtn.onclick = async () => {
-                    // Step 1: 先觸發聯絡追蹤（確保在導向 WhatsApp 前完成）
-                    if (window.__assessmentId) {
-                        try {
-                            await fetch(`${API_BASE}/contact/update`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ assessment_id: window.__assessmentId, confirmed: true }),
-                            });
-                        } catch (_) {}
+                // Step 1: 先觸發聯絡追蹤（確保在導向 WhatsApp 前完成）
+                    const updatePromise = fetch(`${API_BASE}/contact/update`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            assessment_id: window.__assessmentId,
+                            confirmed: true,
+                            phone: window.__userPhone || '',  // 帶入用戶電話供後端精準匹配 Sheet 行
+                        }),
+                        // keepalive: true 確保頁面導向時請求不中斷
+                        keepalive: true,
+                    }).catch(() => {});
+
+                    // 同時使用 sendBeacon 作為雙重保障（瀏覽器導向時仍確保送出）
+                    if (navigator.sendBeacon) {
+                        const blob = new Blob([JSON.stringify({
+                            assessment_id: window.__assessmentId,
+                            confirmed: true,
+                            phone: window.__userPhone || '',
+                        })], { type: 'application/json' });
+                        navigator.sendBeacon(`${API_BASE}/contact/update`, blob);
                     }
+
+                    await updatePromise;  // 等待成功後再導向（不阻塞 >500ms）
 
                     if (isMobile) {
                         // 流動端：直接用 https://wa.me/ 統一連結

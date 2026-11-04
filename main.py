@@ -327,6 +327,7 @@ class QuestionnairesSubmit(BaseModel):
 class BookingSubmit(BaseModel):
     assessment_id: str
     confirmed: bool = True
+    phone: Optional[str] = None  # 用於 Google Sheets 行匹配
 
 class HealthReportResponse(BaseModel):
     assessment_id: str
@@ -832,15 +833,15 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
         print(f"[SHEET_ERROR]    完整 traceback:\n{_sheet_tb}")
 
 
-def update_contact_status_in_sheet(assessment_id: str) -> None:
-    """找到最後一行「有否聯絡檢測員」為「未」的列，更新為「有」"""
+def update_contact_status_in_sheet(assessment_id: str, phone: Optional[str] = None) -> None:
+    """精準搜尋 Google Sheet 行並更新「有否聯絡檢測員」為「有」
+    優先使用電話號碼（E欄）匹配；找不到則回退至最後一行的「未」更新"""
     try:
-        logger.info("[SHEET] Updating contact status for assessment %s", assessment_id)
+        logger.info("[SHEET] Updating contact status | assessment_id=%s phone=%s", assessment_id, phone)
         from google.oauth2.service_account import Credentials
         import gspread
 
         creds = None
-        # 【優先順序 1】GOOGLE_CREDENTIALS_JSON
         if GOOGLE_CREDENTIALS_JSON:
             try:
                 json_data = json.loads(GOOGLE_CREDENTIALS_JSON)
@@ -848,48 +849,71 @@ def update_contact_status_in_sheet(assessment_id: str) -> None:
                 print(f"[SHEET_LOG] ✅ 使用 GOOGLE_CREDENTIALS_JSON 憑證（聯絡更新）")
             except Exception:
                 pass
-        # 【優先順序 2】GOOGLE_SERVICE_ACCOUNT_JSON
         if creds is None and GOOGLE_SERVICE_ACCOUNT_JSON:
             try:
                 json_data = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
                 creds = Credentials.from_service_account_info(json_data, scopes=["https://www.googleapis.com/auth/spreadsheets"])
             except Exception:
                 pass
-        # 【優先順序 3】憑證檔案
         if creds is None and os.path.exists(GOOGLE_CREDENTIALS_FILE):
             creds = Credentials.from_service_account_file(
                 GOOGLE_CREDENTIALS_FILE,
                 scopes=["https://www.googleapis.com/auth/spreadsheets"]
             )
         if creds is None:
-            print(f"[SHEET_CRITICAL] ❌ 無法取得 Google 憑證（聯絡更新）| assessment_id={assessment_id}")
+            print(f"[SHEET_CRITICAL] ❌ 無法取得 Google 憑證（聯絡更新）")
             logger.warning("[SHEET] No credentials for contact status update")
             return
 
         gc = gspread.authorize(creds)
         sh = gc.open_by_key(GOOGLE_CUSTOMER_SHEET_ID)
-        # 優先透過工作表名稱精確定位
         ws = sh.worksheet("客戶記錄")
         logger.info("[SHEET] Connected to worksheet '客戶記錄' for contact update")
 
-        all_rows = ws.get_all_values()
-        logger.info("[SHEET] Total rows in sheet: %d", len(all_rows))
+        # 讀取所有資料列（含表頭）
+        all_values = ws.get_all_values()
+        logger.info("[SHEET] Total rows in sheet: %d", len(all_values))
 
-        if len(all_rows) <= 1:
-            logger.warning("[SHEET] No data rows found")
+        if len(all_values) <= 1:
+            logger.warning("[SHEET] No data rows found in sheet")
             return
 
-        # 從最後一行往前找「有否聯絡檢測員」=「未」的列
-        for row_idx in range(len(all_rows) - 1, 0, -1):
-            row = all_rows[row_idx]
-            if len(row) >= 10 and row[9] == "未":
-                ws.update(f"J{row_idx + 1}", [["有"]])
-                logger.info("[SHEET] ✅ Updated contact status to 有 at row %d", row_idx + 1)
-                return
+        matched_row_idx = None  # 0-based index in all_values (excluding header)
 
-        logger.warning("[SHEET] No row with '未' found for contact update")
+        if phone:
+            # ── 策略 A：用電話號碼精準匹配（E欄 = 索引 4）──
+            normalized_phone = phone.strip().replace('+', '').replace(' ', '')
+            logger.info("[SHEET] Searching by phone: %s", normalized_phone)
+            for i, row in enumerate(all_values[1:], start=1):  # skip header
+                if len(row) >= 5 and row[4]:
+                    row_phone = row[4].strip().replace('+', '').replace(' ', '')
+                    if row_phone == normalized_phone:
+                        matched_row_idx = i
+                        logger.info("[SHEET] ✅ Found matching row by phone: row %d", i + 1)
+                        break
+
+        # ── 策略 B：若電話匹配失敗，回退至最後一行的「未」列 ──
+        if matched_row_idx is None:
+            logger.info("[SHEET] Phone match failed or not provided; falling back to last '未' row")
+            for i, row in enumerate(reversed(all_values[1:]), start=1):
+                row_real_idx = len(all_values) - i  # 0-based in all_values
+                if len(row) >= 11 and row[10] == "未":  # K欄 = 索引 10
+                    matched_row_idx = row_real_idx
+                    logger.info("[SHEET] ✅ Found fallback row by '未': row %d", matched_row_idx + 1)
+                    break
+
+        if matched_row_idx is not None:
+            # 更新 K 欄（索引 10 = 「有否聯絡檢測員」）
+            ws.update(f"K{matched_row_idx + 2}", [["有"]])  # +2: 0-based + header row
+            logger.info("[SHEET] ✅ Updated K%d to 有 | assessment_id=%s", matched_row_idx + 2, assessment_id)
+            print(f"[SHEET_LOG] ✅ 已聯絡狀態已更新為「有」| row={matched_row_idx + 2} | assessment_id={assessment_id}")
+        else:
+            logger.warning("[SHEET] ⚠️ No matching row found for contact status update | assessment_id=%s", assessment_id)
     except Exception as e:
-        logger.error("[SHEET] ❌ Failed to update contact status: %s\n%s", e, tb.format_exc())
+        tb = __import__('traceback').format_exc()
+        logger.error("[SHEET] ❌ Failed to update contact status: %s\n%s", e, tb)
+        print(f"[SHEET_ERROR] ❌ 聯絡狀態更新失敗: {e}")
+        print(f"[SHEET_ERROR]    traceback:\n{tb}")
 
 
 def generate_report_image(assessment: Assessment, recommendations: List[str]) -> Optional[bytes]:
@@ -1699,6 +1723,7 @@ def submit_questionnaire(
                 "email_sent": EMAIL_ENABLED,
                 "email_target": email_target,
                 "email_status": email_status,
+                "user_phone": record.phone or "",  # 回傳用戶電話供前端存儲，用於後續 Sheet 行匹配
             }
         finally:
             db.close()
@@ -1740,16 +1765,27 @@ def get_report(assessment_id: str):
 
 @app.post("/api/contact/update")
 def update_contact_status(data: BookingSubmit, background_tasks: BackgroundTasks):
-    """用戶點擊 WhatsApp 按鈕後，標記為已聯絡檢測員"""
+    """用戶點擊 WhatsApp 按鈕後，標記為已聯絡檢測員
+    1. 立即更新 SQLite（同步，確保不丟失）
+    2. 後台非同步更新 Google Sheets（精準匹配電話號碼）
+    """
     db: Session = SessionLocal()
     try:
         record = db.query(Assessment).filter(Assessment.id == data.assessment_id).first()
         if not record:
             raise HTTPException(status_code=404, detail="未找到檢測記錄")
+
+        # 優先使用請求中的電話，否則從資料庫取用
+        search_phone = (data.phone or "").strip() or (record.phone or "").strip()
+
         record.contacted = 1
         db.commit()
-        # 更新 Sheet 最後一行的「有否聯絡檢測員」為「有」
-        background_tasks.add_task(update_contact_status_in_sheet, data.assessment_id)
+        logger.info("[DB] ✅ contacted updated to 1 | assessment_id=%s phone=%s", data.assessment_id, search_phone)
+
+        # 非同步更新 Google Sheets（精準匹配電話號碼）
+        background_tasks.add_task(update_contact_status_in_sheet, data.assessment_id, search_phone or None)
+        logger.info("[SHEET] 📨 Contact status update queued for background | assessment_id=%s", data.assessment_id)
+
         return {"success": True, "message": "聯絡狀態已更新"}
     finally:
         db.close()
