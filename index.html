@@ -1790,36 +1790,6 @@
 
             lucide.createIcons();
 
-            // Update coupon agent ID from submitted referral_code
-            const referralCode = (data.referral_code || ($("referral_code") ? $("referral_code").value.trim() : ''));
-            const agentId = referralCode || '預設/無';
-            const couponAgentId = $('coupon-agent-id');
-            if (couponAgentId) couponAgentId.textContent = `檢測員：${agentId}`;
-
-            // Dynamic expiry date calculation (uses current system date)
-            const now = new Date();
-            const currentDay = now.getDate();
-            const currentMonth = now.getMonth(); // 0-indexed
-            const currentYear = now.getFullYear();
-            let expiryDate;
-            if (currentDay <= 15) {
-                // 1~15日 → 當月最後一天
-                expiryDate = new Date(currentYear, currentMonth + 1, 0);
-            } else {
-                // 16~31日 → 下個月15號
-                // 若當月為 12 月，年份自動 +1
-                let nextMonth = currentMonth + 1;
-                let nextYear = currentYear;
-                if (nextMonth > 11) {
-                    nextMonth = 0;
-                    nextYear = currentYear + 1;
-                }
-                expiryDate = new Date(nextYear, nextMonth, 15);
-            }
-            const expiryStr = `${expiryDate.getFullYear()}年${expiryDate.getMonth() + 1}月${expiryDate.getDate()}日`;
-            const couponExpiry = $('coupon-expiry');
-            if (couponExpiry) couponExpiry.textContent = `有效期至 ${expiryStr}`;
-
             // Download coupon as image — direct file download
             const downloadBtn = $('download-coupon');
             if (downloadBtn) {
