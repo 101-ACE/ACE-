@@ -1208,6 +1208,35 @@
                 <div id="recommendations" class="space-y-2 text-slate-700 text-sm md:text-base"></div>
             </div>
 
+            <!-- 分享測驗結果區塊 -->
+            <div id="share-section" class="bg-white rounded-2xl shadow-md p-5 md:p-6 mb-4 hidden">
+                <h3 class="text-lg font-semibold text-primary-dark mb-1 text-center">分享測驗結果，結伴調理養生</h3>
+                <p class="text-xs text-slate-400 text-center mb-4">把檢測報告分享給好友，一起關注健康</p>
+                <div class="grid grid-cols-4 gap-3">
+                    <!-- WhatsApp -->
+                    <button id="share-whatsapp" class="flex flex-col items-center gap-1.5 py-3 px-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 rounded-xl transition active:scale-95">
+                        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        <span class="text-[11px] font-medium text-slate-600">WhatsApp</span>
+                    </button>
+                    <!-- Facebook -->
+                    <button id="share-facebook" class="flex flex-col items-center gap-1.5 py-3 px-2 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 rounded-xl transition active:scale-95">
+                        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        <span class="text-[11px] font-medium text-slate-600">Facebook</span>
+                    </button>
+                    <!-- WeChat -->
+                    <button id="share-wechat" class="flex flex-col items-center gap-1.5 py-3 px-2 bg-[#07C160]/10 hover:bg-[#07C160]/20 rounded-xl transition active:scale-95">
+                        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="#07C160"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05a6.127 6.127 0 0 1-.253-1.736c0-3.674 3.381-6.654 7.56-6.654.254 0 .504.014.754.037-1.368-3.449-5.195-5.946-9.52-5.946zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm3.636 4.48c-3.793 0-6.868 2.655-6.868 5.934 0 3.28 3.075 5.934 6.868 5.934a8.3 8.3 0 0 0 2.296-.322.666.666 0 0 1 .555.076l1.478.865a.253.253 0 0 0 .129.042.227.227 0 0 0 .226-.229c0-.056-.022-.111-.037-.166l-.303-1.149a.462.462 0 0 1 .166-.52C21.92 19.502 22.653 17.87 22.653 16.4c0-3.279-3.075-5.934-6.868-5.934h.187zm-2.536 3.298c.512 0 .929.423.929.945a.936.936 0 0 1-.929.945.936.936 0 0 1-.928-.945c0-.522.416-.945.928-.945zm4.87 0c.512 0 .928.423.928.945a.936.936 0 0 1-.928.945.936.936 0 0 1-.929-.945c0-.522.417-.945.929-.945z"/></svg>
+                        <span class="text-[11px] font-medium text-slate-600">WeChat</span>
+                    </button>
+                    <!-- Copy Link -->
+                    <button id="share-copy" class="flex flex-col items-center gap-1.5 py-3 px-2 bg-slate-100 hover:bg-slate-200 rounded-xl transition active:scale-95">
+                        <svg class="w-7 h-7 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        <span class="text-[11px] font-medium text-slate-600">複製連結</span>
+                    </button>
+                </div>
+                <p id="copy-toast" class="text-center text-xs text-green-600 mt-2 hidden">✅ 已複製連結到剪貼簿</p>
+            </div>
+
             <!-- CTA: 預約領取養生禮品包及檢測 -->
             <div class="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-6 text-center text-white shadow-lg">
                 <h3 class="text-xl font-bold mb-2">預約領取養生禮品包及檢測</h3>
@@ -1886,6 +1915,79 @@
                         }, 500);
                     }
                 };
+            }
+
+            // ═══════════════════════════════════════════
+            // 分享測驗結果按鈕（在結果頁面顯示）
+            // ═══════════════════════════════════════════
+            const shareSection = $('share-section');
+            if (shareSection && report) {
+                shareSection.classList.remove('hidden');
+                const shareText = `快來測驗你的中醫體質！了解自己的健康狀況，仲可以領取免費養生禮品包 🌿`;
+                const shareUrl = window.location.href;
+                const encodedShareText = encodeURIComponent(shareText);
+                const encodedShareUrl = encodeURIComponent(shareUrl);
+                const constitutionName = report.constitution || '';
+                const fullShareText = `${shareText}｜我的檢測結果：${constitutionName}`;
+
+                // WhatsApp 分享：開啟 wa.me 對話帶入推廣文案
+                const waShareBtn = $('share-whatsapp');
+                if (waShareBtn) {
+                    waShareBtn.addEventListener('click', () => {
+                        window.open(`https://wa.me/?text=${encodeURIComponent(fullShareText + ' ' + shareUrl)}`, '_blank');
+                    });
+                }
+
+                // Facebook 分享：Meta Share Dialog
+                const fbShareBtn = $('share-facebook');
+                if (fbShareBtn) {
+                    fbShareBtn.addEventListener('click', () => {
+                        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedShareUrl}&quote=${encodedShareText}`, '_blank');
+                    });
+                }
+
+                // WeChat 提示：微信不支援直接連結分享，改為複製網址提示
+                const wxShareBtn = $('share-wechat');
+                if (wxShareBtn) {
+                    wxShareBtn.addEventListener('click', async () => {
+                        const toast = $('copy-toast');
+                        try {
+                            await navigator.clipboard.writeText(fullShareText + '\n' + shareUrl);
+                            toast.textContent = '✅ 已複製推廣文字與連結';
+                            toast.className = 'text-center text-xs text-green-600 mt-2';
+                            toast.classList.remove('hidden');
+                            setTimeout(() => toast.classList.add('hidden'), 3000);
+                        } catch (_) {
+                            alert('請手動複製以下文字分享至微信：\n\n' + fullShareText + '\n' + shareUrl);
+                        }
+                    });
+                }
+
+                // 複製連結
+                const copyBtn = $('share-copy');
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', async () => {
+                        const toast = $('copy-toast');
+                        try {
+                            await navigator.clipboard.writeText(shareUrl);
+                            toast.textContent = '✅ 已複製連結到剪貼簿';
+                            toast.className = 'text-center text-xs text-green-600 mt-2';
+                            toast.classList.remove('hidden');
+                            setTimeout(() => toast.classList.add('hidden'), 3000);
+                        } catch (_) {
+                            // Fallback: 選擇性文字框
+                            const temp = document.createElement('input');
+                            temp.value = shareUrl;
+                            document.body.appendChild(temp);
+                            temp.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(temp);
+                            toast.textContent = '✅ 已複製連結到剪貼簿';
+                            toast.classList.remove('hidden');
+                            setTimeout(() => toast.classList.add('hidden'), 3000);
+                        }
+                    });
+                }
             }
 
             // Setup store cards
