@@ -1172,8 +1172,9 @@ def build_email_html(assessment: Assessment, recommendations: List[str]) -> str:
     score = assessment.health_score
     risk = assessment.risk_level
     constitution = assessment.constitution
-    name = assessment.name
-    phone = assessment.phone
+    # 優先使用 Claim 後填寫的暱稱與 WhatsApp，否則退回到提交時欄位
+    name = (assessment.name or "").strip() or (assessment.nickname or "-")
+    phone = (assessment.phone or "").strip() or (assessment.contact_phone or "-")
     inspector_name = find_inspector_name(assessment.referral_code)
     inspector_phone = find_inspector_phone(assessment.referral_code)
     submitted_at = assessment.submitted_at.strftime("%Y-%m-%d %H:%M") if assessment.submitted_at else "-"
@@ -1702,7 +1703,7 @@ def submit_questionnaire(
             email_status = "queued"
             email_result_detail = ""
 
-            if SMTP_ENABLED:
+            if EMAIL_ENABLED:
                 background_tasks.add_task(
                     send_email_report,
                     inspector_email,
@@ -1711,11 +1712,11 @@ def submit_questionnaire(
                     "【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
                 )
                 funnel.record_email_send(True)
-                print(f"[FUNNEL] 📨 Email 已排入背景任務 | {inspector_email}")
+                print(f"[FUNNEL] 📨 Email 已排入背景任務（{('API' if API_EMAIL_ENABLED else 'SMTP')}） | {inspector_email}")
             else:
-                print(f"[EMAIL_INFO] ℹ️ SMTP 未配置，跳過郵件發送 | assessment_id={record.id}")
-                logger.info("SMTP not configured; skip email for assessment %s", record.id)
-                email_status = "skipped (SMTP disabled)"
+                print(f"[EMAIL_INFO] ℹ️ SMTP/API 未配置，跳過郵件發送 | assessment_id={record.id}")
+                logger.info("Email not configured; skip email for assessment %s", record.id)
+                email_status = "skipped (no email credentials)"
                 funnel.record_email_send(False)
             
             # 返回完整報告 JSON
@@ -1890,7 +1891,7 @@ def claim_assessment(data: dict, background_tasks: BackgroundTasks):
         # ── 發送 Email（僅首次 Claim 時發送，避免重複推播）─────────────────────────
         inspector_email = find_inspector_email(referral_code)
         email_result = {"success": False, "method": None, "error": ""}
-        if is_first_claim and SMTP_ENABLED and inspector_email:
+        if is_first_claim and EMAIL_ENABLED and inspector_email:
             try:
                 result = send_email_report(inspector_email, record, recommendations,
                                            f"【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！")
