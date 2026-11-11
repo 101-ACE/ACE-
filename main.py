@@ -938,6 +938,48 @@ def update_contact_status_in_sheet(assessment_id: str, phone: Optional[str] = No
         print(f"[SHEET_ERROR]    traceback:\n{tb}")
 
 
+def run_claims_background_tasks(assessment_id: str, nickname: str) -> None:
+    """在 HTTP 回應後執行：寫 Google Sheet + 發送 Email（含報告圖片附件）。
+    使用獨立 Session，避免與主請求共享連接。"""
+    import logging as _logging
+    logger_bg = _logging.getLogger(__name__ + ".claims_bg")
+    try:
+        db: Session = SessionLocal()
+        rec = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+        if not rec:
+            logger_bg.error("[CLAIMS_BG] ❌ assessment_id=%s 不存在", assessment_id)
+            return
+
+        # ── 寫入 Google Sheet ───────────────────────────────────────────────────
+        symptoms_raw = json.loads(rec.answers).get("symptoms", []) if rec.answers else []
+        sheet_ok = write_customer_record_to_sheet(rec, symptoms_raw, contacted=1, nickname_for_name_col=nickname)
+        print(f"[FUNNEL] 📨 [BG] Sheet={'成功' if sheet_ok else '失敗'} | id={assessment_id}")
+        funnel.record_sheet_write(sheet_ok)
+
+        # ── 發送 Email（僅首次 Claim）────────────────────────────────────────────
+        inspector_email = find_inspector_email(rec.referral_code)
+        if rec.claim_status == "claimed" and EMAIL_ENABLED and inspector_email:
+            recommendations = get_recommendations(rec.constitution)
+            try:
+                result = send_email_report(inspector_email, rec, recommendations,
+                                           f"【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！")
+                print(f"[EMAIL_LOG] 📨 [BG] {'✅' if result['success'] else '❌'} Email={'sent' if result['success'] else 'failed'} → {inspector_email} ({result.get('method')})")
+            except Exception as exc:
+                logger_bg.exception("[EMAIL_ERROR] [BG] Email send error: %s", exc)
+        else:
+            if rec.claim_status != "claimed":
+                logger_bg.info("[EMAIL_INFO] [BG] 非首次 Claim，跳過郵件 | id=%s", assessment_id)
+            elif not EMAIL_ENABLED:
+                logger_bg.info("[EMAIL_INFO] [BG] 未配置 Email，跳過 | id=%s", assessment_id)
+    except Exception as exc:
+        logger_bg.exception("[CLAIMS_BG] ❌ Background task failed for assessment %s: %s", assessment_id, exc)
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
+
+
 def generate_report_image(assessment: Assessment, recommendations: List[str]) -> Optional[bytes]:
     """生成檢測報告圖片 (PNG) – 2x 高解析度、無 Emoji 亂碼、客戶資料卡拉長"""
     try:
@@ -1887,29 +1929,12 @@ def claim_assessment(data: dict, background_tasks: BackgroundTasks):
         db.commit()
         logger.info("[DB] ✅ Claim updated | assessment_id=%s nickname=%s phone=%s", assessment_id, nickname, contact_phone)
 
-        # 準備推薦建議
-        recommendations = get_recommendations(record.constitution)
+        # ── 背景任務：寫 Google Sheet + 發送 Email（含報告圖片）────────────────
+        background_tasks.add_task(run_claims_background_tasks, assessment_id, nickname)
+        print(f"[FUNNEL] 📨 [BG] Sheet 寫入與 Email 已排入背景任務 | assessment_id={assessment_id}")
+
+        # 準備 Constitution 全名（同步，不含 IO 操作）
         constitution_full = get_constitution_full(record.constitution)
-        symptoms_raw = json.loads(record.answers).get("symptoms", []) if record.answers else []
-
-        # ── 寫入 Google Sheet（暱稱填 Column D，聯絡狀態即時設為「有」）──────────────
-        sheet_success = write_customer_record_to_sheet(record, symptoms_raw, contacted=1, nickname_for_name_col=nickname)
-        print(f"[FUNNEL] 📨 Sheet 寫入={'成功' if sheet_success else '失敗'} | assessment_id={assessment_id}")
-
-        # ── 發送 Email（僅首次 Claim 時發送，避免重複推播）─────────────────────────
-        inspector_email = find_inspector_email(referral_code)
-        email_result = {"success": False, "method": None, "error": ""}
-        if is_first_claim and EMAIL_ENABLED and inspector_email:
-            try:
-                result = send_email_report(inspector_email, record, recommendations,
-                                           f"【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！")
-                email_result.update(result)
-                print(f"[EMAIL_LOG] {'✅' if result['success'] else '❌'} Email sent to {inspector_email} | {result.get('method')}")
-            except Exception as e:
-                print(f"[EMAIL_ERROR] ❌ Email failed: {e}")
-                email_result["error"] = str(e)
-        elif not is_first_claim:
-            print(f"[EMAIL_INFO] ℹ️ 非首次 Claim，跳過 Email 發送 | assessment_id={assessment_id}")
 
         # ── 建構 WhatsApp Click-to-Chat 訊息 ──────────────────────
         partner = find_partner(normalize_partner_id(referral_code) if referral_code else None)
@@ -1933,9 +1958,6 @@ def claim_assessment(data: dict, background_tasks: BackgroundTasks):
             "store_names": STORE_NAMES,
             "constitution_full": constitution_full,
             "health_score": record.health_score,
-            "sheet_success": sheet_success,
-            "email_sent": email_result.get("success", False),
-            "email_method": email_result.get("method"),
             "claimed_at": now_hk().isoformat(),
         }
     finally:
