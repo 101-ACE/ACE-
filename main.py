@@ -23,6 +23,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from urllib.parse import quote as urlquote
 from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, Text, Float
 from sqlalchemy.ext.declarative import declarative_base
@@ -301,6 +302,9 @@ def migrate_database():
             "partner_email": "TEXT",
             "partner_name": "TEXT",
             "contacted": "INTEGER DEFAULT 0",
+            "nickname": "TEXT DEFAULT ''",
+            "contact_phone": "TEXT DEFAULT ''",
+            "claim_status": "TEXT DEFAULT 'pending'",
         }
         for col, definition in needed_cols.items():
             if col not in existing_cols:
@@ -317,12 +321,14 @@ migrate_database()
 
 # ===== Pydantic 模式 =====
 class QuestionnairesSubmit(BaseModel):
-    name: str = Field(..., max_length=100)
-    phone: str = Field(..., max_length=20)
-    gender: str
-    age_group: str
+    """問卷提交：只需 answers，姓名電話等欄位改為選填（先測後留模式）"""
     referral_code: Optional[str] = None
     answers: Dict[str, Any]
+    # 以下為可選的詳細資料（用戶可选择在結果頁填寫，或留空先出結果）
+    name: str = ""
+    phone: str = ""
+    gender: str = "unknown"
+    age_group: str = "unknown"
 
 class BookingSubmit(BaseModel):
     assessment_id: str
@@ -807,12 +813,14 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
         inspector_display = inspector_display or "預設"
 
         # 12 欄資料（一維列表，供 append_row 使用）
+        # ⚠️ 先測後留：Phone 優先取 contact_phone（Claim 時填寫），否則回退至提交時的 phone
+        effective_phone = (assessment.contact_phone or "").strip() or (assessment.phone or "").strip() or "-"
         row_data = [
             assessment.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if assessment.submitted_at else "-",
             inspector_code,
             inspector_display,
             assessment.name or "-",
-            assessment.phone or "-",
+            effective_phone,
             gender_val,
             assessment.age_group or "-",
             get_constitution_full(assessment.constitution) or "-",
@@ -1639,15 +1647,15 @@ def submit_questionnaire(
         potential_risks = risk_indicators[:split_idx] if split_idx < len(risk_indicators) else risk_indicators
         severe_risks = risk_indicators[split_idx:] if split_idx < len(risk_indicators) else []
         
-        # 儲存至資料庫
+        # 儲存至資料庫（先測後留：contact 欄位延遲填寫）
         db: Session = SessionLocal()
         try:
             partner = find_partner(data.referral_code)
             record = Assessment(
-                name=data.name,
-                phone=data.phone,
-                gender=data.gender,
-                age_group=data.age_group,
+                name=data.name if data.name else "",
+                phone=data.phone if data.phone else "",
+                gender=data.gender if data.gender else "unknown",
+                age_group=data.age_group if data.age_group else "unknown",
                 referral_code=data.referral_code,
                 answers=json.dumps(data.answers, ensure_ascii=False),
                 constitution=analysis["constitution"],
@@ -1656,30 +1664,32 @@ def submit_questionnaire(
                 risk_indicators=json.dumps(risk_indicators, ensure_ascii=False),
                 partner_email=partner["email"] if partner else None,
                 partner_name=partner["name"] if partner else None,
+                nickname="",
+                contact_phone="",
+                claim_status="pending",
             )
             db.add(record)
             db.commit()
             db.refresh(record)
 
-            # 記錄漏斗提交
+            # 記錄漏斗提交（含訪問與答題，但不寫 Sheet，等 Claim）
             funnel.record_submission(data.referral_code, inspector_name)
-            print(f"[FUNNEL] ✅ 問卷提交成功 | assessment_id={record.id} | 體質={analysis['constitution']}")
-            
+            print(f"[FUNNEL] ✅ 問卷已提交 | assessment_id={record.id} | 體質={analysis['constitution']} | ⚠️ 等待 Claim 才寫 Sheet")
+
             # 準備推薦建議
             recommendations = get_recommendations(analysis["constitution"])
             symptoms = data.answers.get("symptoms", [])
 
             # ═══════════════════════════════════════════════════════════
-            # Step A: 非同步寫入 Google Sheet 客戶記錄（BackgroundTask，不阻塞回應）
+            # Step A: ⛔ 延遲寫入 Google Sheet，等待 /claim 觸發
+            # （用戶未完成暱稱/電話前不寫入，防假資料）
             # ═══════════════════════════════════════════════════════════
-            background_tasks.add_task(
-                write_customer_record_to_sheet, record, symptoms, 0
-            )
-            funnel.record_sheet_write(True)  # 樂觀估計：視為成功
-            print(f"[FUNNEL] 📨 Sheet 寫入已排入背景任務 | assessment_id={record.id}")
+            # background_tasks.add_task(...)  ← 已移除，改在 claim 端點執行
+            print(f"[FUNNEL] ℹ️ Sheet 寫入已延遲至 /api/questionnaire/claim 端點 | assessment_id={record.id}")
+            funnel.record_sheet_write(False)  # 尚未寫入
 
             # ═══════════════════════════════════════════════════════════
-            # Step B: 非同步發送 Email（BackgroundTask，不阻塞回應）
+            # Step B: ⛔ 延遲 Email，等待 /claim 觸發
             # ═══════════════════════════════════════════════════════════
             inspector_email = find_inspector_email(data.referral_code)
             email_target = inspector_email
@@ -1694,7 +1704,7 @@ def submit_questionnaire(
                     recommendations,
                     "【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
                 )
-                funnel.record_email_send(True)  # 樂觀估計：視為成功
+                funnel.record_email_send(True)
                 print(f"[FUNNEL] 📨 Email 已排入背景任務 | {inspector_email}")
             else:
                 print(f"[EMAIL_INFO] ℹ️ SMTP 未配置，跳過郵件發送 | assessment_id={record.id}")
@@ -1723,7 +1733,8 @@ def submit_questionnaire(
                 "email_sent": EMAIL_ENABLED,
                 "email_target": email_target,
                 "email_status": email_status,
-                "user_phone": record.phone or "",  # 回傳用戶電話供前端存儲，用於後續 Sheet 行匹配
+                "user_phone": record.phone or "",
+                "claim_ready": True,  # 通知前端可以顯示 Claim 表單
             }
         finally:
             db.close()
@@ -1800,6 +1811,101 @@ def confirm_booking(data: BookingSubmit):
         return {"success": True, "confirmed": True, "message": "預約已確認，報告已備份至拍檔 Email。"}
     finally:
         db.close()
+
+@app.post("/api/questionnaire/claim")
+def claim_assessment(data: dict, background_tasks: BackgroundTasks):
+    """用戶完成暱稱與 WhatsApp 號碼後提交 Claim，觸發：
+    1. 更新 SQLite（nickname、contact_phone、claim_status）
+    2. 寫入 Google Sheet 客戶記錄
+    3. 發送 Email 給檢測員
+    4. 返回 WhatsApp Click-to-Chat 連結 + 門市資訊
+    """
+    assessment_id = data.get("assessment_id", "").strip()
+    nickname = (data.get("nickname") or "").strip()
+    contact_phone = (data.get("contact_phone") or "").strip()
+    referral_code = data.get("referral_code") or None
+
+    if not assessment_id:
+        raise HTTPException(status_code=400, detail="缺少 assessment_id")
+    if not nickname:
+        raise HTTPException(status_code=400, detail="請填寫暱稱")
+    if not contact_phone:
+        raise HTTPException(status_code=400, detail="請填寫 WhatsApp 聯絡電話")
+
+    db: Session = SessionLocal()
+    try:
+        record = db.query(Assessment).filter(Assessment.id == assessment_id).first()
+        if not record:
+            raise HTTPException(status_code=404, detail="未找到檢測記錄")
+        if record.claim_status == "claimed":
+            raise HTTPException(status_code=409, detail="此檢測已領取過禮品包")
+
+        # 更新 SQLite
+        record.nickname = nickname
+        record.contact_phone = contact_phone
+        record.claim_status = "claimed"
+        db.commit()
+        logger.info("[DB] ✅ Claim updated | assessment_id=%s nickname=%s phone=%s", assessment_id, nickname, contact_phone)
+
+        # 準備推薦建議
+        recommendations = get_recommendations(record.constitution)
+        constitution_full = get_constitution_full(record.constitution)
+        symptoms_raw = json.loads(record.answers).get("symptoms", []) if record.answers else []
+
+        # ── 寫入 Google Sheet ──────────────────────────────────────
+        sheet_success = write_customer_record_to_sheet(record, symptoms_raw, 0)
+        print(f"[FUNNEL] 📨 Sheet 寫入={'成功' if sheet_success else '失敗'} | assessment_id={assessment_id}")
+
+        # ── 發送 Email（條件式）─────────────────────────────────────
+        inspector_email = find_inspector_email(referral_code)
+        email_result = {"success": False, "method": None, "error": ""}
+        if SMTP_ENABLED and inspector_email:
+            try:
+                result = send_email_report(inspector_email, record, recommendations,
+                                           f"【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！")
+                email_result.update(result)
+                print(f"[EMAIL_LOG] {'✅' if result['success'] else '❌'} Email sent to {inspector_email} | {result.get('method')}")
+            except Exception as e:
+                print(f"[EMAIL_ERROR] ❌ Email failed: {e}")
+                email_result["error"] = str(e)
+
+        # ── 建構 WhatsApp Click-to-Chat 訊息 ──────────────────────
+        partner = find_partner(normalize_partner_id(referral_code) if referral_code else None)
+        # ── 門市名稱（硬編碼，與前端 stage-3 一致）───────────────────
+        STORE_NAMES = ["將軍澳中心", "寶琳", "樂富", "柴灣"]
+
+        # ── WhatsApp 目標電話 ──────────────────────────────────────
+        default_phone = partner["phone"] if partner else DEFAULT_INSPECTOR_PHONE
+        wa_phone = _strip_852(default_phone)
+
+        store_list_str = " / ".join(STORE_NAMES)
+        whatsapp_message = (
+            f"你好，我是{nickname}，我剛完成中醫體質檢測\n"
+            f"得分：{record.health_score}分，體質：{constitution_full}\n"
+            f"想預約到 {store_list_str} 門市領取養生禮品包與調理建議。"
+        )
+        is_mobile = "Mobile" not in contact_phone and len(contact_phone.replace(" ", "")) > 10
+        wa_url = (
+            f"https://wa.me/{wa_phone}?text={urlquote(whatsapp_message)}"
+            if is_mobile
+            else f"https://web.whatsapp.com/send?phone={wa_phone}&text={urlquote(whatsapp_message)}"
+        )
+
+        return {
+            "success": True,
+            "assessment_id": assessment_id,
+            "whatsapp_url": wa_url,
+            "store_names": STORE_NAMES,
+            "constitution_full": constitution_full,
+            "health_score": record.health_score,
+            "sheet_success": sheet_success,
+            "email_sent": email_result.get("success", False),
+            "email_method": email_result.get("method"),
+            "claimed_at": now_hk().isoformat(),
+        }
+    finally:
+        db.close()
+
 
 # ═══════════════════════════════════════════════════════════════
 # [DIAGNOSTIC] 診斷與漏斗統計端點

@@ -1060,62 +1060,25 @@
                     </div>
                 </div>
 
-                <!-- Basic Info -->
-                <div class="bg-white rounded-2xl shadow-md p-5 md:p-6">
-                    <h3 class="text-lg font-semibold text-slate-800 mb-4">基本資料</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- 姓名 -->
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">姓名 <span class="text-red-500">*</span></label>
-                            <input type="text" id="name" required placeholder="請輸入姓名"
-                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition">
-                        </div>
-                        <!-- 聯絡電話 -->
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">聯絡電話 <span class="text-red-500">*</span></label>
-                            <input type="tel" id="phone" required placeholder="請輸入電話"
-                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition">
-                        </div>
-                    </div>
-                    <!-- 性別 / 年齡 / 檢測人員編號 三欄同排 -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">性別 <span class="text-red-500">*</span></label>
-                            <select id="gender" required
-                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition bg-white">
-                                <option value="">請選擇</option>
-                                <option value="男">男</option>
-                                <option value="女">女</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">年齡 <span class="text-red-500">*</span></label>
-                            <select id="age_group" required
-                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition bg-white">
-                                <option value="">請選擇年齡</option>
-                                <option value="18-30">18-30 歲</option>
-                                <option value="31-45">31-45 歲</option>
-                                <option value="46-60">46-60 歲</option>
-                                <option value="61+">61 歲以上</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">檢測人員編號 <span class="text-slate-400 text-xs">(選填)</span></label>
-                            <input type="text" id="referral_code" placeholder="例：111557 或 HK111557"
-                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition">
-                        </div>
-                    </div>
+                <!-- 先測後留：Landing Page（無表單，直接開始檢測） -->
+                <div class="text-center py-6">
+                    <h1 class="text-2xl md:text-3xl font-bold text-primary-dark mb-3">🌿 中醫體質趣味檢測</h1>
+                    <p class="text-slate-500 mb-2">透過 AI 觀察你的面色、眼睛、舌象等，3 分鐘判斷你的體質類型</p>
+                    <p class="text-sm text-slate-400 mb-6">完成檢測即可免費領取門市養生禮品包 🎁</p>
+                    <button type="button" id="start-btn"
+                        class="w-full md:w-auto px-10 py-4 bg-gradient-to-r from-primary to-primary-light text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition transform active:scale-[0.98]">
+                        開始檢測
+                    </button>
                 </div>
 
-                <!-- Submit Button -->
-                <button type="submit" id="submit-btn"
-                    class="w-full py-4 px-6 bg-gradient-to-r from-primary to-primary-light text-white rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition transform active:scale-[0.98] flex items-center justify-center gap-2">
-                    <span id="btn-text">立即生成 體質分析報告</span>
-                    <svg id="btn-spinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                </button>
+                <!-- 檢測員編號（僅保留，隱藏於首頁下方） -->
+                <div class="bg-white rounded-2xl shadow-md p-4 mt-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-slate-500 whitespace-nowrap">檢測人員編號（選填）：</span>
+                        <input type="text" id="referral_code" placeholder="例：111557 或 HK111557"
+                            class="flex-1 px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition text-sm">
+                    </div>
+                </div>
             </form>
         </div>
     </div>
@@ -1235,6 +1198,34 @@
                     </button>
                 </div>
                 <p id="copy-toast" class="text-center text-xs text-green-600 mt-2 hidden">✅ 已複製連結到剪貼簿</p>
+            </div>
+
+            <!-- 先測後留：Claim 區（填寫暱稱與 WhatsApp 後才可領取） -->
+            <div id="claim-section" class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border-2 border-amber-200 p-5 md:p-6 hidden">
+                <h3 class="text-lg font-bold text-amber-800 mb-1 text-center">🎁 免費領取門市養生禮品包</h3>
+                <p class="text-xs text-amber-600 text-center mb-4">填寫以下資料，一鍵預約門市領取你的個人化禮品包</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">你的名字（暱稱）<span class="text-red-500">*</span></label>
+                        <input type="text" id="nickname" placeholder="例如：小明 / Lisa" maxlength="30"
+                            class="w-full px-4 py-3 rounded-xl border border-amber-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">WhatsApp 聯絡號碼 <span class="text-red-500">*</span></label>
+                        <input type="tel" id="contact-phone" placeholder="例如：9123 4567 或 +852 9123 4567"
+                            class="w-full px-4 py-3 rounded-xl border border-amber-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none transition">
+                    </div>
+                    <button id="claim-btn" type="button"
+                        class="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold shadow hover:shadow-lg transition transform active:scale-[0.98] flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        立即領取禮品包並預約門市
+                        <svg id="claim-spinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <p class="text-xs text-slate-400 text-center mt-3">僅需暱稱與 WhatsApp，無需輸入姓名與真實電話</p>
             </div>
 
             <!-- CTA: 預約領取養生禮品包及檢測 -->
@@ -1493,16 +1484,8 @@
             return result;
         }
 
-        // ===== 驗證表單 =====
+        // ===== 驗證表單（先測後留：只需有觀察資料）=====
         function validateForm() {
-            const fields = ["name", "phone", "gender", "age_group"];
-            for (const f of fields) {
-                if (!$(f).value.trim()) {
-                    alert("請填寫所有必填欄位");
-                    $(f).focus();
-                    return false;
-                }
-            }
             if (getObservations().length === 0) {
                 alert("請至少選擇一個觀察項目，或勾選「並無以上症狀」");
                 return false;
@@ -1617,60 +1600,115 @@
             });
         }
 
-        // ===== 提交表單（非同步並行：動畫 + API 同時啟動）=====
+        // ===== 提交問卷（僅含 answers + referral_code）=====
         async function submitQuestionnaire(e) {
             e.preventDefault();
             if (!validateForm()) return;
 
             const payload = {
-                name: $("name").value.trim(),
-                phone: $("phone").value.trim(),
-                gender: $("gender").value,
-                age_group: $("age_group").value,
                 referral_code: $("referral_code").value.trim() || null,
                 answers: { symptoms: getObservations() },
             };
 
-            const btn = $("submit-btn");
-            const btnText = $("btn-text");
-            const spinner = $("btn-spinner");
-
+            const btn = $("start-btn");
+            const origText = btn.textContent.trim();
             btn.disabled = true;
-            btnText.textContent = "分析中...";
-            spinner.classList.remove("hidden");
+            btn.textContent = "分析中...";
 
             try {
-                // ① 立即啟動 Loading 動畫（漸進式進度條）
                 const scanPromise = runScanAnimation();
-
-                // ② 同時在背景發起 API 請求
                 const apiPromise = fetch(`${API_BASE}/questionnaire/submit`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload),
                 }).then(resp => resp.json().then(data => {
                     if (!resp.ok) throw new Error(data.detail || "提交失敗");
-                    // API 完成：觸發進度條衝到 100%
                     if (typeof window.__finalizeAnimation === 'function') {
                         window.__finalizeAnimation();
                     }
                     return data;
                 }));
 
-                // ③ 等待兩者皆完成：動畫結束（8 秒後）&& API 回傳
                 const data = await Promise.all([scanPromise, apiPromise]).then(([_, result]) => result);
 
                 renderReport(data);
                 window.__assessmentId = data.assessment_id;
-                window.__userPhone = data.user_phone || ($("user-phone") ? $("user-phone").value.trim() : '');
+                window.__inspectorPhone = data.inspector_phone || '';
                 showStage("stage2");
+
+                // 顯示 Claim 區塊（用戶可填寫暱稱與 WhatsApp）
+                setTimeout(() => {
+                    const claimSection = document.getElementById("claim-section");
+                    if (claimSection) claimSection.classList.remove("hidden");
+                }, 600);
             } catch (err) {
                 alert("提交失敗：" + err.message);
             } finally {
                 btn.disabled = false;
-                btnText.textContent = "立即生成 體質分析報告";
+                btn.textContent = origText;
+            }
+        }
+
+        // ===== Claim 處理：填寫暱稱+WhatsApp → 寫 Sheet + 導向 WhatsApp =====
+        async function handleClaim() {
+            const nickname = document.getElementById("nickname")?.value.trim() || "";
+            const contactPhone = document.getElementById("contact-phone")?.value.trim() || "";
+            const assessmentId = window.__assessmentId;
+
+            if (!nickname) { alert("請填寫你的名字（暱稱）"); return; }
+            if (!contactPhone) { alert("請填寫 WhatsApp 聯絡號碼"); return; }
+            if (!assessmentId) { alert("未有檢測記錄，請重新完成檢測"); return; }
+
+            const btn = document.getElementById("claim-btn");
+            const spinner = document.getElementById("claim-spinner");
+            btn.disabled = true;
+            spinner.classList.remove("hidden");
+
+            try {
+                const resp = await fetch(`${API_BASE}/questionnaire/claim`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        assessment_id: assessmentId,
+                        nickname: nickname,
+                        contact_phone: contactPhone,
+                        referral_code: $("referral_code")?.value.trim() || null,
+                    }),
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.detail || "領取失敗");
+
+                showToast(`✅ ${data.constitution_full} · 得分${data.health_score} | 已預約門市禮品包！`, "success");
+
+                // 存儲聯絡資料供後續按鈕使用
+                window.__contactPhone = contactPhone;
+
+                // 跳轉至 WhatsApp Click-to-Chat
+                if (data.whatsapp_url) {
+                    setTimeout(() => window.open(data.whatsapp_url, "_blank"), 800);
+                }
+            } catch (err) {
+                alert("領取失敗：" + err.message);
+            } finally {
+                btn.disabled = false;
                 spinner.classList.add("hidden");
             }
+        }
+
+        // ===== Toast 提示 =====
+        function showToast(msg, type = "info") {
+            const existing = document.getElementById("toast-container");
+            if (existing) existing.remove();
+            const container = document.createElement("div");
+            container.id = "toast-container";
+            container.style.cssText = `position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;`;
+            const toast = document.createElement("div");
+            const bg = type === "success" ? "bg-emerald-600" : type === "error" ? "bg-red-600" : "bg-slate-800";
+            toast.className = `${bg} text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium max-w-xs text-center`;
+            toast.textContent = msg;
+            container.appendChild(toast);
+            document.body.appendChild(container);
+            setTimeout(() => { toast.style.opacity = "0"; toast.style.transition = "opacity 0.3s"; setTimeout(() => container.remove(), 300); }, 3000);
         }
 
         // ===== 報告渲染 =====
@@ -1868,7 +1906,7 @@
                         body: JSON.stringify({
                             assessment_id: window.__assessmentId,
                             confirmed: true,
-                            phone: window.__userPhone || '',  // 帶入用戶電話供後端精準匹配 Sheet 行
+                            phone: window.__contactPhone || window.__userPhone || '',  // 先測後留：Claim 後帶入 contact_phone
                         }),
                         // keepalive: true 確保頁面導向時請求不中斷
                         keepalive: true,
@@ -1879,7 +1917,7 @@
                         const blob = new Blob([JSON.stringify({
                             assessment_id: window.__assessmentId,
                             confirmed: true,
-                            phone: window.__userPhone || '',
+                            phone: window.__contactPhone || window.__userPhone || '',
                         })], { type: 'application/json' });
                         navigator.sendBeacon(`${API_BASE}/contact/update`, blob);
                     }
@@ -2039,6 +2077,19 @@
         document.addEventListener("DOMContentLoaded", () => {
             const form = $("questionnaire-form");
             if (form) form.addEventListener("submit", submitQuestionnaire);
+
+            // 開始檢測按鈕
+            const startBtn = $("start-btn");
+            if (startBtn) startBtn.addEventListener("click", () => {
+                if (!validateForm()) return;
+                // 觸發表單提交（若 form 存在）或直接呼叫
+                submitQuestionnaire(new Event("submit"));
+            });
+
+            // Claim 按鈕
+            const claimBtn = $("claim-btn");
+            if (claimBtn) claimBtn.addEventListener("click", handleClaim);
+
             const confirmBtn = $("confirm-booking");
             if (confirmBtn) confirmBtn.addEventListener("click", confirmBooking);
             const closeBtn = $("popup-close");
