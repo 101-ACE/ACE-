@@ -1871,10 +1871,8 @@ def claim_assessment(data: dict, background_tasks: BackgroundTasks):
 
         # ── 建構 WhatsApp Click-to-Chat 訊息 ──────────────────────
         partner = find_partner(normalize_partner_id(referral_code) if referral_code else None)
-        # ── 門市名稱（硬編碼，與前端 stage-3 一致）───────────────────
-        STORE_NAMES = ["將軍澳中心", "寶琳", "樂富", "柴灣"]
 
-        # ── WhatsApp 目標電話 ──────────────────────────────────────
+        STORE_NAMES = ["將軍澳中心", "寶琳", "樂富", "柴灣"]
         default_phone = partner["phone"] if partner else DEFAULT_INSPECTOR_PHONE
         wa_phone = _strip_852(default_phone)
 
@@ -1884,12 +1882,7 @@ def claim_assessment(data: dict, background_tasks: BackgroundTasks):
             f"得分：{record.health_score}分，體質：{constitution_full}\n"
             f"想預約到 {store_list_str} 門市領取養生禮品包與調理建議。"
         )
-        is_mobile = "Mobile" not in contact_phone and len(contact_phone.replace(" ", "")) > 10
-        wa_url = (
-            f"https://wa.me/{wa_phone}?text={urlquote(whatsapp_message)}"
-            if is_mobile
-            else f"https://web.whatsapp.com/send?phone={wa_phone}&text={urlquote(whatsapp_message)}"
-        )
+        wa_url = f"https://wa.me/{wa_phone}?text={urlquote(whatsapp_message)}"
 
         return {
             "success": True,
