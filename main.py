@@ -778,7 +778,7 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
             print(f"[SHEET_CRITICAL]    2. GOOGLE_SERVICE_ACCOUNT_JSON: {'[已設定]' if GOOGLE_SERVICE_ACCOUNT_JSON else '[未設定]'}")
             print(f"[SHEET_CRITICAL]    3. 憑證檔案 ({GOOGLE_CREDENTIALS_FILE}): {'[存在]' if os.path.exists(GOOGLE_CREDENTIALS_FILE) else '[不存在]'}")
             logger.critical("[SHEET] No Google credentials available. Check env vars: GOOGLE_CREDENTIALS_JSON, GOOGLE_SERVICE_ACCOUNT_JSON")
-            return
+            return False
 
         gc = gspread.authorize(creds)
         sh = gc.open_by_key(GOOGLE_CUSTOMER_SHEET_ID)
@@ -847,12 +847,14 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
         ws.append_row(row_data)
         logger.info("[SHEET] ✅ Customer record written successfully for assessment %s (contacted=%s)", assessment.id, contacted_status)
         print(f"[SHEET_LOG] ✅ 寫入客戶記錄成功 | assessment_id={assessment.id} | 體質={get_constitution_full(assessment.constitution)} | 檢測員={inspector_display}")
+        return True
     except Exception as e:
         _sheet_tb = __import__('traceback').format_exc()
         logger.error("[SHEET] ❌ Failed to write customer record: %s\n%s", e, _sheet_tb)
         print(f"[SHEET_ERROR] ❌ 寫入客戶記錄失敗 | assessment_id={assessment.id}")
         print(f"[SHEET_ERROR]    錯誤: {e}")
         print(f"[SHEET_ERROR]    完整 traceback:\n{_sheet_tb}")
+        return False
 
 
 def update_contact_status_in_sheet(assessment_id: str, phone: Optional[str] = None) -> None:
@@ -943,6 +945,9 @@ def run_claims_background_tasks(assessment_id: str, nickname: str) -> None:
     使用獨立 Session，避免與主請求共享連接。"""
     import logging as _logging
     logger_bg = _logging.getLogger(__name__ + ".claims_bg")
+    # 用哨兵值追蹤是否已在 main flow 中記錄（避免 finally 重複）
+    sheet_recorded = False
+    email_recorded = False
     try:
         db: Session = SessionLocal()
         rec = db.query(Assessment).filter(Assessment.id == assessment_id).first()
@@ -955,24 +960,39 @@ def run_claims_background_tasks(assessment_id: str, nickname: str) -> None:
         sheet_ok = write_customer_record_to_sheet(rec, symptoms_raw, contacted=1, nickname_for_name_col=nickname)
         print(f"[FUNNEL] 📨 [BG] Sheet={'成功' if sheet_ok else '失敗'} | id={assessment_id}")
         funnel.record_sheet_write(sheet_ok)
+        sheet_recorded = True
 
         # ── 發送 Email（僅首次 Claim）────────────────────────────────────────────
+        is_first_claim_now = (rec.claim_status != "claimed")
         inspector_email = find_inspector_email(rec.referral_code)
-        if rec.claim_status == "claimed" and EMAIL_ENABLED and inspector_email:
+        if is_first_claim_now and EMAIL_ENABLED and inspector_email:
             recommendations = get_recommendations(rec.constitution)
             try:
                 result = send_email_report(inspector_email, rec, recommendations,
                                            f"【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！")
-                print(f"[EMAIL_LOG] 📨 [BG] {'✅' if result['success'] else '❌'} Email={'sent' if result['success'] else 'failed'} → {inspector_email} ({result.get('method')})")
+                email_ok = result.get("success", False)
+                print(f"[EMAIL_LOG] 📨 [BG] {'✅' if email_ok else '❌'} Email={'sent' if email_ok else 'failed'} → {inspector_email} ({result.get('method')})")
             except Exception as exc:
                 logger_bg.exception("[EMAIL_ERROR] [BG] Email send error: %s", exc)
+                print(f"[EMAIL_ERROR] [BG] ❌ Email exception: {exc}")
+                email_ok = False
+            finally:
+                funnel.record_email_send(email_ok)
+                email_recorded = True
         else:
-            if rec.claim_status != "claimed":
+            if not is_first_claim_now:
                 logger_bg.info("[EMAIL_INFO] [BG] 非首次 Claim，跳過郵件 | id=%s", assessment_id)
             elif not EMAIL_ENABLED:
                 logger_bg.info("[EMAIL_INFO] [BG] 未配置 Email，跳過 | id=%s", assessment_id)
+            else:
+                logger_bg.warning("[EMAIL_WARN] [BG] inspector_email 為空，跳過郵件 | id=%s", assessment_id)
     except Exception as exc:
         logger_bg.exception("[CLAIMS_BG] ❌ Background task failed for assessment %s: %s", assessment_id, exc)
+        print(f"[CLAIMS_BG_ERROR] ❌ 背景任務异常 | id={assessment_id} | err={exc}")
+        if not sheet_recorded:
+            funnel.record_sheet_write(False)
+        if not email_recorded:
+            funnel.record_email_send(False)
     finally:
         try:
             db.close()
@@ -1747,28 +1767,13 @@ def submit_questionnaire(
             funnel.record_sheet_write(False)  # 尚未寫入
 
             # ═══════════════════════════════════════════════════════════
-            # Step B: ⛔ 延遲 Email，等待 /claim 觸發
+            # Step B: ⛔ Email 延遲至 /claim 端點背景任務觸發（避免重複發送）
+            # 舊版 submit-time email 已移除，現統一由 run_claims_background_tasks 處理
             # ═══════════════════════════════════════════════════════════
             inspector_email = find_inspector_email(data.referral_code)
             email_target = inspector_email
-            email_status = "queued"
-            email_result_detail = ""
-
-            if EMAIL_ENABLED:
-                background_tasks.add_task(
-                    send_email_report,
-                    inspector_email,
-                    record,
-                    recommendations,
-                    "【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！"
-                )
-                funnel.record_email_send(True)
-                print(f"[FUNNEL] 📨 Email 已排入背景任務（{('API' if API_EMAIL_ENABLED else 'SMTP')}） | {inspector_email}")
-            else:
-                print(f"[EMAIL_INFO] ℹ️ SMTP/API 未配置，跳過郵件發送 | assessment_id={record.id}")
-                logger.info("Email not configured; skip email for assessment %s", record.id)
-                email_status = "skipped (no email credentials)"
-                funnel.record_email_send(False)
+            email_status = "delayed_to_claim"
+            print(f"[FUNNEL] ℹ️ Email 等待 Claim 觸發（不在 Submit 時發送）| id={record.id} → {inspector_email}")
             
             # 返回完整報告 JSON
             inspector_phone = find_inspector_phone(data.referral_code)
