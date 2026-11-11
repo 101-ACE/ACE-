@@ -940,9 +940,10 @@ def update_contact_status_in_sheet(assessment_id: str, phone: Optional[str] = No
         print(f"[SHEET_ERROR]    traceback:\n{tb}")
 
 
-def run_claims_background_tasks(assessment_id: str, nickname: str) -> None:
+def run_claims_background_tasks(assessment_id: str, nickname: str, is_first_claim: bool) -> None:
     """在 HTTP 回應後執行：寫 Google Sheet + 發送 Email（含報告圖片附件）。
-    使用獨立 Session，避免與主請求共享連接。"""
+    使用獨立 Session，避免與主請求共享連接。
+    is_first_claim 由 /claim 端點在 commit 前判斷並傳入，避免 DB stale 問題。"""
     import logging as _logging
     logger_bg = _logging.getLogger(__name__ + ".claims_bg")
     # 用哨兵值追蹤是否已在 main flow 中記錄（避免 finally 重複）
@@ -963,9 +964,9 @@ def run_claims_background_tasks(assessment_id: str, nickname: str) -> None:
         sheet_recorded = True
 
         # ── 發送 Email（僅首次 Claim）────────────────────────────────────────────
-        is_first_claim_now = (rec.claim_status != "claimed")
+        # 使用傳入的 is_first_claim 標記（非 DB 狀態），因為背景任務執行時 DB 已更新為 claimed
         inspector_email = find_inspector_email(rec.referral_code)
-        if is_first_claim_now and EMAIL_ENABLED and inspector_email:
+        if is_first_claim and EMAIL_ENABLED and inspector_email:
             recommendations = get_recommendations(rec.constitution)
             try:
                 result = send_email_report(inspector_email, rec, recommendations,
@@ -980,7 +981,7 @@ def run_claims_background_tasks(assessment_id: str, nickname: str) -> None:
                 funnel.record_email_send(email_ok)
                 email_recorded = True
         else:
-            if not is_first_claim_now:
+            if not is_first_claim:
                 logger_bg.info("[EMAIL_INFO] [BG] 非首次 Claim，跳過郵件 | id=%s", assessment_id)
             elif not EMAIL_ENABLED:
                 logger_bg.info("[EMAIL_INFO] [BG] 未配置 Email，跳過 | id=%s", assessment_id)
@@ -1936,8 +1937,9 @@ def claim_assessment(data: dict, background_tasks: BackgroundTasks):
         logger.info("[DB] ✅ Claim updated | assessment_id=%s nickname=%s phone=%s", assessment_id, nickname, contact_phone)
 
         # ── 背景任務：寫 Google Sheet + 發送 Email（含報告圖片）────────────────
-        background_tasks.add_task(run_claims_background_tasks, assessment_id, nickname)
-        print(f"[FUNNEL] 📨 [BG] Sheet 寫入與 Email 已排入背景任務 | assessment_id={assessment_id}")
+        # is_first_claim 在 commit 前判斷，傳入背景任務以避免 DB stale
+        background_tasks.add_task(run_claims_background_tasks, assessment_id, nickname, is_first_claim)
+        print(f"[FUNNEL] 📨 [BG] Sheet 寫入與 Email 已排入背景任務 | id={assessment_id} first_claim={is_first_claim}")
 
         # 準備 Constitution 全名（同步，不含 IO 操作）
         constitution_full = get_constitution_full(record.constitution)
