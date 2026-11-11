@@ -1200,10 +1200,10 @@
                 <p id="copy-toast" class="text-center text-xs text-green-600 mt-2 hidden">✅ 已複製連結到剪貼簿</p>
             </div>
 
-            <!-- 先測後留：Claim 區（填寫暱稱與 WhatsApp 後才可領取） -->
+            <!-- 預約領取養生禮包及檢測（合拼版：圖片上 → 表單中 → 按鈕下） -->
             <div id="claim-section" class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border-2 border-amber-200 p-5 md:p-6 hidden">
-                <h3 class="text-lg font-bold text-amber-800 mb-1 text-center">🎁 免費領取門市養生禮品包</h3>
-                <p class="text-xs text-amber-600 text-center mb-4">填寫以下資料，一鍵預約門市領取你的個人化禮品包</p>
+                <h3 class="text-lg font-bold text-amber-800 mb-3 text-center">🎁 預約領取養生禮包及檢測</h3>
+                <img src="images/養生禮品包.jpg" alt="養生禮品包免費領取" class="w-full rounded-xl shadow-sm mb-4 cursor-zoom-in transition-transform hover:scale-[1.02]" loading="lazy" decoding="async" data-lightbox>
                 <div class="space-y-3">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">你的名字（暱稱）<span class="text-red-500">*</span></label>
@@ -1218,7 +1218,7 @@
                     <button id="claim-btn" type="button"
                         class="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold shadow hover:shadow-lg transition transform active:scale-[0.98] flex items-center justify-center gap-2">
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                        立即領取禮品包並預約門市
+                        立即預約領取禮包及檢測
                         <svg id="claim-spinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -1226,19 +1226,6 @@
                     </button>
                 </div>
                 <p class="text-xs text-slate-400 text-center mt-3">僅需暱稱與 WhatsApp，無需輸入姓名與真實電話</p>
-            </div>
-
-            <!-- CTA: 預約領取養生禮品包及檢測 -->
-            <div class="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-6 text-center text-white shadow-lg">
-                <h3 class="text-xl font-bold mb-2">預約領取養生禮品包及檢測</h3>
-                <img src="images/養生禮品包.jpg" alt="養生禮品包免費領取" class="w-full rounded-xl shadow-sm mb-4 cursor-zoom-in transition-transform hover:scale-[1.02]" loading="lazy" decoding="async" data-lightbox>
-                <button id="whatsapp-cta"
-                    class="w-full py-4 px-6 bg-white text-primary-dark rounded-xl font-bold shadow hover:shadow-xl transition transform active:scale-[0.98] flex items-center justify-center gap-2">
-                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="#25D366">
-                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.149-.174.198-.298.297-.497.099-.198.05-.371-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                    </svg>
-                    預約領取免費禮包及檢測
-                </button>
             </div>
 
             <!-- O2O Coupon Card -->
@@ -1634,6 +1621,10 @@
                 renderReport(data);
                 window.__assessmentId = data.assessment_id;
                 window.__inspectorPhone = data.inspector_phone || '';
+                // SessionStorage 備份：防止 SPA 路由跳轉或事件丟失導致狀態遺漏
+                sessionStorage.setItem('tcm_assessment_id', data.assessment_id);
+                sessionStorage.setItem('tcm_constitution_full', data.report?.constitution || '');
+                sessionStorage.setItem('tcm_score', data.report?.score || '');
                 showStage("stage2");
 
                 // 顯示 Claim 區塊（用戶可填寫暱稱與 WhatsApp）
@@ -1653,11 +1644,13 @@
         async function handleClaim() {
             const nickname = document.getElementById("nickname")?.value.trim() || "";
             const contactPhone = document.getElementById("contact-phone")?.value.trim() || "";
-            const assessmentId = window.__assessmentId;
-
+            const assessmentId = window.__assessmentId || sessionStorage.getItem('tcm_assessment_id');
+            if (!assessmentId) {
+                alert("暫無檢測記錄，請先完成中醫體質檢測。");
+                return;
+            }
             if (!nickname) { alert("請填寫你的名字（暱稱）"); return; }
             if (!contactPhone) { alert("請填寫 WhatsApp 聯絡號碼"); return; }
-            if (!assessmentId) { alert("未有檢測記錄，請重新完成檢測"); return; }
 
             const btn = document.getElementById("claim-btn");
             const spinner = document.getElementById("claim-spinner");
@@ -1872,85 +1865,6 @@
                         document.body.removeChild(a);
                     } else {
                         alert('找不到體驗券圖片');
-                    }
-                };
-            }
-
-            // Setup WhatsApp CTA
-            const whatsappBtn = $('whatsapp-cta');
-            if (whatsappBtn && report && report.constitution) {
-                // 修復電話號碼前綴問題：直接使用原始號碼，移除 +000 錯誤前綴
-                const rawPhone = data.inspector_phone || '85252706980';
-                // 清理非數字字符，保留國際區號
-                const cleanPhone = rawPhone.toString().replace(/\D/g, '');
-                // 確保電話號碼格式正確（香港號碼應為 852 開頭）
-                const inspectorPhone = cleanPhone.startsWith('852') ? cleanPhone : (cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone);
-                const inspectorName = (data.inspector_name || '客服專員').trim() || '客服專員';
-                
-                // 三行嚴格格式：{檢測員暱稱}、{結果} 為動態變數
-                const result = report.constitution; // 後端已回傳全名
-                const messageText = `HI ${inspectorName}，\n我的快速中醫檢測結果是 ${result}\n我想預約領取免費禮包及檢測。`;
-                // 標準 URL 安全編碼（桌面 + 流動共用）
-                const encodedText = encodeURIComponent(messageText);
-
-                // 環境偵測：流動端 → wa.me（iOS/Android 統一，一鍵直達）
-                // 桌面端 → 優先嘗試 WhatsApp Desktop App，失敗則降級至 WhatsApp Web
-                const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 768);
-                const isDesktop = !isMobile;
-
-                whatsappBtn.onclick = async () => {
-                // Step 1: 先觸發聯絡追蹤（確保在導向 WhatsApp 前完成）
-                    const updatePromise = fetch(`${API_BASE}/contact/update`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            assessment_id: window.__assessmentId,
-                            confirmed: true,
-                            phone: window.__contactPhone || window.__userPhone || '',  // 先測後留：Claim 後帶入 contact_phone
-                        }),
-                        // keepalive: true 確保頁面導向時請求不中斷
-                        keepalive: true,
-                    }).catch(() => {});
-
-                    // 同時使用 sendBeacon 作為雙重保障（瀏覽器導向時仍確保送出）
-                    if (navigator.sendBeacon) {
-                        const blob = new Blob([JSON.stringify({
-                            assessment_id: window.__assessmentId,
-                            confirmed: true,
-                            phone: window.__contactPhone || window.__userPhone || '',
-                        })], { type: 'application/json' });
-                        navigator.sendBeacon(`${API_BASE}/contact/update`, blob);
-                    }
-
-                    await updatePromise;  // 等待成功後再導向（不阻塞 >500ms）
-
-                    if (isMobile) {
-                        // 流動端：直接用 https://wa.me/ 統一連結
-                        // 不依賴 whatsapp:// URI Scheme（iOS 會彈出確認視窗，Android 可能中轉）
-                        // wa.me 由 WhatsApp 伺服器統一處理，自動跳轉至 App 或 Web，一鍵完成
-                        window.open(`https://wa.me/${inspectorPhone}?text=${encodedText}`, '_self');
-                    } else {
-                        // 桌面端：智慧偵測 - 優先嘗試本地 WhatsApp Desktop App
-                        const appUrl = `whatsapp://send?phone=${inspectorPhone}&text=${encodedText}`;
-                        const webUrl = `https://web.whatsapp.com/send?phone=${inspectorPhone}&text=${encodedText}`;
-
-                        // 使用 iframe 技巧偵測 WhatsApp Desktop 是否已安裝
-                        const startTime = Date.now();
-                        const iframe = document.createElement('iframe');
-                        iframe.style.display = 'none';
-                        iframe.src = appUrl;
-                        document.body.appendChild(iframe);
-
-                        setTimeout(() => {
-                            document.body.removeChild(iframe);
-                            // 若偵測時間過短（<200ms）代表 App 未安裝，降級至 Web
-                            if (Date.now() - startTime < 200) {
-                                window.open(webUrl, '_blank');
-                            } else {
-                                // App 已安裝，使用 App URL
-                                window.location.href = appUrl;
-                            }
-                        }, 500);
                     }
                 };
             }
