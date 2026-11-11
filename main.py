@@ -1049,8 +1049,8 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         # ===== 客戶資料卡片（行距收緊，三行緊湊排列）=====
         draw.rectangle([(40, y), (W - 40, y + 190)], fill=WHITE, outline='#E0E0E0', width=2)
         draw.text((60, y + 16), "客戶資料", font=font_label, fill=ORANGE_MAIN)
-        draw.text((60, y + 56), f"姓名：{assessment.name}", font=font_value, fill=DARK)
-        draw.text((60, y + 96), f"電話：{assessment.phone}", font=font_value, fill=DARK)
+        draw.text((60, y + 56), f"姓名：{(assessment.nickname or assessment.name or '-')}", font=font_value, fill=DARK)
+        draw.text((60, y + 96), f"電話：{(assessment.contact_phone or assessment.phone or '-')}", font=font_value, fill=DARK)
         draw.text((60, y + 140),
                   f"檢測人員：{inspector_name}（{inspector_phone}）",
                   font=get_font(32, bold=True), fill=DARK)
@@ -1058,7 +1058,7 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
 
         # ===== 健康警示分數 – Progress Ring 區塊 =====
         ring_center_x = W // 2
-        ring_center_y = y + 140
+        ring_center_y = y + 90      # 向上平移 50px，避免與下方風險等級文字重疊
         ring_radius = 81          # 原 40.5 ×2
         ring_width = 14           # 原 7 ×2
 
@@ -1080,7 +1080,7 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
             score_text_color = (0x16, 0xA3, 0x4A)     # 🟢 綠：81-100
         draw.text((ring_center_x, ring_center_y), str(score), font=font_big, fill=score_text_color, anchor='mm')
 
-        draw.text((W // 2, y + 220), f"潛在風險等級：{risk}", font=font_ring_lbl, fill=risk_text_color, anchor='mm')
+        draw.text((W // 2, y + 270), f"潛在風險等級：{risk}", font=font_ring_lbl, fill=risk_text_color, anchor='mm')
 
         # 同齡人群比較文案（連貫單行：三段拼接，消除空白，分數數字加粗）
         _percent = min(99, max(1, int((100 - score) * 0.95)))
@@ -1098,9 +1098,9 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         w3 = font_comparison.getlength(_seg3)
         total_w = w1 + w2 + w3
         x_start = W // 2 - total_w // 2
-        draw.text((x_start,               y + 282), _seg1, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
-        draw.text((x_start + w1,          y + 282), _seg2, font=font_comparison_num, fill=score_text_color, anchor='lm')
-        draw.text((x_start + w1 + w2,     y + 282), _seg3, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
+        draw.text((x_start,               y + 308), _seg1, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
+        draw.text((x_start + w1,          y + 308), _seg2, font=font_comparison_num, fill=score_text_color, anchor='lm')
+        draw.text((x_start + w1 + w2,     y + 308), _seg3, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
 
         # 體質全名（共用模組級常數，禁止簡寫）
         _const_full = get_constitution_full(assessment.constitution)
