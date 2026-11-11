@@ -1212,7 +1212,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">WhatsApp 聯絡號碼 <span class="text-red-500">*</span></label>
-                        <input type="tel" id="contact-phone" placeholder="例如：9123 4567 或 +852 9123 4567"
+                        <input type="tel" id="contact-phone" placeholder="填上你的WhatsApp電話"
                             class="w-full px-4 py-3 rounded-xl border border-amber-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 outline-none transition">
                     </div>
                     <button id="claim-btn" type="button"
@@ -1225,7 +1225,7 @@
                         </svg>
                     </button>
                 </div>
-                <p class="text-xs text-slate-400 text-center mt-3">僅需暱稱與 WhatsApp，無需輸入姓名與真實電話</p>
+                <p class="text-xs text-slate-400 text-center mt-3">僅需暱稱與 WhatsApp，然後預約領取禮品包</p>
             </div>
 
             <!-- O2O Coupon Card -->
@@ -1625,6 +1625,8 @@
                 sessionStorage.setItem('tcm_assessment_id', data.assessment_id);
                 sessionStorage.setItem('tcm_constitution_full', data.report?.constitution || '');
                 sessionStorage.setItem('tcm_score', data.report?.score || '');
+                sessionStorage.setItem('tcm_inspector_phone', data.inspector_phone || '');
+                sessionStorage.setItem('tcm_referral_code', $("referral_code")?.value.trim() || '');
                 showStage("stage2");
 
                 // 顯示 Claim 區塊（用戶可填寫暱稱與 WhatsApp）
@@ -1644,7 +1646,21 @@
         async function handleClaim() {
             const nickname = document.getElementById("nickname")?.value.trim() || "";
             const contactPhone = document.getElementById("contact-phone")?.value.trim() || "";
-            const assessmentId = window.__assessmentId || sessionStorage.getItem('tcm_assessment_id');
+            let assessmentId = window.__assessmentId || sessionStorage.getItem('tcm_assessment_id');
+            const referralCode = sessionStorage.getItem('tcm_referral_code') || $("referral_code")?.value.trim() || null;
+
+            if (!assessmentId) {
+                // 極端情況：嘗試從後端找回最新未領取記錄
+                try {
+                    const resp = await fetch(`${API_BASE}/questionnaire/find-latest?referral_code=${encodeURIComponent(referralCode || '')}`);
+                    const result = await resp.json();
+                    if (result.success && result.assessment_id) {
+                        assessmentId = result.assessment_id;
+                        window.__assessmentId = assessmentId;
+                        sessionStorage.setItem('tcm_assessment_id', assessmentId);
+                    }
+                } catch (_) {}
+            }
             if (!assessmentId) {
                 alert("暫無檢測記錄，請先完成中醫體質檢測。");
                 return;

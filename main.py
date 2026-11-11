@@ -1812,6 +1812,28 @@ def confirm_booking(data: BookingSubmit):
     finally:
         db.close()
 
+@app.get("/api/questionnaire/find-latest")
+def find_latest_unclaimed(referral_code: str = ""):
+    """後備端點：若前端 assessment_id 遺失，根據 referral_code 找回最新未領取記錄"""
+    db: Session = SessionLocal()
+    try:
+        query = db.query(Assessment).filter(Assessment.claim_status == "pending")
+        if referral_code:
+            query = query.filter(Assessment.referral_code == referral_code)
+        latest = query.order_by(Assessment.submitted_at.desc()).first()
+        if not latest:
+            return {"success": False, "detail": "未找到未領取的檢測記錄"}
+        return {
+            "success": True,
+            "assessment_id": str(latest.id),
+            "constitution": latest.constitution,
+            "score": latest.health_score,
+            "submitted_at": latest.submitted_at.isoformat(),
+        }
+    finally:
+        db.close()
+
+
 @app.post("/api/questionnaire/claim")
 def claim_assessment(data: dict, background_tasks: BackgroundTasks):
     """用戶完成暱稱與 WhatsApp 號碼後提交 Claim，觸發：
