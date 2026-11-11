@@ -284,6 +284,9 @@ class Assessment(Base):
     partner_email = Column(String, nullable=True)
     partner_name = Column(String, nullable=True)
     contacted = Column(Integer, default=0)  # 1 = 已聯絡檢測員
+    nickname = Column(String, default="")          # Claim 時的暱稱
+    contact_phone = Column(String, default="")     # Claim 時的 WhatsApp 號碼
+    claim_status = Column(String, default="pending")  # pending / claimed
 
 Base.metadata.create_all(bind=engine)
 
