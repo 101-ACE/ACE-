@@ -722,8 +722,9 @@ def find_inspector_email(referral_code: Optional[str]) -> str:
 
 # ===== HTML 郵件範本生成 =====
 # ===== Google Sheets 客戶記錄寫入 =====
-def write_customer_record_to_sheet(assessment: Assessment, observations: List[str], contacted: int = 0) -> None:
-    """將客戶記錄寫入 Google Sheet「客戶記錄」工作表（11 欄）"""
+def write_customer_record_to_sheet(assessment: Assessment, observations: List[str], contacted: int = 0, nickname_for_name_col: str = "") -> None:
+    """將客戶記錄寫入 Google Sheet「客戶記錄」工作表（12 欄）
+    若提供 nickname_for_name_col，則 Column D（姓名）使用該值而非 assessment.name"""
     try:
         logger.info("[SHEET] Starting write for assessment %s (contacted=%s)", assessment.id, contacted)
         from google.oauth2.service_account import Credentials
@@ -818,11 +819,13 @@ def write_customer_record_to_sheet(assessment: Assessment, observations: List[st
         # 12 欄資料（一維列表，供 append_row 使用）
         # ⚠️ 先測後留：Phone 優先取 contact_phone（Claim 時填寫），否則回退至提交時的 phone
         effective_phone = (assessment.contact_phone or "").strip() or (assessment.phone or "").strip() or "-"
+        # 姓名欄：若 Caller 明確傳入暱稱（Claim 時），優先使用；否則顯示 database 存的 name
+        name_col = (nickname_for_name_col or "").strip() or (assessment.name or "-")
         row_data = [
             assessment.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if assessment.submitted_at else "-",
             inspector_code,
             inspector_display,
-            assessment.name or "-",
+            name_col,
             effective_phone,
             gender_val,
             assessment.age_group or "-",
@@ -1865,10 +1868,10 @@ def claim_assessment(data: dict, background_tasks: BackgroundTasks):
         record = db.query(Assessment).filter(Assessment.id == assessment_id).first()
         if not record:
             raise HTTPException(status_code=404, detail="未找到檢測記錄")
-        if record.claim_status == "claimed":
-            raise HTTPException(status_code=409, detail="此檢測已領取過禮品包")
 
-        # 更新 SQLite
+        is_first_claim = record.claim_status != "claimed"
+
+        # 更新 SQLite（冪等：重複提交也會更新暱稱與電話）
         record.nickname = nickname
         record.contact_phone = contact_phone
         record.claim_status = "claimed"
@@ -1880,14 +1883,14 @@ def claim_assessment(data: dict, background_tasks: BackgroundTasks):
         constitution_full = get_constitution_full(record.constitution)
         symptoms_raw = json.loads(record.answers).get("symptoms", []) if record.answers else []
 
-        # ── 寫入 Google Sheet ──────────────────────────────────────
-        sheet_success = write_customer_record_to_sheet(record, symptoms_raw, 0)
+        # ── 寫入 Google Sheet（暱稱填 Column D，聯絡狀態即時設為「有」）──────────────
+        sheet_success = write_customer_record_to_sheet(record, symptoms_raw, contacted=1, nickname_for_name_col=nickname)
         print(f"[FUNNEL] 📨 Sheet 寫入={'成功' if sheet_success else '失敗'} | assessment_id={assessment_id}")
 
-        # ── 發送 Email（條件式）─────────────────────────────────────
+        # ── 發送 Email（僅首次 Claim 時發送，避免重複推播）─────────────────────────
         inspector_email = find_inspector_email(referral_code)
         email_result = {"success": False, "method": None, "error": ""}
-        if SMTP_ENABLED and inspector_email:
+        if is_first_claim and SMTP_ENABLED and inspector_email:
             try:
                 result = send_email_report(inspector_email, record, recommendations,
                                            f"【COSWAY 健康檢測通知】新客戶已完成 AI 中醫體質檢測！")
@@ -1896,6 +1899,8 @@ def claim_assessment(data: dict, background_tasks: BackgroundTasks):
             except Exception as e:
                 print(f"[EMAIL_ERROR] ❌ Email failed: {e}")
                 email_result["error"] = str(e)
+        elif not is_first_claim:
+            print(f"[EMAIL_INFO] ℹ️ 非首次 Claim，跳過 Email 發送 | assessment_id={assessment_id}")
 
         # ── 建構 WhatsApp Click-to-Chat 訊息 ──────────────────────
         partner = find_partner(normalize_partner_id(referral_code) if referral_code else None)
