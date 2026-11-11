@@ -1817,19 +1817,22 @@ def find_latest_unclaimed(referral_code: str = ""):
     """後備端點：若前端 assessment_id 遺失，根據 referral_code 找回最新未領取記錄"""
     db: Session = SessionLocal()
     try:
-        query = db.query(Assessment).filter(Assessment.claim_status == "pending")
+        q = db.query(Assessment).filter(Assessment.claim_status == "pending")
         if referral_code:
-            query = query.filter(Assessment.referral_code == referral_code)
-        latest = query.order_by(Assessment.submitted_at.desc()).first()
+            q = q.filter(Assessment.referral_code == referral_code)
+        latest = q.order_by(Assessment.submitted_at.desc()).first()
         if not latest:
             return {"success": False, "detail": "未找到未領取的檢測記錄"}
         return {
             "success": True,
             "assessment_id": str(latest.id),
-            "constitution": latest.constitution,
-            "score": latest.health_score,
-            "submitted_at": latest.submitted_at.isoformat(),
+            "constitution": latest.constitution or "",
+            "score": int(latest.health_score) if latest.health_score else 0,
+            "submitted_at": latest.submitted_at.isoformat() if latest.submitted_at else "",
         }
+    except Exception as e:
+        logger.error("[DIAG] find_latest error: %s", e)
+        return {"success": False, "detail": str(e)}
     finally:
         db.close()
 
