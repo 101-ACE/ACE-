@@ -1143,8 +1143,8 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
             score_text_color = (0x16, 0xA3, 0x4A)     # 🟢 綠：81-100
         draw.text((ring_center_x, ring_center_y), str(score), font=font_big, fill=score_text_color, anchor='mm')
 
-        # 風險文字整體向上收攏 30px，使環底→風險文字的間距更緊湊（~69px 而非 ~99px）
-        draw.text((W // 2, y + 240), f"潛在風險等級：{risk}", font=font_ring_lbl, fill=risk_text_color, anchor='mm')
+        # 風險文字（環底→風險標籤：~54px 間距，精簡呼吸感）
+        draw.text((W // 2, y + 230), f"潛在風險等級：{risk}", font=font_ring_lbl, fill=risk_text_color, anchor='mm')
 
         # 同齡人群比較文案（連貫單行：三段拼接，消除空白，分數數字加粗）
         _percent = min(99, max(1, int((100 - score) * 0.95)))
@@ -1162,15 +1162,15 @@ def generate_report_image(assessment: Assessment, recommendations: List[str]) ->
         w3 = font_comparison.getlength(_seg3)
         total_w = w1 + w2 + w3
         x_start = W // 2 - total_w // 2
-        draw.text((x_start,               y + 278), _seg1, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
-        draw.text((x_start + w1,          y + 278), _seg2, font=font_comparison_num, fill=score_text_color, anchor='lm')
-        draw.text((x_start + w1 + w2,     y + 278), _seg3, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
+        draw.text((x_start,               y + 295), _seg1, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
+        draw.text((x_start + w1,          y + 295), _seg2, font=font_comparison_num, fill=score_text_color, anchor='lm')
+        draw.text((x_start + w1 + w2,     y + 295), _seg3, font=font_comparison, fill=(0x4B, 0x55, 0x63), anchor='lm')
 
         # 體質全名（共用模組級常數，禁止簡寫）
         _const_full = get_constitution_full(assessment.constitution)
-        draw.text((W // 2, y + 358), f"體質判定：{_const_full}",
+        draw.text((W // 2, y + 365), f"體質判定：{_const_full}",
                   font=font_ring_lbl_b, fill=GRAY, anchor='mm')
-        y += 420
+        y += 435
 
         # ===== 健康風險指標 (Progress Bars) — 共用 calc_risk_indicator_pct =====
         indicators = get_risk_indicator_pcts(score)
