@@ -1255,8 +1255,16 @@
 </div>
                             </div>
 
-            <input type="hidden" id="referral_code_hidden_adv" value="">
-            <button type="submit" class="w-full py-4 bg-gradient-to-r from-primary to-primary-light text-white rounded-xl font-semibold text-lg shadow hover:shadow-lg transition transform active:scale-[0.98]">
+            <!-- 檢測員編號 -->
+            <div class="bg-white rounded-2xl shadow-md p-4 mt-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-slate-500 whitespace-nowrap">檢測人員編號（選填）：</span>
+                    <input type="text" id="referral_code" placeholder="例：111557 或 HK111557"
+                        class="flex-1 px-4 py-2 rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition text-sm">
+                </div>
+            </div>
+            <button type="submit" id="start-btn"
+                class="w-full py-4 bg-gradient-to-r from-primary to-primary-light text-white rounded-xl font-semibold text-lg shadow hover:shadow-lg transition transform active:scale-[0.98]">
                 開始分析
             </button>
         </form>
@@ -2226,6 +2234,10 @@
                 // Re-initialize observation cards in advanced form
                 initObservationCards();
                 autoFillReferralCode();
+                const advForm = document.getElementById('questionnaire-form-advanced');
+                if (advForm) {
+                    advForm.addEventListener('submit', submitQuestionnaire);
+                }
             }
         })();
 
