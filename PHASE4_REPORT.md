@@ -8,14 +8,63 @@
 
 | 項目 | 狀態 | 詳細 |
 |------|------|------|
-| 前端 (pages.dev) | ✅ LIVE | MD5 `299b2e7d` / 186831 bytes，Phase 4.1 修復已部署 |
-| 後端 (Render) | ✅ OK | API 正常運行，wizard_intent 存檔邏輯已啟用 |
-| Git 推送 | ✅ OK | HEAD = origin/main = `0a447fe`（13 commits，含 Phase4.1 修復） |
+| 前端 (pages.dev) | ✅ LIVE | MD5 `3dc93f76` / **190645 bytes**，Phase 4.2 已部署 |
+| 後端 (Render) | ✅ OK | API 正常運行，Step 5 體重分流權重已上線 |
+| Git 推送 | ✅ OK | HEAD = origin/main = `9d470a5`（14 commits，含 Phase 4.2） |
 | 備份盤 | ✅ OK | `/…/tcm_health_assessment_backup_legacy_20261125_044722/` 含 main.py + index.html |
 
 ---
 
-## 🔧 Phase 4.1 修復摘要
+## 🔧 Phase 4.1 修復摘要（已完成）
+
+**白屏根因**：`renderReport(data)` 未 await，導致 `showStage("stage2")` 在報告渲染完成前執行。  
+**修復**：加入 `await renderReport()` + try/catch 錯誤邊界。
+
+---
+
+## 🆕 Phase 4.2 重整摘要
+
+### 變更內容
+
+| 步驟 | 原設計 | 現設計 |
+|------|--------|--------|
+| Step 1 | 日常能量與睡眠（5選項，可選1-2） | ✅ 維持不變，新增圖庫輔助 |
+| Step 2 | 腸胃身型代謝（4選項） | ✅ 維持不變，新增圖片輔助 |
+| Step 3 | 臉色眼睛嘴唇（4選項） | ✅ 維持不變，新增圖片輔助 |
+| Step 4 | 舌象快速看一眼（4選項） | ✅ 維持不變，新增舌象示意圖 |
+| **Step 5** | ~~跟進意願分流（預約vs先看報告）~~ | **🔄 循環代謝狀態分流（4選項）** |
+
+### Step 5 新選項與權重映射
+
+| 選項 | data-value | 症狀子項 | 偏頗體質權重 |
+|------|-----------|---------|------------|
+| A | `循環卡頓痠痛麻` | 肩頸僵硬、局部刺痛 | 氣鬱+2-3，血瘀+2-3 |
+| B | `排便黏膩口氣重` | 排便黏膩、口氣重 | 濕熱+3-4，痰濕+2-3 |
+| C | `心悸氣短精力透支` | 心悸、氣短、精力透支 | 氣虛+3-4，陽虛+2-3 |
+| D | `循環排泄大致順暢` | （無） | 平和基準，不加分 |
+
+### 現有圖庫使用清單
+
+| 類別 | 路徑 | 使用位置 |
+|------|------|---------|
+| 症狀圖檔 | `images/symptoms/*.png` (10張) | Step 1: 容易疲勞、睡眠差、手腳冰冷、口乾 |
+| 體型圖檔 | `public/images/body/*.png` (4張) | Step 2: body_fat/slouched/thin/normal |
+| 面色圖檔 | `public/images/features/face/*.png` (5張) | Step 3: pale/oily/dark_spots/normal |
+| 眼睛圖檔 | `public/images/eyes/*.png` (6張) | 保留供進階模式使用 |
+| 唇色圖檔 | `public/images/lips/*.png` (5張) | 保留供進階模式使用 |
+| 舌象圖檔 | `images/tongue/{danbai,hong,zi,fanhong}.png` | Step 4: 淡白舌/紅舌/紫舌/淡紅舌 |
+| 無症狀圖檔 | `public/images/no_symptoms.png` | Step 1 E、Step 5 D |
+| Lucide Icons | CDN unpkg.com/lucide@latest | Step 5 SVG 圖案替代 |
+
+### CSS 調整
+
+```css
+/* 新加 opt-img-wrap 縮圖樣式 */
+.opt-img-wrap { width:52px; height:52px; border-radius:10px; overflow:hidden; ... }
+.option-card  { padding:10px 12px; min-height:72px; /* 微調以容納圖片 */ }
+```
+
+---
 
 ### 問題根因
 **白屏成因**：`submitWizardResult()` 和 `submitQuestionnaire()` 中調用 `renderReport(data)` 時未使用 `await`，導致：
@@ -118,17 +167,28 @@ c6c1f3b fix: 修復進階模式表單提交邏輯
 
 ---
 
-## ✅ Phase 4.1 完成檢查清單
+## ✅ Phase 4.2 完成檢查清單
 
-- [x] 排查白屏根因（竞态條件：renderReport 未 await）
-- [x] 修復 submitWizardResult() 中的 renderReport 呼叫
-- [x] 修復 submitQuestionnaire() 中的 renderReport 呼叫
-- [x] 加入錯誤邊界保護（try/catch + alert）
-- [x] 推送至 origin/main (`0a447fe`)
-- [x] Cloudflare Pages 自動部署完成
-- [x] 後端端到端測試通過（3 case: 氣虛質/平和質/report endpoint）
-- [x] 驗證 stage2 所有 DOM 元素存在
-- [ ] Dave 實測驗證（需人工測試）
+- [x] Step 5 題目從「跟進意願分流」改為「循環代謝狀態分流」
+- [x] `WIZARD_ANSWER_KEYS` 新增 Step 5 四個選項權重映射
+- [x] `WIZARD_SYNONYM_MAP` + `WIZARD_INLINE_WEIGHTS` 新增 7 個子症狀項
+- [x] 5步驟所有選項加入對應圖庫圖片（共 24 張圖片縮圖）
+- [x] CSS 新增 `.opt-img-wrap` 樣式 + 調整 `.option-card` padding/min-height
+- [x] JS `wizardFinish()` 移除 Step 5 intent 邏輯，固定使用 CTA 預設值
+- [x] JS `submitWizardResult()` 移除 `intent` 變數，claim-section 一律顯示
+- [x] Git commit `9d470a5` 推送至 origin/main
+- [x] Cloudflare Pages 自動部署完成 (190645 bytes)
+- [x] 後端端到端測試：氣虛質(分38)/血瘀質(分42)/平和質(分85) 三 case 全部通過
+
+---
+
+## 🧪 Phase 4.2 計分測試結果（已驗證）
+
+| 測試案例 | Step 1→5 選取 | constitution | score | risk | indicators |
+|---------|--------------|-------------|-------|------|-----------|
+| 氣虛質（典型+Step5疊加） | A易累無神 / A腹部肥胖 / A面色白眼 / A舌淡白 / **C心悸氣短** | 氣虛質 | 38 | 高 | 免疫機能下降, 身體恢復力減弱 |
+| 血瘀體質 | B睡差嘆氣 / D無困擾 / C膚色暗沉 / C舌紫青 / **A循環卡頓** | 血瘀障礙型 | 42 | 高 | 血液循環阻力增加, 組織供氧不足 |
+| 平和質（全正常） | E大致正常 / D無困擾 / D氣色紅潤 / D舌淡紅不確定 / **D順暢** | 平和質 | 85 | 低 | （空白） |
 
 ---
 
@@ -136,9 +196,10 @@ c6c1f3b fix: 修復進階模式表單提交邏輯
 
 **Dave 實測重點**：
 1. 打開 https://healthcheck-bel.pages.dev/
-2. 完成 5 步 Wizard 流程
-3. 確認不會出現白屏，報告能正確渲染
-4. 測試 CTA 預約功能
-5. 檢查手機版版型
+2. 確認每步選項右側有圖片輔助理解（Step1-5均有）
+3. 完成 5 步 Wizard 流程（含新 Step 5），確認不會白屏
+4. 結果頁應顯示完整報告 + 底下定 CTA 預約區塊
+5. 檢查手機版版型（圖片縮圖在小螢幕上是否擠壓）
+6. 右上角 ⚙️ 進階細項版本按鈕仍正常運作
 
 如有任何問題，請查看瀏覽器控制台（F12 → Console）中的 `[TCM]` 開頭日誌。
