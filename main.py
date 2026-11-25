@@ -552,6 +552,33 @@ OBSERVATION_CONSTITUTION_MAP = {
 }
 
 
+
+# ===== 5-Step Wizard Answer → Constitution Weight Mapping =====
+WIZARD_CONSTITUTION_MAP = {
+    # Step 1：日常能量與睡眠狀態
+    "易累無神":        {"氣虛": 4, "血虛": 2},
+    "睡差煩躁嘆氣":    {"氣鬱": 5, "濕熱": 2},
+    "怕冷手腳冰冷":    {"陽虛": 5, "氣虛": 2},
+    "口乾敏感起疹":    {"陰虛": 4, "特稟": 4, "濕熱": 2},
+    "大致正常":        {"平和": 3},
+    # Step 2：腸胃、身型與水液代謝
+    "腹部肥胖消化不良": {"痰濕": 5, "氣虛": 2},
+    "容易水腫姿態委靡": {"氣虛": 5, "痰濕": 3},
+    "身型偏瘦喉嚨有痰": {"氣鬱": 4, "痰濕": 3},
+    "身型消化無明顯困擾": {"平和": 3},
+    # Step 3：臉色、眼睛與嘴唇
+    "面色白眼疲倦":    {"氣虛": 5, "血虛": 4},
+    "出油泛紅痘黑眼圈":{"濕熱": 5, "血瘀": 2},
+    "膚色暗沉唇甲紫暗":{"血瘀": 5, "氣鬱": 2},
+    "氣色紅潤眼神有神":{"平和": 3},
+    # Step 4：舌頭快速看一眼
+    "舌淡白齒痕胖大瘦薄": {"氣虛": 5, "陽虛": 4},
+    "舌紅深紅苔黃厚少苔": {"濕熱": 5, "陰虛": 4},
+    "舌紫青血管明顯紫點": {"血瘀": 5},
+    "舌淡紅苔薄白不確定": {"平和": 2},
+}
+
+
 def analyze_constitution(answers: Dict[str, Any]) -> Dict[str, Any]:
     scores: Dict[str, int] = {k: 0 for k in CONSTITUTION_RULES}
     symptoms = answers.get("symptoms", [])
@@ -572,8 +599,7 @@ def analyze_constitution(answers: Dict[str, Any]) -> Dict[str, Any]:
     ]
 
     for symptom in active_symptoms:
-        # 直接使用原始值（如 "症狀:睡眠差"），映射表用完整key
-        weights = OBSERVATION_CONSTITUTION_MAP.get(symptom, {})
+        weights = OBSERVATION_CONSTITUTION_MAP.get(symptom, {}) or WIZARD_CONSTITUTION_MAP.get(symptom, {})
         for constitution, weight in weights.items():
             scores[constitution] += weight
     if not active_symptoms:
