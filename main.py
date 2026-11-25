@@ -287,6 +287,7 @@ class Assessment(Base):
     nickname = Column(String, default="")          # Claim 時的暱稱
     contact_phone = Column(String, default="")     # Claim 時的 WhatsApp 號碼
     claim_status = Column(String, default="pending")  # pending / claimed
+    wizard_intent = Column(String, default="")       # "立即查看預約領取禮包" or "先看報告再決定"
 
 Base.metadata.create_all(bind=engine)
 
@@ -308,6 +309,7 @@ def migrate_database():
             "nickname": "TEXT DEFAULT ''",
             "contact_phone": "TEXT DEFAULT ''",
             "claim_status": "TEXT DEFAULT 'pending'",
+            "wizard_intent": "TEXT DEFAULT ''",
         }
         for col, definition in needed_cols.items():
             if col not in existing_cols:
@@ -332,6 +334,8 @@ class QuestionnairesSubmit(BaseModel):
     phone: str = ""
     gender: str = "unknown"
     age_group: str = "unknown"
+    # Wizard step 5 follow-up intent (optional)
+    wizard_intent: str = ""  # "立即查看預約領取禮包" or "先看報告再決定"
 
 class BookingSubmit(BaseModel):
     assessment_id: str
@@ -554,29 +558,146 @@ OBSERVATION_CONSTITUTION_MAP = {
 
 
 # ===== 5-Step Wizard Answer → Constitution Weight Mapping =====
-WIZARD_CONSTITUTION_MAP = {
-    # Step 1：日常能量與睡眠狀態
-    "易累無神":        {"氣虛": 4, "陰虛": 2},
-    "睡差煩躁嘆氣":    {"氣鬱": 5, "濕熱": 2},
-    "怕冷手腳冰冷":    {"陽虛": 5, "氣虛": 2},
-    "口乾敏感起疹":    {"陰虛": 4, "特稟": 4, "濕熱": 2},
-    "大致正常":        {"平和": 3},
-    # Step 2：腸胃、身型與水液代謝
-    "腹部肥胖消化不良": {"痰濕": 5, "氣虛": 2},
-    "容易水腫姿態委靡": {"氣虛": 5, "痰濕": 3},
-    "身型偏瘦喉嚨有痰": {"氣鬱": 4, "痰濕": 3},
-    "身型消化無明顯困擾": {"平和": 3},
-    # Step 3：臉色、眼睛與嘴唇
-    "面色白眼疲倦":    {"氣虛": 5, "陰虛": 3},
-    "出油泛紅痘黑眼圈":{"濕熱": 5, "血瘀": 2},
-    "膚色暗沉唇甲紫暗":{"血瘀": 5, "氣鬱": 2},
-    "氣色紅潤眼神有神":{"平和": 3},
-    # Step 4：舌頭快速看一眼
-    "舌淡白齒痕胖大瘦薄": {"氣虛": 5, "陽虛": 4},
-    "舌紅深紅苔黃厚少苔": {"濕熱": 5, "陰虛": 4},
-    "舌紫青血管明顯紫點": {"血瘀": 5},
-    "舌淡紅苔薄白不確定": {"平和": 2},
+# Each wizard answer key expands to one or more canonical OBSERVATION keys with per-symptom weights.
+# analyze_constitution() expands each wizard key via WIZARD_SYNONYM_MAP before scoring.
+WIZARD_ANSWER_KEYS = {
+    # ── Step 1：日常能量與睡眠狀態 ───────────────────────────────────
+    "易累無神": [
+        ("症狀_容易疲勞", {"氣虛": 4, "陽虛": 2, "痰濕": 2}),
+        ("症狀_頭暈",   {"氣虛": 2, "痰濕": 1, "血瘀": 2}),
+    ],
+    "睡差煩躁嘆氣": [
+        ("症狀_睡眠差",  {"氣鬱": 3, "陰虛": 2, "血瘀": 1}),
+        ("症狀_容易生氣",{"氣鬱": 4, "濕熱": 2}),
+        ("聲音_頻繁嘆氣",{"氣鬱": 5}),
+    ],
+    "怕冷手腳冰冷": [
+        ("症狀_手腳冰冷",{"陽虛": 4, "氣虛": 2}),
+        ("症狀_夜尿頻繁",{"陽虛": 4}),
+    ],
+    "口乾敏感起疹": [
+        ("症狀_口乾",    {"陰虛": 4, "濕熱": 2}),
+        ("症狀_皮膚敏感",{"特稟": 4, "濕熱": 2}),
+    ],
+    "大致正常": [],
+
+    # ── Step 2：腸胃、身型與水液代謝 ───────────────────────────────
+    "腹部肥胖消化不良": [
+        ("形態_腹部肥胖",{"痰濕": 5}),
+        ("症狀_消化不良",{"痰濕": 3, "氣虛": 2}),
+    ],
+    "容易水腫姿態委靡": [
+        ("症狀_容易水腫",{"痰濕": 4, "陽虛": 2}),
+        ("形態_姿態委靡",{"氣虛": 4, "陽虛": 3}),
+    ],
+    "身型偏瘦喉嚨有痰": [
+        ("形態_身型乾瘦",{"陰虛": 2, "氣虛": 1}),
+        ("聲音_痰音粗重",{"痰濕": 5}),
+    ],
+    "身型消化無明顯困擾": [],
+
+    # ── Step 3：臉色、眼睛與嘴唇 ───────────────────────────────────
+    "面色白眼疲倦": [
+        ("面色_蒼白淡白",  {"氣虛": 5, "陽虛": 3}),
+        ("唇色_淡白無血",  {"氣虛": 4, "陽虛": 3}),
+        ("眼_疲倦無神",    {"氣虛": 3, "陽虛": 2}),
+        ("眼_眼瞼蒼白",    {"氣虛": 3}),
+    ],
+    "出油泛紅痘黑眼圈": [
+        ("面色_油光",      {"濕熱": 3, "痰濕": 2}),
+        ("面色_潮紅爆痘",  {"濕熱": 4}),
+        ("眼_血絲多",      {"濕熱": 4}),
+        ("眼_乾澀充血",    {"陰虛": 3}),
+    ],
+    "膚色暗沉唇甲紫暗": [
+        ("面色_晦暗色斑",  {"血瘀": 5}),
+        ("唇色_青紫暗紫",  {"血瘀": 5}),
+        ("形態_指甲紫暗",  {"血瘀": 5}),
+    ],
+    "氣色紅潤眼神有神": [],
+
+    # ── Step 4：舌頭快速看一眼 ───────────────────────────────────
+    "舌淡白齒痕胖大瘦薄": [
+        ("舌色_淡白舌",   {"氣虛": 4, "陽虛": 3}),
+        ("舌形_胖大舌",   {"痰濕": 5, "陽虛": 3}),
+        ("舌形_齒痕舌",   {"氣虛": 5, "痰濕": 3}),
+        ("舌形_瘦薄舌",   {"氣虛": 4, "陰虛": 3}),
+    ],
+    "舌紅深紅苔黃厚少苔": [
+        ("舌色_紅舌",     {"濕熱": 4, "陰虛": 2}),
+        ("舌色_絳舌",     {"濕熱": 4, "陰虛": 3}),
+        ("舌苔_厚膩苔",   {"痰濕": 5, "濕熱": 3}),
+        ("舌苔_黃苔",     {"濕熱": 4}),
+        ("舌苔_無苔",     {"陰虛": 4}),
+    ],
+    "舌紫青血管明顯紫點": [
+        ("舌色_紫舌",      {"血瘀": 5}),
+        ("舌色_青舌",      {"血瘀": 5}),
+        ("舌態_舌下靜脈怒張",{"血瘀": 5}),
+        ("舌形_紫斑點刺",  {"血瘀": 5}),
+    ],
+    "舌淡紅苔薄白不確定": [],
 }
+
+# Canonical → OBSERVATION_CONSTITUTION_MAP key aliases
+WIZARD_SYNONYM_MAP = {
+    "症狀_容易疲勞":     None,   # not in OBSERVATION; handled inline below
+    "症狀_頭暈":          "頭暈",
+    "症狀_睡眠差":         "症狀:睡眠差",
+    "症狀_容易生氣":       "症狀:容易生氣",
+    "聲音_頻繁嘆氣":       "聲音:頻繁嘆氣",
+    "症狀_手腳冰冷":       "症狀:手腳冰冷",
+    "症狀_夜尿頻繁":       "症狀:夜尿頻繁",
+    "症狀_口乾":           "症狀:口乾",
+    "症狀_皮膚敏感":       "症狀:皮膚敏感",
+    "形態_腹部肥胖":       "體型:腹部肥胖",
+    "症狀_消化不良":       "症狀:消化不良",
+    "症狀_容易水腫":       "症狀:容易水腫",
+    "形態_姿態委靡":       "體型:姿態委靡",
+    "形態_身型乾瘦":       "體型:體型瘦削",
+    "聲音_痰音粗重":       "聲音:痰音粗重",
+    "面色_蒼白淡白":       "面色:面色淡白",
+    "唇色_淡白無血":       "唇色:淡白無血",
+    "眼_疲倦無神":         "眼睛:眼神疲倦無神",
+    "眼_眼瞼蒼白":         "眼睛:眼瞼淡白",
+    "面色_油光":           "面色:油光",
+    "面色_潮紅爆痘":       "面色:潮紅爆痘",
+    "眼_血絲多":           "眼睛:目赤血絲多",
+    "眼_乾澀充血":         "眼睛:眼睛乾澀充血",
+    "面色_晦暗色斑":       "面色:面色黧黑",
+    "唇色_青紫暗紫":       "唇色:青紫暗紫",
+    "形態_指甲紫暗":       "指甲:甲色暗紫",
+    "舌色_淡白舌":         "舌色:淡白舌",
+    "舌形_胖大舌":         "舌形:胖大舌",
+    "舌形_齒痕舌":         "舌形:齒痕舌",
+    "舌形_瘦薄舌":         "舌形:瘦薄舌",
+    "舌色_紅舌":           "舌色:紅舌",
+    "舌色_絳舌":           "舌色:絳舌",
+    "舌苔_厚膩苔":         "舌苔質:膩苔",
+    "舌苔_黃苔":           "舌苔色:黃苔",
+    "舌苔_無苔":           "舌苔色:無苔",
+    "舌色_紫舌":           "舌色:紫舌",
+    "舌色_青舌":           "舌色:青舌",
+    "舌態_舌下靜脈怒張":   "舌態:舌歪斜",
+    "舌形_紫斑點刺":       "舌形:點刺舌",
+}
+# Inline sub-symptom → constitution weights for keys NOT in OBSERVATION_CONSTITUTION_MAP
+WIZARD_INLINE_WEIGHTS = {
+    "症狀_容易疲勞": {"氣虛": 4, "陽虛": 2, "痰濕": 2},
+}
+
+
+def _expand_wizard_symptoms(wizard_keys: list) -> list:
+    """Expand wizard answer keys into a flat list of OBSERVATION-compatible symptom strings."""
+    flat = []
+    for key in wizard_keys:
+        synonym = WIZARD_SYNONYM_MAP.get(key)
+        if synonym is not None:
+            flat.append(synonym)
+        elif key in WIZARD_INLINE_WEIGHTS:
+            # This key has its own direct weight mapping (no OBSERVATION equivalent)
+            flat.append(key)  # will be scored via WIZARD_INLINE_WEIGHTS in analyze_constitution
+    return flat
 
 
 def analyze_constitution(answers: Dict[str, Any]) -> Dict[str, Any]:
@@ -587,7 +708,7 @@ def analyze_constitution(answers: Dict[str, Any]) -> Dict[str, Any]:
     excluded_prefixes: set[str] = set()
     for s in symptoms:
         if s.startswith("none:"):
-            prefix = s[5:]  # 去掉 "none:" 前綴
+            prefix = s[5:]
             if prefix in NONE_CATEGORY_PREFIXES:
                 excluded_prefixes.add(prefix)
 
@@ -598,11 +719,33 @@ def analyze_constitution(answers: Dict[str, Any]) -> Dict[str, Any]:
         and not any(s.startswith(p + ":") for p in excluded_prefixes)
     ]
 
-    for symptom in active_symptoms:
-        weights = OBSERVATION_CONSTITUTION_MAP.get(symptom, {}) or WIZARD_CONSTITUTION_MAP.get(symptom, {})
+    # Expand each wizard answer key into constituent observation symptoms
+    expanded_symptoms: list[str] = []
+    for sym in active_symptoms:
+        if sym in WIZARD_ANSWER_KEYS:
+            raw_sub = WIZARD_ANSWER_KEYS[sym]
+            for sub_key, _weights in raw_sub:
+                synonym = WIZARD_SYNONYM_MAP.get(sub_key)
+                if synonym is not None:
+                    expanded_symptoms.append(synonym)
+                elif sub_key in WIZARD_INLINE_WEIGHTS:
+                    expanded_symptoms.append(sub_key)  # scored inline below
+        else:
+            expanded_symptoms.append(sym)
+
+    # Score using OBSERVATION map first
+    for symptom in expanded_symptoms:
+        weights = OBSERVATION_CONSTITUTION_MAP.get(symptom, {})
         for constitution, weight in weights.items():
             scores[constitution] += weight
-    if not active_symptoms:
+
+    # Also apply inline weights for non-OBSERVATION keys
+    for symptom in expanded_symptoms:
+        if symptom in WIZARD_INLINE_WEIGHTS:
+            for constitution, weight in WIZARD_INLINE_WEIGHTS[symptom].items():
+                scores[constitution] += weight
+
+    if not expanded_symptoms:
         return {"constitution": "平和", "score": 90, "risk_level": "低", "risk_indicators": []}
     dominant = max(scores, key=scores.get)
     if scores[dominant] == 0:
@@ -1828,6 +1971,7 @@ def submit_questionnaire(
                 "email_status": email_status,
                 "user_phone": record.phone or "",
                 "claim_ready": True,  # 通知前端可以顯示 Claim 表單
+                "wizard_intent": record.wizard_intent or "",
             }
         finally:
             db.close()

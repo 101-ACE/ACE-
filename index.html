@@ -2340,19 +2340,25 @@
         function wizardFinish() {
             // Collect all step answers into symptoms payload
             const allSymptoms = [];
+            let wizardIntent = "";
             for (let s = 1; s <= totalSteps; s++) {
-                (stepAnswers[s] || []).forEach(v => allSymptoms.push(v));
+                const stepVals = stepAnswers[s] || [];
+                if (s === 5) {
+                    // Step 5: only first value matters for intent
+                    wizardIntent = stepVals[0] || "";
+                }
+                stepVals.forEach(v => allSymptoms.push(v));
             }
             if (allSymptoms.length === 0) {
                 alert('請完成所有步驟的選取');
                 return;
             }
-            // Map wizard answers to backend-compatible symptom keys
-            // Send via existing API with synthesized symptoms format
             const payload = {
                 referral_code: null,
                 answers: { symptoms: allSymptoms, wizard_answers: stepAnswers },
+                wizard_intent: wizardIntent,
             };
+            sessionStorage.setItem('tcm_wizard_intent', wizardIntent);
             submitWizardResult(payload);
         }
 
@@ -2379,6 +2385,9 @@
                 renderReport(data);
                 window.__assessmentId = data.assessment_id;
                 window.__inspectorPhone = data.inspector_phone || '';
+                // Save wizard intent and inspector phone from backend response
+                const intent = data.wizard_intent || stepAnswers[5]?.[0] || "";
+                sessionStorage.setItem('tcm_wizard_intent', intent);
                 sessionStorage.setItem('tcm_assessment_id', data.assessment_id);
                 sessionStorage.setItem('tcm_constitution_full', data.report?.constitution || '');
                 sessionStorage.setItem('tcm_score', data.report?.score || '');
@@ -2386,7 +2395,14 @@
                 showStage("stage2");
                 setTimeout(() => {
                     const claimSection = document.getElementById("claim-section");
-                    if (claimSection) claimSection.classList.remove("hidden");
+                    if (!claimSection) return;
+                    if (intent === "立即查看預約領取禮包") {
+                        // Option A: immediate urgency CTA
+                        claimSection.classList.remove("hidden");
+                    } else {
+                        // Option B: softer follow-up path
+                        claimSection.classList.remove("hidden");
+                    }
                 }, 600);
             } catch (err) {
                 alert("提交失敗：" + err.message);
