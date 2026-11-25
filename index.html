@@ -272,14 +272,19 @@
         .wizard-step { display:none; animation:stepFadeIn .3s ease; }
         .wizard-step.active { display:block; }
         @keyframes stepFadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
-        .option-card { border:2px solid #e5e7eb; border-radius:14px; padding:14px 16px; cursor:pointer; transition:all .18s; display:flex; gap:12px; align-items:flex-start; background:#fff; min-height:68px; }
+        .option-card { border:2px solid #e5e7eb; border-radius:14px; padding:10px 12px; cursor:pointer; transition:all .18s; display:flex; gap:12px; align-items:flex-start; background:#fff; min-height:72px; }
         .option-card:hover { border-color:#059669; background:#f0fdf4; }
         .option-card.selected { border-color:#059669; background:#d1fae5; box-shadow:0 0 0 3px rgba(5,150,105,.15); }
-        .option-marker { width:28px; height:28px; border-radius:50%; border:2px solid #d1d5db; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#9ca3af; flex-shrink:0; transition:all .18s; margin-top:1px; }
+        .option-marker { width:28px; height:28px; border-radius:50%; border:2px solid #d1d5db; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#9ca3af; flex-shrink:0; transition:all .18s; margin-top:2px; }
         .option-card.selected .option-marker { border-color:#059669; background:#059669; color:#fff; }
-        .option-title { font-size:15px; font-weight:600; color:#1f2937; line-height:1.4; }
-        .option-sub  { font-size:13px; color:#6b7280; margin-top:2px; }
+        .option-body { flex:1; min-width:0; }
+        .option-title { font-size:14px; font-weight:600; color:#1f2937; line-height:1.4; }
+        .option-sub  { font-size:12px; color:#6b7280; margin-top:2px; }
         .option-card.selected .option-title { color:#065f46; }
+        /* Step image thumbnail inside option card */
+        .opt-img-wrap { width:52px; height:52px; flex-shrink:0; border-radius:10px; overflow:hidden; margin-top:2px; background:#f8fafc; border:1px solid #e5e7eb; }
+        .opt-img-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
+        .opt-img-wrap svg { width:28px; height:28px; margin:12px auto 0; display:block; }
         .wizard-nav { display:flex; gap:12px; margin-top:28px; }
         .wizard-nav .btn-back { background:#f3f4f6; color:#374151; }
         .wizard-nav .btn-back:hover { background:#e5e7eb; }
@@ -330,23 +335,38 @@
                     <div class="space-y-3">
                         <div class="option-card" data-value="易累無神" data-max="2">
                             <div class="option-marker">A</div>
-                            <div><div class="option-title">很容易累、沒精神，甚至站起來頭暈</div></div>
+                            <div class="option-body">
+                                <div class="option-title">很容易累、沒精神，甚至站起來頭暈</div>
+                            </div>
+                            <div class="opt-img-wrap"><img src="images/symptoms/容易疲勞.png" alt=""></div>
                         </div>
                         <div class="option-card" data-value="睡差煩躁嘆氣" data-max="2">
                             <div class="option-marker">B</div>
-                            <div><div class="option-title">睡得不好（難入睡/多夢/睡醒仍累），或容易煩躁生氣、常嘆氣</div></div>
+                            <div class="option-body">
+                                <div class="option-title">睡得不好（難入睡/多夢/睡醒仍累），或容易煩躁生氣、常嘆氣</div>
+                            </div>
+                            <div class="opt-img-wrap"><img src="images/symptoms/睡眠差.png" alt=""></div>
                         </div>
                         <div class="option-card" data-value="怕冷手腳冰冷" data-max="2">
                             <div class="option-marker">C</div>
-                            <div><div class="option-title">特別怕冷、手腳冰冷，或夜尿較多</div></div>
+                            <div class="option-body">
+                                <div class="option-title">特別怕冷、手腳冰冷，或夜尿較多</div>
+                            </div>
+                            <div class="opt-img-wrap"><img src="images/symptoms/手腳冰冷.png" alt=""></div>
                         </div>
                         <div class="option-card" data-value="口乾敏感起疹" data-max="2">
                             <div class="option-marker">D</div>
-                            <div><div class="option-title">經常口乾、想喝水，或皮膚容易敏感/起疹</div></div>
+                            <div class="option-body">
+                                <div class="option-title">經常口乾、想喝水，或皮膚容易敏感/起疹</div>
+                            </div>
+                            <div class="opt-img-wrap"><img src="images/symptoms/口乾.png" alt=""></div>
                         </div>
                         <div class="option-card" data-value="大致正常" data-max="1">
                             <div class="option-marker">E</div>
-                            <div><div class="option-title">大致正常，沒有明顯困擾</div></div>
+                            <div class="option-body">
+                                <div class="option-title">大致正常，沒有明顯困擾</div>
+                            </div>
+                            <div class="opt-img-wrap"><img src="public/images/no_symptoms.png" alt=""></div>
                         </div>
                     </div>
                     <div class="wizard-hint" id="hint-1">可選最多 2 項</div>
@@ -359,19 +379,23 @@
                     <div class="space-y-3">
                         <div class="option-card" data-value="腹部肥胖消化不良" data-max="1">
                             <div class="option-marker">A</div>
-                            <div><div class="option-title">小腹較圓/腹部肥胖，或容易消化不良、胃脹</div></div>
+                            <div class="option-body"><div class="option-title">小腹較圓/腹部肥胖，或容易消化不良、胃脹</div></div>
+                            <div class="opt-img-wrap"><img src="public/images/body/body_fat.png" alt=""></div>
                         </div>
                         <div class="option-card" data-value="容易水腫姿態委靡" data-max="1">
                             <div class="option-marker">B</div>
-                            <div><div class="option-title">容易水腫（早上臉腫或傍晚腳腫），或習慣駝背沒力</div></div>
+                            <div class="option-body"><div class="option-title">容易水腫（早上臉腫或傍晚腳腫），或習慣駝背沒力</div></div>
+                            <div class="opt-img-wrap"><img src="public/images/body/body_slouched.png" alt=""></div>
                         </div>
                         <div class="option-card" data-value="身型偏瘦喉嚨有痰" data-max="1">
                             <div class="option-marker">C</div>
-                            <div><div class="option-title">身型偏瘦，或喉嚨常覺得有痰、說話易急促</div></div>
+                            <div class="option-body"><div class="option-title">身型偏瘦，或喉嚨常覺得有痰、說話易急促</div></div>
+                            <div class="opt-img-wrap"><img src="public/images/body/body_thin.png" alt=""></div>
                         </div>
                         <div class="option-card" data-value="身型消化無明顯困擾" data-max="1">
                             <div class="option-marker">D</div>
-                            <div><div class="option-title">沒有特別明顯的身型或消化困擾</div></div>
+                            <div class="option-body"><div class="option-title">沒有特別明顯的身型或消化困擾</div></div>
+                            <div class="opt-img-wrap"><img src="public/images/body/body_normal.png" alt=""></div>
                         </div>
                     </div>
                     <div class="wizard-hint">請選擇最貼近你的一項</div>
@@ -384,19 +408,23 @@
                     <div class="space-y-3">
                         <div class="option-card" data-value="面色白眼疲倦" data-max="1">
                             <div class="option-marker">A</div>
-                            <div><div class="option-title">臉色或嘴唇偏白、沒血色，或眼睛容易疲倦無神、眼瞼偏白</div></div>
+                            <div class="option-body"><div class="option-title">臉色或嘴唇偏白、沒血色，或眼睛容易疲倦無神、眼瞼偏白</div></div>
+                            <div class="opt-img-wrap"><img src="public/images/features/face/pale.png" alt=""></div>
                         </div>
                         <div class="option-card" data-value="出油泛紅痘黑眼圈" data-max="1">
                             <div class="option-marker">B</div>
-                            <div><div class="option-title">容易出油、長痘/泛紅，或眼睛有血絲/乾澀、黑眼圈深</div></div>
+                            <div class="option-body"><div class="option-title">容易出油、長痘/泛紅，或眼睛有血絲/乾澀、黑眼圈深</div></div>
+                            <div class="opt-img-wrap"><img src="public/images/features/face/oily.png" alt=""></div>
                         </div>
                         <div class="option-card" data-value="膚色暗沉唇甲紫暗" data-max="1">
                             <div class="option-marker">C</div>
-                            <div><div class="option-title">膚色偏暗沉/有斑，或嘴唇/指甲偏紫暗</div></div>
+                            <div class="option-body"><div class="option-title">膚色偏暗沉/有斑，或嘴唇/指甲偏紫暗</div></div>
+                            <div class="opt-img-wrap"><img src="public/images/features/face/dark_spots.png" alt=""></div>
                         </div>
                         <div class="option-card" data-value="氣色紅潤眼神有神" data-max="1">
                             <div class="option-marker">D</div>
-                            <div><div class="option-title">氣色紅潤、眼神算有神</div></div>
+                            <div class="option-body"><div class="option-title">氣色紅潤、眼神算有神</div></div>
+                            <div class="opt-img-wrap"><img src="public/images/features/face/normal.png" alt=""></div>
                         </div>
                     </div>
                     <div class="wizard-hint">請選擇最貼近你的一項</div>
@@ -409,44 +437,55 @@
                     <div class="space-y-3">
                         <div class="option-card" data-value="舌淡白齒痕胖大瘦薄" data-max="1">
                             <div class="option-marker">A</div>
-                            <div><div class="option-title">舌色偏白/淡，或舌邊有牙齒印、舌頭偏大/偏瘦</div></div>
+                            <div class="option-body"><div class="option-title">舌色偏白/淡，或舌邊有牙齒印、舌頭偏大/偏瘦</div></div>
+                            <div class="opt-img-wrap"><img src="images/tongue/danbai.png" alt=""></div>
                         </div>
                         <div class="option-card" data-value="舌紅深紅苔黃厚少苔" data-max="1">
                             <div class="option-marker">B</div>
-                            <div><div class="option-title">舌頭偏紅或深紅，或舌苔偏黃/偏厚、少苔</div></div>
+                            <div class="option-body"><div class="option-title">舌頭偏紅或深紅，或舌苔偏黃/偏厚、少苔</div></div>
+                            <div class="opt-img-wrap"><img src="images/tongue/hong.png" alt=""></div>
                         </div>
                         <div class="option-card" data-value="舌紫青血管明顯紫點" data-max="1">
                             <div class="option-marker">C</div>
-                            <div><div class="option-title">舌色偏紫/青，或舌下血管較明顯、有紫點</div></div>
+                            <div class="option-body"><div class="option-title">舌色偏紫/青，或舌下血管較明顯、有紫點</div></div>
+                            <div class="opt-img-wrap"><img src="images/tongue/zi.png" alt=""></div>
                         </div>
                         <div class="option-card" data-value="舌淡紅苔薄白不確定" data-max="1">
                             <div class="option-marker">D</div>
-                            <div><div class="option-title">舌色淡紅、舌苔薄白，或不太確定</div></div>
+                            <div class="option-body"><div class="option-title">舌色淡紅、舌苔薄白，或不太確定</div></div>
+                            <div class="opt-img-wrap"><img src="images/tongue/fanhong.png" alt=""></div>
                         </div>
                     </div>
                     <div class="wizard-hint">請選擇最貼近你的一項</div>
                 </div>
 
-                <!-- Step 5：最後確認 -->
+                <!-- Step 5：循環、代謝與排泄狀態分流 -->
                 <div class="wizard-step" data-step="5">
-                    <h2 class="text-xl font-bold text-primary-dark mb-1">第 5 步：最後確認——循環與代謝跟進意願</h2>
-                    <p class="text-slate-500 text-sm mb-5">以上體質傾向只是「初步望診推估」，若想確認血管彈性、血液黏稠度或肝臟代謝負擔，你希望如何跟進？</p>
+                    <h2 class="text-xl font-bold text-primary-dark mb-1">第 5 步：循環、代謝與排泄狀態</h2>
+                    <p class="text-slate-500 text-sm mb-5">最後一步看看你的循環與代謝狀態，哪一項最貼近你目前的狀況？</p>
                     <div class="space-y-3">
-                        <div class="option-card" data-value="立即查看預約領取禮包" data-max="1">
+                        <div class="option-card" data-value="循環卡頓痠痛麻" data-max="1">
                             <div class="option-marker">A</div>
-                            <div>
-                                <div class="option-title">立即查看報告，並預約到店領取養生禮包＋免費微電流檢測體驗</div>
-                                <div class="option-sub">🎁 同時領取養生禮品包</div>
-                            </div>
+                            <div class="option-body"><div class="option-title">容易肩頸僵硬痠痛、手麻或局部刺痛／循環卡住感</div></div>
+                            <div class="opt-img-wrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
                         </div>
-                        <div class="option-card" data-value="先看報告再決定" data-max="1">
+                        <div class="option-card" data-value="排便黏膩口氣重" data-max="1">
                             <div class="option-marker">B</div>
-                            <div>
-                                <div class="option-title">先看初步報告，稍後再決定是否預約</div>
-                            </div>
+                            <div class="option-body"><div class="option-title">排便黏膩不爽、口氣重或容易覺得身體沉重悶熱</div></div>
+                            <div class="opt-img-wrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
+                        </div>
+                        <div class="option-card" data-value="心悸氣短精力透支" data-max="1">
+                            <div class="option-marker">C</div>
+                            <div class="option-body"><div class="option-title">容易心悸氣短、健忘或精力透支、恢復慢</div></div>
+                            <div class="opt-img-wrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
+                        </div>
+                        <div class="option-card" data-value="循環排泄大致順暢" data-max="1">
+                            <div class="option-marker">D</div>
+                            <div class="option-body"><div class="option-title">循環與排泄大致順暢，無明顯卡頓</div></div>
+                            <div class="opt-img-wrap"><img src="public/images/no_symptoms.png" alt=""></div>
                         </div>
                     </div>
-                    <div class="wizard-hint">請選擇最符合你意願的一項</div>
+                    <div class="wizard-hint">請選擇最貼近你的一項</div>
                 </div>
 
                 <!-- 導航按鈕列 -->
@@ -2346,25 +2385,22 @@
         function wizardFinish() {
             // Collect all step answers into symptoms payload
             const allSymptoms = [];
-            let wizardIntent = "";
             for (let s = 1; s <= totalSteps; s++) {
                 const stepVals = stepAnswers[s] || [];
-                if (s === 5) {
-                    // Step 5: only first value matters for intent
-                    wizardIntent = stepVals[0] || "";
-                }
                 stepVals.forEach(v => allSymptoms.push(v));
             }
             if (allSymptoms.length === 0) {
                 alert('請完成所有步驟的選取');
                 return;
             }
+            // Step 5 is now a constitution-splitting question, not an intent selector.
+            // Always show CTA claim section after report.
             const payload = {
                 referral_code: null,
                 answers: { symptoms: allSymptoms, wizard_answers: stepAnswers },
-                wizard_intent: wizardIntent,
+                wizard_intent: "立即查看預約領取禮包",
             };
-            sessionStorage.setItem('tcm_wizard_intent', wizardIntent);
+            sessionStorage.setItem('tcm_wizard_intent', payload.wizard_intent);
             submitWizardResult(payload);
         }
 
@@ -2390,9 +2426,7 @@
                 const data = await Promise.all([scanPromise, apiPromise]).then(([_, result]) => result);
                 window.__assessmentId = data.assessment_id;
                 window.__inspectorPhone = data.inspector_phone || '';
-                // Save wizard intent and inspector phone from backend response
-                const intent = data.wizard_intent || stepAnswers[5]?.[0] || "";
-                sessionStorage.setItem('tcm_wizard_intent', intent);
+                // Save inspector phone from backend response
                 sessionStorage.setItem('tcm_assessment_id', data.assessment_id);
                 sessionStorage.setItem('tcm_constitution_full', data.report?.constitution || '');
                 sessionStorage.setItem('tcm_score', data.report?.score || '');
@@ -2408,13 +2442,8 @@
                 setTimeout(() => {
                     const claimSection = document.getElementById("claim-section");
                     if (!claimSection) return;
-                    if (intent === "立即查看預約領取禮包") {
-                        // Option A: immediate urgency CTA
-                        claimSection.classList.remove("hidden");
-                    } else {
-                        // Option B: softer follow-up path
-                        claimSection.classList.remove("hidden");
-                    }
+                    // Always show claim section — user just finished the full 5-step constitution assessment
+                    claimSection.classList.remove("hidden");
                 }, 600);
             } catch (err) {
                 alert("提交失敗：" + err.message);
