@@ -4,14 +4,27 @@
 
 ---
 
-## ✅ 部署狀態摘要
+## ✅ 部署狀態摘要（Phase 4.3 更新）
 
 | 項目 | 狀態 | 詳細 |
 |------|------|------|
-| 前端 (pages.dev) | ✅ LIVE | MD5 `3dc93f76` / **190645 bytes**，Phase 4.2 已部署 |
-| 後端 (Render) | ✅ OK | API 正常運行，Step 5 體重分流權重已上線 |
-| Git 推送 | ✅ OK | HEAD = origin/main = `9d470a5`（14 commits，含 Phase 4.2） |
-| 備份盤 | ✅ OK | `/…/tcm_health_assessment_backup_legacy_20261125_044722/` 含 main.py + index.html |
+| 前端 (pages.dev) | ✅ LIVE | MD5 `3dc93f76` / **190,645 bytes**，與本地完全一致 |
+| 後端 (Render) | ✅ OK | API 正常運行，Step 5 體重分流權重已上線，email_sent=True |
+| Git 推送 | ✅ OK | HEAD = origin/main = `56f0a01`（17 commits，含 Phase 4.2+4.3） |
+| 備份盤 | ✅ OK | `/…/tcm_health_assessment_backup_legacy_20261125_044722/` 完整保留 |
+
+---
+
+## 📋 本次上線包含的 commits
+
+```
+56f0a01 docs: Phase4.3 實測檢核清單 + 自動驗證腳本
+8e0b889 docs: Phase4.2 重整報告｜5步體重分流+圖庫+計分測試結果
+9d470a5 feat: Phase 4.2 重整 5步為體質分流題目+圖片輔助 | Step5改循環代謝題、新增圖庫、權重重新分配
+9906303 docs: Phase4.1 修復報告｜白屏問題根治+驗證清單
+0a447fe fix: Phase4.1 修復 wizard 提交後白屏 | await renderReport + 錯誤邊界
+129eea1 docs: Phase4 報告更新｜補Render redeploy說明+完整commit清單
+```
 
 ---
 
