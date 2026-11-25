@@ -729,12 +729,16 @@ def analyze_constitution(answers: Dict[str, Any]) -> Dict[str, Any]:
     for sym in active_symptoms:
         if sym in WIZARD_ANSWER_KEYS:
             raw_sub = WIZARD_ANSWER_KEYS[sym]
-            for sub_key, _weights in raw_sub:
+            for sub_key, weights in raw_sub:
                 synonym = WIZARD_SYNONYM_MAP.get(sub_key)
                 if synonym is not None:
                     expanded_symptoms.append(synonym)
                 elif sub_key in WIZARD_INLINE_WEIGHTS:
-                    expanded_symptoms.append(sub_key)  # scored inline below
+                    # Apply inline weights directly to scores rather than re-expanding
+                    for constitution, w in weights.items():
+                        scores[constitution] += w
+                else:
+                    expanded_symptoms.append(sub_key)
         else:
             expanded_symptoms.append(sym)
 
