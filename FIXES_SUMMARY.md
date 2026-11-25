@@ -1,67 +1,66 @@
-# COSWAY AI 中醫體質檢測 Web App - 修復摘要
+# COSWAY TCM 階段性修復摘要 — 2026-11-25
 
-## 階段一完成：FastAPI 路由與報告 JSON 修復
+## ✅ 已完成事項
 
-### 已完成項目
+### Phase 3 計分模型修正（3 commits）
+| Commit | 說明 |
+|--------|------|
+| 244f484 | 降低 Step1/Step2 權重，改用 sqrt 縮放公式 |
+| 3e546ea | analyze_constitution 改讀 WIZARD_ANSWER_KEYS 權重（而非舊 INLINE_WEIGHTS） |
+| edd0c8c | submit 端點新增 `wizard_intent=data.wizard_intent` 存入資料庫 |
 
-#### 1. 路由修復
-- ✅ 新增 `GET /` 回傳 `{"status": "ok"}`
-- ✅ 新增 `GET /api/health` 回傳 `{"status": "ok"}`
-- ✅ 保留 `GET /health` 向後兼容
-- ✅ 確保 `POST /api/questionnaire/submit` 正常工作
+### 驗證結果
+- ✅ Cloudflare Pages 前端：HTTP 200 / 186263 bytes（與本地同步）
+- ✅ 後端計分測試：氣虛 combo → score=40 risk=高；平衡 combo → score=90 risk=低
+- ✅ Git origin/main：最新 commit edd0c8c 已推送
 
-#### 2. 報告 JSON 結構完整化
-```json
-{
-  "success": true,
-  "assessment_id": "uuid",
-  "report": {
-    "constitution": "氣虛",
-    "score": 55,
-    "risk_level": "高",
-    "potential_risks": ["免疫機能下降"],
-    "severe_risks": ["身體恢復力減弱", "組織修復速度變慢"],
-    "risk_indicators": ["免疫機能下降", "身體恢復力減弱", "組織修復速度變慢"]
-  },
-  "email_sent": false,
-  "email_result": {"success": false, "error": "SMTP not configured"}
-}
-```
+## ⚠️ 阻塞項
 
-#### 3. 錯誤處理
-- ✅ 全域 try-except 包攔所有異常
-- ✅ 即使背景任務失敗，前端仍能收到 200 報告
-- ✅ Google Sheets 寫入失敗不阻塞回應
+### Render 後端未自動部署最新程式碼
+目前 live Render 仍運行舊版（不含 wizard_intent 存檔）。需手動觸發 redeploy：
 
-### 待處理項目（階段二）
+**操作路徑：**
+1. 登入 https://dashboard.render.com
+2. 進入 tcm-backend 服務頁面
+3. 點擊「Manual Deploy」→ 「Deploy latest commit」
 
-#### 4. Google Sheets 穩健寫入
-- 改用 `values_append` 批次寫入
-- 環境變數 `GOOGLE_SERVICE_ACCOUNT_JSON` 優先
-
-#### 5. Email 備用發送機制
-- 檢測人員編號未找到時，退回至 `ADMIN_EMAIL`
-- 使用 `BackgroundTasks` 背景發送
-
-### Git 狀態
-```
-Commit: 2ed3472
-Message: fix(phase1): restore routes and complete report json payload
-Branch: main → origin/main ✅
-```
-
-### 測試結果
+或執行：
 ```bash
-# 健康檢查
-$ curl http://localhost:8000/
-{"status":"ok"}
-
-$ curl http://localhost:8000/api/health
-{"status":"ok"}
-
-# 提交問卷
-$ curl -X POST http://localhost:8000/api/questionnaire/submit \
+curl -X POST "https://api.render.com/v1/services/srv-tcm-backend/deployments" \
+  -H "Authorization: Bearer $RENDER_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"name":"測試","phone":"91234567","gender":"男","age_group":"25-34","referral_code":"111557","answers":{"symptoms":["症狀:手腳冰冷","舌色:淡白舌"]}}'
-# 返回完整 JSON 結構 ✅
+  -d '{"commitSha":"edd0c8c","forceBuild":true}'
 ```
+
+## 📊 計分模型最終參數
+
+### 核心公式
+```
+score = max(20, round(85 - sqrt(dominant_score) * 8))
+risk = 高(score<60) / 中(score<80) / 低(≥80)
+```
+
+### 單步權重對照
+| 選項 | dominant體質 | 預估score範圍 |
+|------|-------------|--------------|
+| 易累無神 | 氣虛 | ~65 |
+| 睡差煩躁嘆氣 | 氣鬱 | ~57 |
+| 怕冷手腳冰冷 | 陽虛 | ~62 |
+| 口乾敏感起疹 | 陰虛/特稟 | ~69 |
+| 腹部肥胖消化不良 | 痰濕 | ~62 |
+| 面色白眼疲倦 | 氣虛 | ~55 |
+| 出油泛紅痘黑眼圈 | 濕熱 | ~58 |
+| 膚色暗沉唇甲紫暗 | 血瘀 | ~56 |
+
+### 多步合併實測
+| 組合 | constitution | score | risk |
+|------|-------------|-------|------|
+| Qi deficiency full | 氣虛質 | 40 | 高 |
+| Damp-heat full | 濕熱質 | ~45 | 高 |
+| Blood stasis full | 血瘀質 | ~43 | 高 |
+| Full balanced | 平和質 | 90 | 低 |
+
+## 📁 相關檔案
+- `main.py` — 後端主程式（FastAPI + SQLModel）
+- `index.html` — 前端主檔（Cloudflare Pages）
+- `ANALYSIS_PATH.md` — 完整分析路徑指南
