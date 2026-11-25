@@ -1929,6 +1929,7 @@ def submit_questionnaire(
                 nickname="",
                 contact_phone="",
                 claim_status="pending",
+                wizard_intent=data.wizard_intent if hasattr(data, 'wizard_intent') and data.wizard_intent else "",
             )
             db.add(record)
             db.commit()
