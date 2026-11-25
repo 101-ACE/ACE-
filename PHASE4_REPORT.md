@@ -8,10 +8,10 @@
 
 | 項目 | 狀態 | 詳細 |
 |------|------|------|
-| 前端 (pages.dev) | ✅ LIVE | MD5 `dc958956` / 186263 bytes，與本地完全一致 |
-| 後端 (Render) | ✅ LIVE | API `/submit` 正常，4 組測試案例全部通過 |
-| Git 推送 | ✅ OK | HEAD = origin/main = d34f994（11 commits） |
-| 備份盤 | ✅ OK | `backup_legacy_20261125_044722/` 含 main.py + index.html |
+| 前端 (pages.dev) | ✅ LIVE | MD5 `dc958956` / 186263 bytes，與本地完全一致（已部署上線） |
+| 後端 (Render) | ⚠️ STALE | API 正常運行中；但 `wizard_intent` 存檔邏輯需 redeploy（see below） |
+| Git 推送 | ✅ OK | HEAD = origin/main = `863455d`（12 commits，含 Phase4 報告） |
+| 備份盤 | ✅ OK | `/…/tcm_health_assessment_backup_legacy_20261125_044722/` 含 main.py + index.html |
 
 ---
 
@@ -75,12 +75,17 @@
 ## 📦 本次上線包含的 commits
 
 ```
+863455d docs: Phase4 上線前檢核報告｜部署狀態+Dave實測檢查清單
 d34f994 docs: Phase3 修復摘要｜計分模型+Render部署指引
 edd0c8c fix: Phase3 補存 wizard_intent 至 Assessment 記錄
 b4b8900 docs: 新增分析路徑指南（計分模型說明、部署路徑、緊急修復檢查點）
 3e546ea fix: Phase3 修正analyze_constitution使用WIZARD_ANSWER_KEYS權重並修補Step1A平和問題
 244f484 fix: Phase3 修正計分模型｜降低Step1-2權重+改用sqrt縮放避免多步合併後分數瞬間歸零
 3878965 feat: Phase 3 串接 5步權重計分、結果頁與引流串接
+6762f6f fix: 修復 Wizard 得分 Key 錯誤｜移除不存在的血虛體質 key
+eea8462 fix: 補全進階模式表單元素與提交綁定
+c6c1f3b fix: 修復進階模式表單提交邏輯
+3ccb4c8 fix: 平和體質得分修正｜避免全部選健康選項時仍報高風險
 ```
 
 ## 🚨 阻塞事項
