@@ -1805,7 +1805,13 @@
 
                 const data = await Promise.all([scanPromise, apiPromise]).then(([_, result]) => result);
 
-                renderReport(data);
+                try {
+                    await renderReport(data);
+                } catch (renderErr) {
+                    console.error("[TCM] renderReport failed:", renderErr);
+                    alert("報告渲染失敗：" + (renderErr.message || "未知錯誤"));
+                    return;
+                }
                 window.__assessmentId = data.assessment_id;
                 window.__inspectorPhone = data.inspector_phone || '';
                 // SessionStorage 備份：防止 SPA 路由跳轉或事件丟失導致狀態遺漏
@@ -2382,7 +2388,6 @@
                     return data;
                 }));
                 const data = await Promise.all([scanPromise, apiPromise]).then(([_, result]) => result);
-                renderReport(data);
                 window.__assessmentId = data.assessment_id;
                 window.__inspectorPhone = data.inspector_phone || '';
                 // Save wizard intent and inspector phone from backend response
@@ -2392,6 +2397,13 @@
                 sessionStorage.setItem('tcm_constitution_full', data.report?.constitution || '');
                 sessionStorage.setItem('tcm_score', data.report?.score || '');
                 sessionStorage.setItem('tcm_inspector_phone', data.inspector_phone || '');
+                try {
+                    await renderReport(data);
+                } catch (renderErr) {
+                    console.error("[TCM] renderReport failed:", renderErr);
+                    alert("報告渲染失敗：" + (renderErr.message || "未知錯誤"));
+                    return;
+                }
                 showStage("stage2");
                 setTimeout(() => {
                     const claimSection = document.getElementById("claim-section");
