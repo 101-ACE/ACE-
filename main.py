@@ -607,6 +607,9 @@ def analyze_constitution(answers: Dict[str, Any]) -> Dict[str, Any]:
     dominant = max(scores, key=scores.get)
     if scores[dominant] == 0:
         return {"constitution": "平和", "score": 85, "risk_level": "低", "risk_indicators": []}
+    # 若為「平和」或得分極低，視為健康狀態
+    if dominant == "平和" or scores[dominant] <= 3:
+        return {"constitution": "平和", "score": 90, "risk_level": "低", "risk_indicators": []}
     base_score = max(20, 85 - scores[dominant] * 5)
     indicators_map = {
         "氣虛": ["免疫機能下降", "身體恢復力減弱", "組織修復速度變慢"],
