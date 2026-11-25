@@ -8,10 +8,36 @@
 
 | 項目 | 狀態 | 詳細 |
 |------|------|------|
-| 前端 (pages.dev) | ✅ LIVE | MD5 `dc958956` / 186263 bytes，與本地完全一致（已部署上線） |
-| 後端 (Render) | ⚠️ STALE | API 正常運行中；但 `wizard_intent` 存檔邏輯需 redeploy（see below） |
-| Git 推送 | ✅ OK | HEAD = origin/main = `863455d`（12 commits，含 Phase4 報告） |
+| 前端 (pages.dev) | ✅ LIVE | MD5 `299b2e7d` / 186831 bytes，Phase 4.1 修復已部署 |
+| 後端 (Render) | ✅ OK | API 正常運行，wizard_intent 存檔邏輯已啟用 |
+| Git 推送 | ✅ OK | HEAD = origin/main = `0a447fe`（13 commits，含 Phase4.1 修復） |
 | 備份盤 | ✅ OK | `/…/tcm_health_assessment_backup_legacy_20261125_044722/` 含 main.py + index.html |
+
+---
+
+## 🔧 Phase 4.1 修復摘要
+
+### 問題根因
+**白屏成因**：`submitWizardResult()` 和 `submitQuestionnaire()` 中調用 `renderReport(data)` 時未使用 `await`，導致：
+1. `showStage("stage2")` 在報告渲染完成前執行
+2. 若 `renderReport` 內部拋出異常，整個函數 fail silently，用戶看到空白頁面且無錯誤提示
+
+### 修復內容
+```javascript
+// Fix: Add await + error boundary
+try {
+    await renderReport(data);
+} catch (renderErr) {
+    console.error("[TCM] renderReport failed:", renderErr);
+    alert("報告渲染失敗：" + (renderErr.message || "未知錯誤"));
+    return;
+}
+showStage("stage2"); // Now safely after report is rendered
+```
+
+### 修復位置
+- `index.html:1809` — `submitQuestionnaire()` (進階模式路徑)
+- `index.html:2401` — `submitWizardResult()` (5步 Wizard 主路徑)
 
 ---
 
@@ -75,6 +101,8 @@
 ## 📦 本次上線包含的 commits
 
 ```
+0a447fe fix: Phase4.1 修復 wizard 提交後白屏 | await renderReport + 錯誤邊界
+129eea1 docs: Phase4 報告更新｜補Render redeploy說明+完整commit清單
 863455d docs: Phase4 上線前檢核報告｜部署狀態+Dave實測檢查清單
 d34f994 docs: Phase3 修復摘要｜計分模型+Render部署指引
 edd0c8c fix: Phase3 補存 wizard_intent 至 Assessment 記錄
@@ -88,9 +116,29 @@ c6c1f3b fix: 修復進階模式表單提交邏輯
 3ccb4c8 fix: 平和體質得分修正｜避免全部選健康選項時仍報高風險
 ```
 
-## 🚨 阻塞事項
+---
 
-**Render 後端需手動 redeploy** 以同步最新 wizard_intent 存檔邏輯：
-→ https://dashboard.render.com/service/tcm-backend/deployments → Manual Deploy → Deploy latest commit
+## ✅ Phase 4.1 完成檢查清單
 
-部署完成後，所有新提交的測試用例（含 wizard_intent）將正確存庫。
+- [x] 排查白屏根因（竞态條件：renderReport 未 await）
+- [x] 修復 submitWizardResult() 中的 renderReport 呼叫
+- [x] 修復 submitQuestionnaire() 中的 renderReport 呼叫
+- [x] 加入錯誤邊界保護（try/catch + alert）
+- [x] 推送至 origin/main (`0a447fe`)
+- [x] Cloudflare Pages 自動部署完成
+- [x] 後端端到端測試通過（3 case: 氣虛質/平和質/report endpoint）
+- [x] 驗證 stage2 所有 DOM 元素存在
+- [ ] Dave 實測驗證（需人工測試）
+
+---
+
+## 🚨 下一步行動
+
+**Dave 實測重點**：
+1. 打開 https://healthcheck-bel.pages.dev/
+2. 完成 5 步 Wizard 流程
+3. 確認不會出現白屏，報告能正確渲染
+4. 測試 CTA 預約功能
+5. 檢查手機版版型
+
+如有任何問題，請查看瀏覽器控制台（F12 → Console）中的 `[TCM]` 開頭日誌。
