@@ -2046,6 +2046,11 @@
             }
 
             // Severe risk section
+            const severeSection = $("severe-risk-section");
+            if (severeSection) {
+                if (severeRisk.length > 0) severeSection.classList.remove("hidden");
+                else severeSection.classList.add("hidden");
+            }
             const severeContainer = $("severe-risk-list");
             if (severeContainer) {
                 if (severeRisk.length > 0) {
