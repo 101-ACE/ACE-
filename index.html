@@ -1830,12 +1830,16 @@
             btn.disabled = true;
             btn.textContent = "分析中...";
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+
             try {
                 const scanPromise = runScanAnimation();
                 const apiPromise = fetch(`${API_BASE}/questionnaire/submit`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload),
+                    signal: controller.signal,
                 }).then(resp => resp.json().then(data => {
                     if (!resp.ok) throw new Error(data.detail || "提交失敗");
                     if (typeof window.__finalizeAnimation === 'function') {
@@ -1845,31 +1849,68 @@
                 }));
 
                 const data = await Promise.all([scanPromise, apiPromise]).then(([_, result]) => result);
+                clearTimeout(timeoutId);
 
                 try {
                     await renderReport(data);
                 } catch (renderErr) {
                     console.error("[TCM] renderReport failed:", renderErr);
-                    alert("報告渲染失敗：" + (renderErr.message || "未知錯誤"));
+                    showStage("stage2");
+                    const stage2 = document.getElementById("stage2");
+                    if (stage2) {
+                        stage2.innerHTML = `
+                            <div class="max-w-2xl mx-auto px-4 py-12 text-center">
+                                <p class="text-lg text-slate-600 mb-2">⚠️ 報告渲染異常</p>
+                                <p class="text-sm text-slate-400 mb-6">${renderErr.message || "未知錯誤"}</p>
+                                <button onclick="location.reload()" class="px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:opacity-90 transition">重新載入</button>
+                            </div>`;
+                    }
                     return;
                 }
                 window.__assessmentId = data.assessment_id;
                 window.__inspectorPhone = data.inspector_phone || '';
-                // SessionStorage 備份：防止 SPA 路由跳轉或事件丟失導致狀態遺漏
                 sessionStorage.setItem('tcm_assessment_id', data.assessment_id);
                 sessionStorage.setItem('tcm_constitution_full', data.report?.constitution || '');
                 sessionStorage.setItem('tcm_score', data.report?.score || '');
                 sessionStorage.setItem('tcm_inspector_phone', data.inspector_phone || '');
                 sessionStorage.setItem('tcm_referral_code', $("referral_code")?.value.trim() || '');
                 showStage("stage2");
+                window.scrollTo(0, 0);
 
-                // 顯示 Claim 區塊（用戶可填寫暱稱與 WhatsApp）
                 setTimeout(() => {
                     const claimSection = document.getElementById("claim-section");
                     if (claimSection) claimSection.classList.remove("hidden");
                 }, 600);
             } catch (err) {
-                alert("提交失敗：" + err.message);
+                clearTimeout(timeoutId);
+                const isTimeout = err.name === "AbortError";
+                const msg = isTimeout ? "網路逾時，請檢查網路後重試" : ("提交失敗：" + (err.message || "未知錯誤"));
+                console.error("[TCM] submitQuestionnaire failed:", err);
+                showStage("scanning");
+                const scanText = document.getElementById("scan-text");
+                if (scanText) {
+                    scanText.textContent = msg;
+                    scanText.className = "text-slate-500 mb-6 min-h-[1.5em] text-center";
+                }
+                const scanBar = document.getElementById("scan-bar-fill");
+                if (scanBar) scanBar.style.width = "0%";
+                let retryBtn = document.getElementById("scan-retry-btn");
+                if (!retryBtn) {
+                    retryBtn = document.createElement("button");
+                    retryBtn.id = "scan-retry-btn";
+                    retryBtn.className = "mt-6 px-8 py-3 bg-primary text-white rounded-xl font-semibold text-base shadow hover:opacity-90 transition active:scale-95";
+                    retryBtn.textContent = "🔄 重新提交";
+                    const parent = document.getElementById("scanning");
+                    if (parent) parent.appendChild(retryBtn);
+                }
+                retryBtn.style.display = "block";
+                retryBtn.onclick = () => {
+                    retryBtn.style.display = "none";
+                    if (scanText) scanText.textContent = "正在重新提交...";
+                    showStage("stage1");
+                    // Re-trigger submit
+                    setTimeout(() => submitQuestionnaire(new Event("submit")), 300);
+                };
             } finally {
                 btn.disabled = false;
                 btn.textContent = origText;
@@ -1965,13 +2006,27 @@
         }
 
         async function renderReport(data) {
+            // ── Guard: if report data is missing, show fallback ──
+            if (!data || !data.report) {
+                const fallback = $("stage2");
+                if (fallback) {
+                    fallback.innerHTML = `
+                        <div class="max-w-2xl mx-auto px-4 py-12 text-center">
+                            <p class="text-lg text-slate-600 mb-4">⚠️ 報告資料載入不完整</p>
+                            <p class="text-sm text-slate-400 mb-6">請重新提交檢測</p>
+                            <button onclick="location.reload()" class="px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:opacity-90 transition">重新載入</button>
+                        </div>`;
+                }
+                throw new Error("report data missing");
+            }
+
             const report = data.report;
-            const score = report.score;
-            const risk = report.risk_level;
+            const score = report.score ?? 0;
+            const risk = report.risk_level || "低";
             const colors = getRiskColor(risk);
 
             // Get full constitution name
-            const fullName = CONSTITUTION_FULL_NAMES[report.constitution] || report.constitution;
+            const fullName = CONSTITUTION_FULL_NAMES[report.constitution] || report.constitution || "平和質";
 
             // Gauge
             const circumference = 2 * Math.PI * 70;
@@ -2402,8 +2457,9 @@
             }
             // Step 5 is now a constitution-splitting question, not an intent selector.
             // Always show CTA claim section after report.
+            const urlParams = new URLSearchParams(window.location.search);
             const payload = {
-                referral_code: null,
+                referral_code: urlParams.get("referral_code") || null,
                 answers: { symptoms: allSymptoms, wizard_answers: stepAnswers },
                 wizard_intent: "立即查看預約領取禮包",
             };
@@ -2417,12 +2473,18 @@
             const origText = btn.textContent.trim();
             btn.disabled = true;
             btn.textContent = "分析中...";
+
+            // AbortController for 30s timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+
             try {
                 const scanPromise = runScanAnimation();
                 const apiPromise = fetch(`${API_BASE}/questionnaire/submit`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload),
+                    signal: controller.signal,
                 }).then(resp => resp.json().then(data => {
                     if (!resp.ok) throw new Error(data.detail || "提交失敗");
                     if (typeof window.__finalizeAnimation === 'function') {
@@ -2431,29 +2493,68 @@
                     return data;
                 }));
                 const data = await Promise.all([scanPromise, apiPromise]).then(([_, result]) => result);
+                clearTimeout(timeoutId);
+
                 window.__assessmentId = data.assessment_id;
                 window.__inspectorPhone = data.inspector_phone || '';
-                // Save inspector phone from backend response
                 sessionStorage.setItem('tcm_assessment_id', data.assessment_id);
                 sessionStorage.setItem('tcm_constitution_full', data.report?.constitution || '');
                 sessionStorage.setItem('tcm_score', data.report?.score || '');
                 sessionStorage.setItem('tcm_inspector_phone', data.inspector_phone || '');
+
                 try {
                     await renderReport(data);
                 } catch (renderErr) {
                     console.error("[TCM] renderReport failed:", renderErr);
-                    alert("報告渲染失敗：" + (renderErr.message || "未知錯誤"));
+                    // Show visible fallback in stage2 instead of blank screen
+                    showStage("stage2");
+                    const stage2 = document.getElementById("stage2");
+                    if (stage2) {
+                        stage2.innerHTML = `
+                            <div class="max-w-2xl mx-auto px-4 py-12 text-center">
+                                <p class="text-lg text-slate-600 mb-2">⚠️ 報告渲染異常</p>
+                                <p class="text-sm text-slate-400 mb-6">${renderErr.message || "未知錯誤"}</p>
+                                <button onclick="location.reload()" class="px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:opacity-90 transition">重新載入</button>
+                            </div>`;
+                    }
                     return;
                 }
                 showStage("stage2");
+                window.scrollTo(0, 0);
                 setTimeout(() => {
                     const claimSection = document.getElementById("claim-section");
-                    if (!claimSection) return;
-                    // Always show claim section — user just finished the full 5-step constitution assessment
-                    claimSection.classList.remove("hidden");
+                    if (claimSection) claimSection.classList.remove("hidden");
                 }, 600);
             } catch (err) {
-                alert("提交失敗：" + err.message);
+                clearTimeout(timeoutId);
+                // Show visible error with retry — never leave a blank screen
+                const isTimeout = err.name === "AbortError";
+                const msg = isTimeout ? "網路逾時，請檢查網路後重試" : ("提交失敗：" + (err.message || "未知錯誤"));
+                console.error("[TCM] submitWizardResult failed:", err);
+                showStage("scanning");
+                const scanText = document.getElementById("scan-text");
+                if (scanText) {
+                    scanText.textContent = msg;
+                    scanText.className = "text-slate-500 mb-6 min-h-[1.5em] text-center";
+                }
+                const scanBar = document.getElementById("scan-bar-fill");
+                if (scanBar) scanBar.style.width = "0%";
+                // Show retry button in scanning stage
+                let retryBtn = document.getElementById("scan-retry-btn");
+                if (!retryBtn) {
+                    retryBtn = document.createElement("button");
+                    retryBtn.id = "scan-retry-btn";
+                    retryBtn.className = "mt-6 px-8 py-3 bg-primary text-white rounded-xl font-semibold text-base shadow hover:opacity-90 transition active:scale-95";
+                    retryBtn.textContent = "🔄 重新提交";
+                    const parent = document.getElementById("scanning");
+                    if (parent) parent.appendChild(retryBtn);
+                }
+                retryBtn.style.display = "block";
+                retryBtn.onclick = () => {
+                    retryBtn.style.display = "none";
+                    if (scanText) scanText.textContent = "正在重新提交...";
+                    submitWizardResult(payload);
+                };
             } finally {
                 btn.disabled = false;
                 btn.textContent = origText;
